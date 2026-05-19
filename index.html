@@ -600,6 +600,7 @@
           <div class="tab" onclick="setTab(this,'t-datos')">Datos del trámite</div>
           <div class="tab active" onclick="setTab(this,'t-docs')">Documentos y gastos</div>
           <div class="tab" onclick="setTab(this,'t-estado')">Estado y auditoría</div>
+          <div class="tab" onclick="setTab(this,'t-liquidacion')">Liquidación</div>
         </div>
 
         <!-- TAB DATOS -->
@@ -806,6 +807,93 @@
             </div>
           </div>
         </div>
+
+        <!-- TAB LIQUIDACIÓN -->
+        <div id="t-liquidacion" style="display:none">
+
+          <div class="totales-bar" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+            <div class="total-card">
+              <div class="total-card-label">Total gastos</div>
+              <div class="total-card-val" id="tl-total-gastos">—</div>
+            </div>
+            <div class="total-card">
+              <div class="total-card-label">Total anticipos</div>
+              <div class="total-card-val" style="color:var(--green)" id="tl-total-anticipos">—</div>
+            </div>
+            <div class="total-card">
+              <div class="total-card-label">Saldo neto</div>
+              <div class="total-card-val" id="tl-saldo-card">—</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <span>Detalle de gastos pagados</span>
+              <span class="badge badge-amber" id="tl-estado-badge">Pendiente</span>
+            </div>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Importado desde la pestaña Documentos y gastos. IVA y retenciones por completar en cada línea.</p>
+            <table class="gasto-table">
+              <thead>
+                <tr>
+                  <th style="width:28%">Concepto</th>
+                  <th style="width:17%">Proveedor</th>
+                  <th style="width:16%">N° factura</th>
+                  <th style="width:12%;text-align:right">Subtotal</th>
+                  <th style="width:9%;text-align:right">IVA</th>
+                  <th style="width:10%;text-align:right">Retención</th>
+                  <th style="width:8%;text-align:right">Total</th>
+                </tr>
+              </thead>
+              <tbody id="tl-gastos-body"></tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td colspan="3" style="font-size:11px;font-family:'DM Mono',monospace">Total gastos pagados</td>
+                  <td id="tl-subtotal-f" style="text-align:right;font-family:'DM Mono',monospace">—</td>
+                  <td id="tl-iva-f" style="text-align:right;font-family:'DM Mono',monospace">—</td>
+                  <td id="tl-ret-f" style="text-align:right;font-family:'DM Mono',monospace">—</td>
+                  <td id="tl-total-f" style="text-align:right;font-family:'DM Mono',monospace;font-size:13px">—</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="panel" style="margin:0">
+              <div class="panel-title" style="font-size:12px;margin-bottom:12px">Anticipos del cliente</div>
+              <table class="gasto-table">
+                <thead><tr><th>Fecha</th><th>Referencia</th><th>Forma pago</th><th>Monto</th></tr></thead>
+                <tbody id="tl-anticipos-body"></tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="3" style="font-family:'DM Mono',monospace;font-size:11px">Total anticipos</td>
+                    <td id="tl-ta-footer" style="font-family:'DM Mono',monospace;color:var(--green)">—</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                  <span style="font-size:12px;color:var(--text-2)">Total gastos</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:12px" id="tl-tg-label">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-size:12px;color:var(--text-2)">Total anticipos</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--green)" id="tl-ta-label">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;border-top:1px solid var(--border)">
+                  <span style="font-size:13px;font-weight:500" id="tl-saldo-label">Saldo</span>
+                  <span style="font-size:24px;font-weight:300;letter-spacing:-0.5px;font-family:'DM Mono',monospace" id="tl-saldo-value">—</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+              <div class="field" style="margin-bottom:8px"><label>Garantía por recuperar</label><select><option>NO</option><option>SÍ</option></select></div>
+              <button class="btn" onclick="showNotif('Generando vista previa del PDF...')">Vista previa PDF</button>
+              <button class="btn btn-primary" onclick="showNotif('Liquidación enviada al cliente por correo')">Enviar liquidación al cliente</button>
+            </div>
+          </div>
+
+        </div>
+
       </div>
 
       <!-- ══ LIQUIDACIÓN ══ -->
@@ -1160,11 +1248,63 @@ function renderLiqAnticipos() {
   }
 }
 
+function renderTabLiquidacion() {
+  const tg = totalGastos();
+  const ta = totalAnticipos();
+  const saldo = tg - ta;
+
+  const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  const setColor = (id, c) => { const e = document.getElementById(id); if (e) e.style.color = c; };
+
+  set('tl-total-gastos', '$' + tg.toFixed(2));
+  set('tl-total-anticipos', '$' + ta.toFixed(2));
+  set('tl-saldo-card', (saldo >= 0 ? '$' : '-$') + Math.abs(saldo).toFixed(2));
+  setColor('tl-saldo-card', saldo > 0 ? 'var(--red)' : saldo < 0 ? 'var(--green)' : 'var(--text)');
+  set('tl-estado-badge', saldo === 0 ? 'Liquidado' : 'Pendiente');
+
+  const gb = document.getElementById('tl-gastos-body');
+  if (gb) {
+    gb.innerHTML = gastoData.map(g => `
+      <tr>
+        <td>${g.concepto}</td>
+        <td style="font-size:12px;color:var(--text-2)">${g.proveedor}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${g.factura}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace">$${g.monto.toFixed(2)}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${g.monto.toFixed(2)}</td>
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:12px;font-size:12px">Sin gastos registrados</td></tr>';
+    set('tl-subtotal-f', '$' + tg.toFixed(2));
+    set('tl-iva-f', '$0.00');
+    set('tl-ret-f', '$0.00');
+    set('tl-total-f', '$' + tg.toFixed(2));
+  }
+
+  const ab = document.getElementById('tl-anticipos-body');
+  if (ab) {
+    ab.innerHTML = anticipoData.map(a => `
+      <tr>
+        <td style="font-size:11px;color:var(--text-3)">${a.fecha}</td>
+        <td style="font-size:12px">${a.descripcion}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--green)">$${a.monto.toFixed(2)}</td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:10px;font-size:11px">Sin anticipos</td></tr>';
+    set('tl-ta-footer', '$' + ta.toFixed(2));
+  }
+
+  set('tl-tg-label', '$' + tg.toFixed(2));
+  set('tl-ta-label', '– $' + ta.toFixed(2));
+  set('tl-saldo-label', saldo > 0 ? 'Saldo a cobrar al cliente' : saldo < 0 ? 'Saldo a favor del cliente' : 'Liquidado');
+  set('tl-saldo-value', (saldo >= 0 ? '$' : '-$') + Math.abs(saldo).toFixed(2));
+  setColor('tl-saldo-value', saldo > 0 ? 'var(--red)' : saldo < 0 ? 'var(--green)' : 'var(--text-2)');
+}
+
 function renderAll() {
   renderGastos();
   renderAnticipos();
   renderLiqAnticipos();
   renderCustomProps();
+  renderTabLiquidacion();
 }
 
 function addGasto() {
@@ -1490,9 +1630,10 @@ function nav(id, el) {
 function setTab(el, targetId) {
   document.querySelectorAll('#screen-tramite .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['t-datos', 't-docs', 't-estado'].forEach(id => {
+  ['t-datos', 't-docs', 't-estado', 't-liquidacion'].forEach(id => {
     document.getElementById(id).style.display = id === targetId ? 'block' : 'none';
   });
+  if (targetId === 't-liquidacion') renderTabLiquidacion();
 }
 
 let notifTimer;
