@@ -428,6 +428,24 @@
   /* ── SECTION DIVIDER ── */
   .section-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
 
+  /* ── PRESET BUTTONS ── */
+  .btn-preset { border-radius: 20px; font-size: 11px; padding: 5px 12px; }
+  .btn-preset.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* ── PRINT / PDF ── */
+  @media print {
+    .sidebar, .topbar, #r-presets-row, #r-filters-row { display: none !important; }
+    body { overflow: auto !important; height: auto !important; }
+    .app { display: block !important; height: auto !important; }
+    .main { display: block !important; overflow: visible !important; }
+    .content { overflow: visible !important; padding: 16px 20px !important; }
+    .screen { display: none !important; }
+    #screen-reportes { display: block !important; animation: none !important; }
+    #r-print-header { display: block !important; }
+    .no-print { display: none !important; }
+    @page { margin: 1cm; size: A4 landscape; }
+  }
+
   /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -898,16 +916,36 @@
       <!-- ══ REPORTES ══ -->
       <div class="screen" id="screen-reportes">
 
-        <div class="filters">
-          <select class="filter-select" id="r-year" onchange="renderReportes()">
+        <!-- print-only header -->
+        <div id="r-print-header" style="display:none;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ccc">
+          <div style="font-size:17px;font-weight:500">Reporte Financiero — Intraservice</div>
+          <div id="r-print-period" style="font-size:12px;color:#666;margin-top:3px"></div>
+        </div>
+
+        <!-- row 1: presets + export -->
+        <div id="r-presets-row" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--text-3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em;margin-right:2px">Período</span>
+          <button class="btn btn-sm btn-preset" id="preset-mes" onclick="setReportePeriodo('mes')">Mes actual</button>
+          <button class="btn btn-sm btn-preset" id="preset-3m" onclick="setReportePeriodo('3m')">Últimos 3 meses</button>
+          <button class="btn btn-sm btn-preset" id="preset-6m" onclick="setReportePeriodo('6m')">Últimos 6 meses</button>
+          <button class="btn btn-sm btn-preset" id="preset-ytd" onclick="setReportePeriodo('ytd')">Lo que va del año</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-sm btn-primary" onclick="exportReportePDF()">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="vertical-align:-1px;margin-right:3px"><rect x="1" y="1" width="9" height="9" rx="1" stroke="white" stroke-width="1"/><line x1="3" y1="5.5" x2="8" y2="5.5" stroke="white" stroke-width="1"/><line x1="5.5" y1="3" x2="5.5" y2="8" stroke="white" stroke-width="1"/></svg>Exportar PDF
+          </button>
+        </div>
+
+        <!-- row 2: manual filters -->
+        <div id="r-filters-row" class="filters" style="margin-bottom:14px">
+          <select class="filter-select" id="r-year" onchange="clearPreset();renderReportes()">
             <option value="2026" selected>2026</option>
             <option value="2025">2025</option>
           </select>
-          <select class="filter-select" id="r-desde" onchange="renderReportes()" style="width:70px">
+          <select class="filter-select" id="r-desde" onchange="clearPreset();renderReportes()" style="width:72px">
             <option value="1" selected>Ene</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
           </select>
           <span style="font-size:11px;color:var(--text-3)">—</span>
-          <select class="filter-select" id="r-hasta" onchange="renderReportes()" style="width:70px">
+          <select class="filter-select" id="r-hasta" onchange="clearPreset();renderReportes()" style="width:72px">
             <option value="1">Ene</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Abr</option><option value="5" selected>May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
           </select>
           <select class="filter-select" id="r-cliente" onchange="renderReportes()">
@@ -1379,13 +1417,48 @@ function renderReporteTramites(filtered) {
   se.style.color=sn>0?'var(--red)':sn<0?'var(--green)':'var(--text)';
 }
 
+const REPORT_CUR_YEAR = 2026;
+const REPORT_CUR_MO   = 5;
+let activePeriodPreset = 'ytd';
+
+function setReportePeriodo(preset) {
+  activePeriodPreset = preset;
+  document.getElementById('r-year').value = REPORT_CUR_YEAR;
+  const desde = { mes: REPORT_CUR_MO, '3m': Math.max(1, REPORT_CUR_MO-2), '6m': Math.max(1, REPORT_CUR_MO-5), ytd: 1 }[preset];
+  document.getElementById('r-desde').value = desde;
+  document.getElementById('r-hasta').value = REPORT_CUR_MO;
+  updatePresetButtons();
+  renderReportes();
+}
+
+function updatePresetButtons() {
+  ['mes','3m','6m','ytd'].forEach(p => {
+    const btn = document.getElementById('preset-'+p);
+    if (btn) { btn.classList.toggle('active', activePeriodPreset === p); }
+  });
+}
+
+function clearPreset() {
+  activePeriodPreset = null;
+  updatePresetButtons();
+}
+
+function exportReportePDF() {
+  const f = getRFiltros();
+  const lb = mesLabels;
+  const d = lb[String(f.desde).padStart(2,'0')];
+  const h = lb[String(f.hasta).padStart(2,'0')];
+  const period = d === h ? `${d} ${f.year}` : `${d} — ${h} ${f.year}`;
+  const extras = [f.cliente, f.op==='IMP'?'Importación':f.op==='EXP'?'Exportación':''].filter(Boolean).join(' · ');
+  const el = document.getElementById('r-print-period');
+  if (el) el.textContent = `Período: ${period}` + (extras ? ` · ${extras}` : '') + `   |   Generado: ${new Date().toLocaleDateString('es-EC')}`;
+  window.print();
+}
+
 function resetReporteFilters() {
-  document.getElementById('r-year').value='2026';
-  document.getElementById('r-desde').value='1';
-  document.getElementById('r-hasta').value='5';
   document.getElementById('r-cliente').value='';
   document.getElementById('r-op').value='';
-  renderReportes();
+  setReportePeriodo('ytd');
 }
 // ─────────────────────────────────────────────────────────────────
 
@@ -1432,6 +1505,7 @@ function showNotif(msg) {
 }
 
 renderAll();
+updatePresetButtons();
 </script>
 </body>
 </html>
