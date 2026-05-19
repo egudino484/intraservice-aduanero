@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intraservice — Presentación del Prototipo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F1;
+    --surface: #FFFFFF;
+    --surface2: #F0EEE9;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.15);
+    --text: #1A1915;
+    --text-2: #6B6860;
+    --text-3: #9E9C97;
+    --blue: #1E4FBF;
+    --blue-light: #EEF3FF;
+    --blue-dark: #163DA8;
+    --green: #1A6B3C;
+    --green-light: #EDFAF3;
+    --amber: #7A4A00;
+    --amber-light: #FFF8EC;
+    --red: #8B1F1F;
+    --red-light: #FFF0F0;
+    --purple: #4A2D8B;
+    --purple-light: #F3EEFF;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    padding: 64px 80px 96px;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeIn 0.35s ease;
+  }
+  .slide.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SLIDE HEADER ── */
+  .slide-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .slide-title {
+    font-size: 44px;
+    font-weight: 500;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .slide-subtitle {
+    font-size: 18px;
+    color: var(--text-2);
+    font-weight: 400;
+    line-height: 1.4;
+    max-width: 800px;
+    margin-bottom: 36px;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+    color: white;
+    justify-content: center;
+    padding: 0 96px;
+  }
+  .cover .logo-row {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 48px;
+  }
+  .cover .logo-icon {
+    width: 52px; height: 52px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cover .logo-icon svg { width: 26px; height: 26px; }
+  .cover .brand {
+    font-size: 18px; font-weight: 500; letter-spacing: -0.3px;
+  }
+  .cover .brand-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: rgba(255,255,255,0.65);
+  }
+  .cover h1 {
+    font-size: 84px;
+    font-weight: 300;
+    letter-spacing: -3px;
+    line-height: 1;
+    margin-bottom: 24px;
+  }
+  .cover h1 b { font-weight: 600; }
+  .cover .lead {
+    font-size: 22px;
+    color: rgba(255,255,255,0.8);
+    max-width: 720px;
+    line-height: 1.45;
+    font-weight: 300;
+    margin-bottom: 48px;
+  }
+  .cover .meta {
+    display: flex; gap: 40px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .cover .meta b { color: white; font-weight: 500; }
+
+  /* ── GRID HELPERS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--blue-light);
+    color: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+  }
+  .card-icon svg { width: 18px; height: 18px; }
+  .card-icon.green { background: var(--green-light); color: var(--green); }
+  .card-icon.amber { background: var(--amber-light); color: var(--amber); }
+  .card-icon.red { background: var(--red-light); color: var(--red); }
+  .card-icon.purple { background: var(--purple-light); color: var(--purple); }
+  .card-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .card-title { font-size: 17px; font-weight: 500; letter-spacing: -0.3px; }
+  .card-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+  /* ── FEATURE LIST ── */
+  .feature {
+    display: flex; gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feature:last-child { border-bottom: none; }
+  .feature-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--text-3);
+    flex-shrink: 0; width: 28px;
+    padding-top: 2px;
+  }
+  .feature-body { flex: 1; }
+  .feature-title { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  .feature-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-blue  { background: var(--blue-light); color: var(--blue); }
+  .badge-red   { background: var(--red-light); color: var(--red); }
+  .badge-gray  { background: var(--surface2); color: var(--text-2); }
+
+  /* ── BIG NUMBER PANEL ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .panel-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .panel-value {
+    font-size: 38px;
+    font-weight: 300;
+    letter-spacing: -1.4px;
+    font-family: 'DM Mono', monospace;
+  }
+  .panel-value.green { color: var(--green); }
+  .panel-value.red { color: var(--red); }
+  .panel-sub { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+  /* ── FORMULA ── */
+  .formula {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    text-align: center;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin: 24px 0;
+  }
+  .formula .op { color: var(--text-3); margin: 0 12px; }
+  .formula .pos { color: var(--green); }
+  .formula .neg { color: var(--red); }
+
+  /* ── STACK CHIPS ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+
+  /* ── COLOR SWATCHES ── */
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .swatch {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .swatch-color { height: 64px; }
+  .swatch-info { padding: 10px 12px; }
+  .swatch-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+  .swatch-hex {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  /* ── DEMO CTA ── */
+  .demo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 24px;
+  }
+  .demo-title {
+    font-size: 56px;
+    font-weight: 400;
+    letter-spacing: -2px;
+    line-height: 1.05;
+  }
+  .demo-sub {
+    font-size: 18px;
+    color: var(--text-2);
+    max-width: 600px;
+    line-height: 1.5;
+  }
+  .btn-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px;
+    background: var(--blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+    margin-top: 8px;
+  }
+  .btn-cta:hover { background: var(--blue-dark); }
+  .btn-cta svg { width: 16px; height: 16px; }
+
+  /* ── TAB MOCK ── */
+  .tab-mock {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 4px 4px 0;
+  }
+  .tab-mock-item {
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--text-2);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab-mock-item.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+    font-weight: 500;
+  }
+
+  /* ── ENTITY TABLE ── */
+  .entity-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .entity-table table { width: 100%; border-collapse: collapse; }
+  .entity-table th {
+    text-align: left;
+    padding: 12px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .entity-table td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .entity-table tr:last-child td { border-bottom: none; }
+  .entity-table td.mono { font-family: 'DM Mono', monospace; color: var(--text-2); }
+
+  /* ── NAV BAR ── */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 6px 8px 6px 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    z-index: 100;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+  .nav-counter { color: var(--text-2); user-select: none; }
+  .nav-counter b { color: var(--text); }
+  .nav-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s;
+  }
+  .nav-btn:hover { background: var(--surface2); }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .nav-btn svg { width: 14px; height: 14px; }
+  .nav-dots { display: flex; gap: 4px; padding: 0 6px; }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-dot.active { background: var(--blue); width: 18px; border-radius: 3px; }
+
+  /* ── PAGE LABEL (top right) ── */
+  .page-label {
+    position: fixed;
+    top: 28px;
+    right: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    z-index: 50;
+  }
+  .slide.cover ~ .page-label,
+  .slide.cover .page-label { display: none; }
+
+  /* ── BRAND CHIP TOP LEFT (non-cover) ── */
+  .brand-chip {
+    position: fixed;
+    top: 28px;
+    left: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 50;
+  }
+  .brand-chip-icon {
+    width: 22px; height: 22px;
+    background: var(--blue);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-chip-icon svg { width: 12px; height: 12px; }
+  .brand-chip-name {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.2px;
+  }
+  body.is-cover .brand-chip,
+  body.is-cover .page-label { display: none; }
+
+  /* ── HINT ── */
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    z-index: 50;
+  }
+  body.is-cover .hint { color: rgba(255,255,255,0.55); }
+
+  /* ── KBD ── */
+  .kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-2);
+    margin: 0 2px;
+  }
+  body.is-cover .kbd {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.8);
+  }
+</style>
+</head>
+<body class="is-cover">
+
+<div class="brand-chip">
+  <div class="brand-chip-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+  </div>
+  <div class="brand-chip-name">Intraservice</div>
+</div>
+<div class="page-label" id="pageLabel">01 / 08</div>
+
+<div class="deck">
+
+  <!-- ───── SLIDE 1: COVER ───── -->
+  <section class="slide cover active">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-6 9 6v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      </div>
+      <div>
+        <div class="brand">Intraservice</div>
+        <div class="brand-sub">SISTEMA ADUANERO · 2026</div>
+      </div>
+    </div>
+    <h1>Sistema de gestión<br><b>aduanera</b> integral.</h1>
+    <p class="lead">Prototipo funcional para administrar trámites de importación y exportación, pre-liquidación CIF + impuestos, gastos, anticipos y liquidación final — cargado con datos reales de las plantillas Intraservice.</p>
+    <div class="meta">
+      <div><b>Cliente</b><br>Intraservice</div>
+      <div><b>Versión</b><br>Prototipo v2</div>
+      <div><b>Fecha</b><br>Mayo 2026</div>
+      <div><b>Autor</b><br>Edison Gudiño</div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 2: PROBLEMA ───── -->
+  <section class="slide">
+    <div class="slide-tag">01 — Contexto</div>
+    <h2 class="slide-title">El reto operativo.</h2>
+    <p class="slide-subtitle">La gestión aduanera mezcla múltiples actores, documentos y movimientos financieros. Sin un sistema centralizado, el control se vuelve frágil y propenso a errores.</p>
+
+    <div class="grid-3" style="margin-top: 8px;">
+      <div class="card">
+        <div class="card-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        </div>
+        <div class="card-id">PROBLEMA 01</div>
+        <div class="card-title">Información dispersa</div>
+        <div class="card-desc">BLs, declaraciones, facturas y comprobantes viven en correos, hojas de cálculo y carpetas separadas.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="card-id">PROBLEMA 02</div>
+        <div class="card-title">Liquidaciones manuales</div>
+        <div class="card-desc">Cuadrar gastos contra anticipos del cliente toma horas y depende de cálculos a mano.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        </div>
+        <div class="card-id">PROBLEMA 03</div>
+        <div class="card-title">Sin trazabilidad</div>
+        <div class="card-desc">Cambios de estado, documentos cargados y responsables no quedan registrados de forma auditable.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 3: SOLUCIÓN ───── -->
+  <section class="slide">
+    <div class="slide-tag">02 — Solución</div>
+    <h2 class="slide-title">Una plataforma. Todo el flujo.</h2>
+    <p class="slide-subtitle">SPA ligera que centraliza el ciclo de vida del trámite aduanero: desde la creación hasta la liquidación final con el cliente.</p>
+
+    <div class="grid-2" style="margin-top: 8px; gap: 32px;">
+      <div>
+        <div class="feature">
+          <div class="feature-num">01</div>
+          <div class="feature-body">
+            <div class="feature-title">Bitácora unificada</div>
+            <div class="feature-desc">Todos los trámites en una sola tabla, con filtros por tipo, estado, mes y búsqueda libre.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-num">02</div>
+          <div class="feature-body">
+            <div class="feature-title">Expediente del trámite</div>
+            <div class="feature-desc">Datos generales, gastos, anticipos, documentos y línea de tiempo en un mismo expediente navegable.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-num">03</div>
+          <div class="feature-body">
+            <div class="feature-title">Liquidación automática</div>
+            <div class="feature-desc">El saldo se calcula tomando los gastos y anticipos del trámite — sin reingreso de datos.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-num">04</div>
+          <div class="feature-body">
+            <div class="feature-title">Auditoría continua</div>
+            <div class="feature-desc">Cada cambio de estado, gasto agregado y documento cargado queda registrado con fecha y motivo.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px; justify-content: center;">
+        <div class="panel">
+          <div class="panel-label">Trámite Activo</div>
+          <div style="display: flex; align-items: baseline; gap: 14px; margin-top: 6px;">
+            <div style="font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500;">T26-281</div>
+            <span class="badge badge-amber">En proceso</span>
+          </div>
+          <div class="panel-sub" style="margin-top: 8px;">MEGASTOCKEC · Importación · CMA CGM · BL GDY0406929</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="panel">
+            <div class="panel-label">Total gastos</div>
+            <div class="panel-value">$2,088<span style="color: var(--text-3); font-size: 20px;">.34</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel-label">Saldo a cobrar</div>
+            <div class="panel-value red">$88<span style="color: var(--text-3); font-size: 20px;">.34</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 4: MÓDULOS ───── -->
+  <section class="slide">
+    <div class="slide-tag">03 — Arquitectura funcional</div>
+    <h2 class="slide-title">Cinco módulos, un mismo flujo.</h2>
+    <p class="slide-subtitle">Cada pantalla resuelve una fase concreta del proceso aduanero, conectadas por la bitácora central.</p>
+
+    <div class="grid-5" style="margin-top: 8px; flex: 1;">
+      <div class="card">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div class="card-id">DASHBOARD</div>
+        <div class="card-title">Métricas generales</div>
+        <div class="card-desc">Activos, pendientes, concluidos y liquidaciones por enviar.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        </div>
+        <div class="card-id">BITÁCORA</div>
+        <div class="card-title">Listado de trámites</div>
+        <div class="card-desc">Filtros por texto, tipo, estado y mes sobre toda la cartera.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <div class="card-id">DETALLE</div>
+        <div class="card-title">Trámite</div>
+        <div class="card-desc">Expediente completo con tres pestañas operativas.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="card-id">LIQUIDACIÓN</div>
+        <div class="card-title">Resumen financiero</div>
+        <div class="card-desc">Gastos, anticipos y saldo resultante listo para enviar.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="card-id">AUDITORÍA</div>
+        <div class="card-title">Historial</div>
+        <div class="card-desc">Log filtrable de actividad sobre todo el sistema.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 5: DETALLE TRÁMITE ───── -->
+  <section class="slide">
+    <div class="slide-tag">04 — Detalle del trámite</div>
+    <h2 class="slide-title">Un expediente, tres pestañas.</h2>
+    <p class="slide-subtitle">Toda la información del trámite organizada en pestañas que reflejan el flujo real de trabajo del operador aduanero.</p>
+
+    <div class="tab-mock">
+      <div class="tab-mock-item active">Datos del trámite</div>
+      <div class="tab-mock-item">Documentos y gastos</div>
+      <div class="tab-mock-item">Estado y auditoría</div>
+    </div>
+
+    <div class="grid-3" style="flex: 1;">
+      <div class="card">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        </div>
+        <div class="card-title">Datos del trámite</div>
+        <div class="card-desc">Cliente, mercadería, BL/AWB, naviera, almacenera, DAI/DAE, MRN, sub partida, contenedores, entrega, transporte, proveedor y facturas.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+        </div>
+        <div class="card-title">Documentos y gastos</div>
+        <div class="card-desc">Tabla editable de gastos por categoría (V/B Consolidadora, THC, BL destino, Almacenaje, Agente aduanas, Transporte, Reembolso) con retención e IVA por línea.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="card-title">Estado y auditoría</div>
+        <div class="card-desc">Cambio de estado con motivo obligatorio y línea de tiempo cronológica de toda la actividad sobre el trámite.</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 18px;">
+      <span class="badge badge-green">Concluido</span>
+      <span class="badge badge-amber">En proceso</span>
+      <span class="badge badge-red">Pendiente documentación</span>
+      <span class="badge badge-gray">Cancelado</span>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 6: LIQUIDACIÓN ───── -->
+  <section class="slide">
+    <div class="slide-tag">05 — Lógica de negocio</div>
+    <h2 class="slide-title">Pre-liquidación + Liquidación final.</h2>
+    <p class="slide-subtitle">Dos etapas: cálculo CIF + impuestos antes del despacho, y cierre financiero contra anticipos del cliente. Importa gastos del trámite — sin reingresar datos.</p>
+
+    <div class="formula">
+      <span style="color: var(--text-2);">CIF</span>
+      <span class="op">+</span>
+      <span class="pos">Impuestos</span>
+      <span class="op">+</span>
+      <span class="pos">Gastos aduaneros</span>
+      <span class="op">−</span>
+      <span class="neg">Anticipo cliente</span>
+      <span class="op">=</span>
+      <b>Saldo</b>
+    </div>
+
+    <div class="grid-3" style="margin-top: 8px;">
+      <div class="panel">
+        <div class="panel-label">CIF mercadería</div>
+        <div class="panel-value">$55,883.81</div>
+        <div class="panel-sub">FOB + Flete + Seguro · sub partida 4804.11.00.00</div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Impuestos calculados</div>
+        <div class="panel-value">$9,574.30</div>
+        <div class="panel-sub">Fodinfa 0.5% · IVA 15% · Seguridad 10%</div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Gastos pagados Intraservice</div>
+        <div class="panel-value">$2,088.34</div>
+        <div class="panel-sub">5 facturas · CMA-CGM, INARPI, F. Arias</div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top: 16px;">
+      <div class="panel">
+        <div class="panel-label">Anticipo recibido</div>
+        <div class="panel-value green">$2,000.00</div>
+        <div class="panel-sub">Transferencia · 25 abr 2026</div>
+      </div>
+      <div class="panel" style="border-color: var(--red); background: var(--red-light);">
+        <div class="panel-label" style="color: var(--red);">Saldo a cobrar</div>
+        <div class="panel-value red">$88.34</div>
+        <div class="panel-sub" style="color: var(--red);">A favor de Fernando Arias</div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Retención aplicada</div>
+        <div class="panel-value">$80.00</div>
+        <div class="panel-sub">Sobre honorario desaduanización</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 7: STACK + DESIGN SYSTEM ───── -->
+  <section class="slide">
+    <div class="slide-tag">06 — Stack y diseño</div>
+    <h2 class="slide-title">Sin frameworks. Sin build.</h2>
+    <p class="slide-subtitle">Una sola página HTML autocontenida, lista para abrir en cualquier navegador. Sistema de diseño consistente basado en variables CSS.</p>
+
+    <div class="grid-2" style="gap: 32px;">
+      <div>
+        <div class="card-id" style="margin-bottom: 14px;">STACK TÉCNICO</div>
+        <div class="chips" style="margin-bottom: 28px;">
+          <div class="chip">HTML5</div>
+          <div class="chip">CSS3</div>
+          <div class="chip">Vanilla JS</div>
+          <div class="chip">DM Sans + DM Mono</div>
+          <div class="chip">SPA · 1 archivo</div>
+        </div>
+
+        <div class="card-id" style="margin-bottom: 14px;">FUENTE DE DATOS</div>
+        <div class="chips" style="margin-bottom: 28px;">
+          <div class="chip">Bitácora · 112 trámites</div>
+          <div class="chip">Plantilla Liquidación Final</div>
+          <div class="chip">Plantilla Pre-liquidación</div>
+        </div>
+
+        <div class="card-id" style="margin-bottom: 14px;">ENTIDADES (plantillas Intraservice)</div>
+        <div class="entity-table">
+          <table>
+            <tr><th>Entidad</th><th>Campos clave</th></tr>
+            <tr><td><b>Trámite</b></td><td class="mono">N°, cliente, BL/AWB, DAI/DAE, MRN, naviera, almacenera, entrega, sub partida, contenedores, transporte</td></tr>
+            <tr><td><b>Pre-liquidación</b></td><td class="mono">FOB, flete, CFR, seguro, CIF, Fodinfa, IVA, Seguridad, póliza</td></tr>
+            <tr><td><b>Gasto</b></td><td class="mono">servicio, emisor, factura, subtotal, IVA, retención, pagado</td></tr>
+            <tr><td><b>Anticipo</b></td><td class="mono">fecha, referencia, comprobante, monto, forma de pago</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="card-id" style="margin-bottom: 14px;">SISTEMA DE COLOR</div>
+        <div class="swatches">
+          <div class="swatch">
+            <div class="swatch-color" style="background: #F5F4F1;"></div>
+            <div class="swatch-info"><div class="swatch-name">--bg</div><div class="swatch-hex">#F5F4F1</div></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: #FFFFFF; border-bottom: 1px solid var(--border);"></div>
+            <div class="swatch-info"><div class="swatch-name">--surface</div><div class="swatch-hex">#FFFFFF</div></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: #1E4FBF;"></div>
+            <div class="swatch-info"><div class="swatch-name">--blue</div><div class="swatch-hex">#1E4FBF</div></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: #1A6B3C;"></div>
+            <div class="swatch-info"><div class="swatch-name">--green</div><div class="swatch-hex">#1A6B3C</div></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: #7A4A00;"></div>
+            <div class="swatch-info"><div class="swatch-name">--amber</div><div class="swatch-hex">#7A4A00</div></div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: #8B1F1F;"></div>
+            <div class="swatch-info"><div class="swatch-name">--red</div><div class="swatch-hex">#8B1F1F</div></div>
+          </div>
+        </div>
+
+        <div class="card-id" style="margin: 24px 0 14px;">PRINCIPIOS</div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-2); line-height: 1.5;">
+          <div>· Tipografía clara con jerarquía contenida</div>
+          <div>· Mono para códigos, montos y metadatos</div>
+          <div>· Color funcional: cada estado, un color</div>
+          <div>· Densidad de información sin ruido visual</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── SLIDE 8: DEMO / CIERRE ───── -->
+  <section class="slide">
+    <div class="slide-tag">07 — Siguiente paso</div>
+    <div class="demo">
+      <div class="card-id" style="font-size: 11px;">PROTOTIPO LISTO</div>
+      <div class="demo-title">Ver el sistema<br>en funcionamiento.</div>
+      <p class="demo-sub">El prototipo es completamente navegable: dashboard, bitácora, expediente, pre-liquidación, liquidación final y auditoría — cargado con datos reales de las plantillas Intraservice.</p>
+      <a class="btn-cta" href="sistema_aduanero_prototipo_2.html" target="_blank">
+        Abrir prototipo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <div style="margin-top: 32px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-3); letter-spacing: 0.1em;">
+        INTRASERVICE · 2026 · EDISON GUDIÑO
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ── NAV ── -->
+<div class="nav">
+  <div class="nav-counter"><b id="navCurrent">1</b> / <span id="navTotal">8</span></div>
+  <div class="nav-dots" id="navDots"></div>
+  <button class="nav-btn" id="prevBtn" aria-label="Anterior">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+  </button>
+  <button class="nav-btn" id="nextBtn" aria-label="Siguiente">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+</div>
+
+<div class="hint"><span class="kbd">←</span> <span class="kbd">→</span> navegar</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const navCurrent = document.getElementById('navCurrent');
+  const navTotal = document.getElementById('navTotal');
+  const navDots = document.getElementById('navDots');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const pageLabel = document.getElementById('pageLabel');
+  let current = 0;
+
+  navTotal.textContent = total;
+
+  // build dots
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.addEventListener('click', () => go(i));
+    navDots.appendChild(dot);
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function go(i) {
+    if (i < 0 || i >= total) return;
+    slides[current].classList.remove('active');
+    slides[i].classList.add('active');
+    current = i;
+    navCurrent.textContent = i + 1;
+    document.querySelectorAll('.nav-dot').forEach((d, idx) => {
+      d.classList.toggle('active', idx === i);
+    });
+    pageLabel.textContent = `${pad(i+1)} / ${pad(total)}`;
+    document.body.classList.toggle('is-cover', i === 0);
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+
+  prevBtn.addEventListener('click', () => go(current - 1));
+  nextBtn.addEventListener('click', () => go(current + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(current - 1); }
+    if (e.key === 'Home') { e.preventDefault(); go(0); }
+    if (e.key === 'End') { e.preventDefault(); go(total - 1); }
+  });
+
+  // init
+  go(0);
+</script>
+
+</body>
+</html>

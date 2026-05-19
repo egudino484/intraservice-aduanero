@@ -491,6 +491,10 @@
       <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1"/><line x1="3.5" y1="9.5" x2="5.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Liquidaciones
     </div>
+    <div class="nav-item" id="nav-reportes" onclick="nav('reportes',this)">
+      <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="9" width="3" height="5" rx="0.5" fill="currentColor" opacity=".8"/><rect x="6" y="5" width="3" height="9" rx="0.5" fill="currentColor" opacity=".8"/><rect x="11" y="2" width="3" height="12" rx="0.5" fill="currentColor" opacity=".8"/></svg>
+      Reporte financiero
+    </div>
 
     <div class="nav-section">Auditoría</div>
     <div class="nav-item" id="nav-auditoria" onclick="nav('auditoria',this)">
@@ -891,6 +895,100 @@
         </div>
       </div>
 
+      <!-- ══ REPORTES ══ -->
+      <div class="screen" id="screen-reportes">
+
+        <div class="filters">
+          <select class="filter-select" id="r-year" onchange="renderReportes()">
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+          <select class="filter-select" id="r-desde" onchange="renderReportes()" style="width:70px">
+            <option value="1" selected>Ene</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
+          </select>
+          <span style="font-size:11px;color:var(--text-3)">—</span>
+          <select class="filter-select" id="r-hasta" onchange="renderReportes()" style="width:70px">
+            <option value="1">Ene</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Abr</option><option value="5" selected>May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
+          </select>
+          <select class="filter-select" id="r-cliente" onchange="renderReportes()">
+            <option value="">Todos los clientes</option>
+            <option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option>
+          </select>
+          <select class="filter-select" id="r-op" onchange="renderReportes()">
+            <option value="">Todas las operaciones</option>
+            <option value="IMP">Importación</option>
+            <option value="EXP">Exportación</option>
+          </select>
+          <button class="btn btn-sm btn-ghost" onclick="resetReporteFilters()">Limpiar</button>
+        </div>
+
+        <div class="metrics-row">
+          <div class="metric">
+            <div class="metric-label">Total gastos</div>
+            <div class="metric-value" id="r-total-gastos">—</div>
+            <div class="metric-sub">pagados por Intraservice</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Total anticipos</div>
+            <div class="metric-value" style="color:var(--green)" id="r-total-anticipos">—</div>
+            <div class="metric-sub">recibidos del cliente</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Saldo neto</div>
+            <div class="metric-value" id="r-saldo-neto">—</div>
+            <div class="metric-sub" id="r-saldo-sub">gastos − anticipos</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Trámites</div>
+            <div class="metric-value" id="r-num-tramites">—</div>
+            <div class="metric-sub">en el período</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-bottom:14px">
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-title">Flujo mensual — gastos vs anticipos</div>
+            <div id="r-chart" style="min-height:160px"></div>
+          </div>
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-title">Gastos por categoría</div>
+            <div id="r-cats"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            <span>Detalle por trámite</span>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span class="badge badge-red" id="r-badge-cobrar">A cobrar: $0.00</span>
+              <span class="badge badge-green" id="r-badge-favor">A favor: $0.00</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>N° trámite</th><th>Cliente</th><th>Op.</th><th>Período</th>
+                <th style="text-align:right">Gastos ($)</th>
+                <th style="text-align:right">Anticipos ($)</th>
+                <th style="text-align:right">Saldo ($)</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="r-tramites-body"></tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="4" style="font-size:11px;font-family:'DM Mono',monospace">Totales período</td>
+                <td style="text-align:right;font-family:'DM Mono',monospace" id="r-tfoot-g">—</td>
+                <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green)" id="r-tfoot-a">—</td>
+                <td style="text-align:right;font-family:'DM Mono',monospace" id="r-tfoot-s">—</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+      </div>
+
       <!-- ══ AUDITORÍA ══ -->
       <div class="screen" id="screen-auditoria">
         <div class="filters">
@@ -1120,11 +1218,183 @@ function removeCustomProp(i) {
   showNotif('Propiedad eliminada');
 }
 
+// ── REPORTE FINANCIERO ────────────────────────────────────────────
+const reportTramites = [
+  {num:'T26-001',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:3790.20,anticipos:4100.00},
+  {num:'T26-003',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:1850.00,anticipos:2000.00},
+  {num:'T26-027',cliente:'ECUALIMFOOD',op:'EXP',mes:'2026-01',gastos:760.00,anticipos:800.00},
+  {num:'T26-038',cliente:'AHCORP',op:'IMP',mes:'2026-01',gastos:1420.30,anticipos:1200.00},
+  {num:'T26-039',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:980.50,anticipos:1000.00},
+  {num:'T26-040',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:1850.00,anticipos:2000.00},
+  {num:'T26-006',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-02',gastos:2500.50,anticipos:2000.00},
+  {num:'T26-010',cliente:'AHCORP',op:'IMP',mes:'2026-02',gastos:680.00,anticipos:800.00},
+  {num:'T26-037',cliente:'AHCORP',op:'IMP',mes:'2026-02',gastos:950.50,anticipos:900.00},
+  {num:'T26-050',cliente:'PRODUCOMERCIO',op:'IMP',mes:'2026-02',gastos:1420.00,anticipos:1500.00},
+  {num:'T26-023',cliente:'NOVA',op:'EXP',mes:'2026-03',gastos:1100.00,anticipos:1000.00},
+  {num:'T26-061',cliente:'NOVA',op:'EXP',mes:'2026-03',gastos:890.00,anticipos:1000.00},
+  {num:'T26-072',cliente:'AHCORP',op:'IMP',mes:'2026-03',gastos:3200.20,anticipos:3000.00},
+  {num:'T26-085',cliente:'ECUALIMFOOD',op:'EXP',mes:'2026-03',gastos:450.00,anticipos:500.00},
+  {num:'T26-091',cliente:'PRODUCOMERCIO',op:'IMP',mes:'2026-04',gastos:741.16,anticipos:800.00},
+  {num:'T26-281',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-04',gastos:2088.34,anticipos:2000.00},
+  {num:'T26-102',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-05',gastos:620.00,anticipos:700.00},
+  {num:'T26-103',cliente:'AHCORP',op:'IMP',mes:'2026-05',gastos:580.00,anticipos:500.00},
+];
+const reportCats = [
+  {cat:'Almacenaje',total:4200.50},
+  {cat:'V/B Consolidadora',total:3360.00},
+  {cat:'Agente aduanas',total:2880.00},
+  {cat:'Transporte',total:1540.00},
+  {cat:'Reembolso',total:920.50},
+  {cat:'Otros',total:401.80},
+];
+const mesLabels = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
+
+function getRFiltros() {
+  return {
+    year: parseInt(document.getElementById('r-year')?.value||'2026'),
+    desde: parseInt(document.getElementById('r-desde')?.value||'1'),
+    hasta: parseInt(document.getElementById('r-hasta')?.value||'12'),
+    cliente: document.getElementById('r-cliente')?.value||'',
+    op: document.getElementById('r-op')?.value||'',
+  };
+}
+
+function renderReportes() {
+  const f = getRFiltros();
+  const filtered = reportTramites.filter(t => {
+    const [y,mo] = t.mes.split('-').map(Number);
+    return y===f.year && mo>=f.desde && mo<=f.hasta &&
+      (!f.cliente||t.cliente===f.cliente) && (!f.op||t.op===f.op);
+  });
+  const tg = filtered.reduce((s,t)=>s+t.gastos,0);
+  const ta = filtered.reduce((s,t)=>s+t.anticipos,0);
+  const saldo = tg - ta;
+  document.getElementById('r-total-gastos').textContent = '$'+tg.toFixed(2);
+  document.getElementById('r-total-anticipos').textContent = '$'+ta.toFixed(2);
+  const snEl = document.getElementById('r-saldo-neto');
+  snEl.textContent = (saldo>=0?'$':'-$')+Math.abs(saldo).toFixed(2);
+  snEl.style.color = saldo>0?'var(--red)':saldo<0?'var(--green)':'var(--text)';
+  document.getElementById('r-saldo-sub').textContent = saldo>0?'por cobrar al cliente':saldo<0?'a favor del cliente':'en equilibrio';
+  document.getElementById('r-num-tramites').textContent = filtered.length;
+  // Build monthly aggregation
+  const meses = [];
+  for (let mo=f.desde; mo<=f.hasta; mo++) {
+    const mm = String(mo).padStart(2,'0');
+    const tramMes = reportTramites.filter(t => {
+      const [y,m2]=t.mes.split('-').map(Number);
+      return y===f.year && m2===mo && (!f.cliente||t.cliente===f.cliente) && (!f.op||t.op===f.op);
+    });
+    meses.push({label:mesLabels[mm]+' '+String(f.year).slice(2), gastos:tramMes.reduce((s,t)=>s+t.gastos,0), anticipos:tramMes.reduce((s,t)=>s+t.anticipos,0)});
+  }
+  renderReporteChart(meses);
+  renderReporteCats();
+  renderReporteTramites(filtered);
+}
+
+function renderReporteChart(meses) {
+  const el = document.getElementById('r-chart');
+  if (!el) return;
+  if (!meses.some(m=>m.gastos||m.anticipos)) {
+    el.innerHTML='<p style="text-align:center;color:var(--text-3);padding:40px 0;font-size:12px">Sin datos para el período</p>'; return;
+  }
+  const max = Math.max(...meses.map(m=>Math.max(m.gastos,m.anticipos)),1);
+  const H = 120;
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:10px;height:${H}px;margin-bottom:6px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);padding:0 6px 0 4px">
+      ${meses.map(m=>{
+        const gH=Math.max(Math.round((m.gastos/max)*H),m.gastos>0?2:0);
+        const aH=Math.max(Math.round((m.anticipos/max)*H),m.anticipos>0?2:0);
+        return `<div style="flex:1;display:flex;gap:3px;align-items:flex-end;height:${H}px">
+          <div title="Gastos: $${m.gastos.toFixed(2)}" style="flex:1;height:${gH}px;background:var(--blue);border-radius:3px 3px 0 0;opacity:0.8;cursor:default;min-height:${m.gastos>0?2:0}px"></div>
+          <div title="Anticipos: $${m.anticipos.toFixed(2)}" style="flex:1;height:${aH}px;background:var(--green);border-radius:3px 3px 0 0;opacity:0.8;cursor:default;min-height:${m.anticipos>0?2:0}px"></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:10px;padding:0 10px;margin-bottom:10px">
+      ${meses.map(m=>`<div style="flex:1;text-align:center">
+        <div style="font-size:9px;color:var(--text-3);font-family:'DM Mono',monospace">${m.label}</div>
+        <div style="font-size:9px;color:var(--blue);font-family:'DM Mono',monospace">${m.gastos>=1000?'$'+(m.gastos/1000).toFixed(1)+'k':m.gastos>0?'$'+m.gastos.toFixed(0):'—'}</div>
+        <div style="font-size:9px;color:var(--green);font-family:'DM Mono',monospace">${m.anticipos>=1000?'$'+(m.anticipos/1000).toFixed(1)+'k':m.anticipos>0?'$'+m.anticipos.toFixed(0):'—'}</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:16px;padding-top:8px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)"><div style="width:10px;height:10px;background:var(--blue);border-radius:2px;opacity:0.8"></div>Gastos</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)"><div style="width:10px;height:10px;background:var(--green);border-radius:2px;opacity:0.8"></div>Anticipos</div>
+    </div>`;
+}
+
+function renderReporteCats() {
+  const el = document.getElementById('r-cats');
+  if (!el) return;
+  const total = reportCats.reduce((s,c)=>s+c.total,0);
+  const colors = ['var(--blue)','var(--purple)','var(--green)','var(--amber)','var(--red)','var(--text-3)'];
+  el.innerHTML = reportCats.map((c,i)=>{
+    const pct = Math.round((c.total/total)*100);
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px">${c.cat}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">$${c.total.toFixed(0)} <span style="color:var(--text-3)">${pct}%</span></span>
+      </div>
+      <div style="height:4px;background:var(--surface2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${colors[i]};border-radius:3px;opacity:0.75"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderReporteTramites(filtered) {
+  const tbody = document.getElementById('r-tramites-body');
+  if (!tbody) return;
+  let cobrar=0, favor=0, tg=0, ta=0;
+  if (!filtered.length) {
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin trámites para los filtros seleccionados</td></tr>';
+    ['r-badge-cobrar','r-badge-favor','r-tfoot-g','r-tfoot-a','r-tfoot-s'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=id.includes('badge-cobrar')?'A cobrar: $0.00':id.includes('badge-favor')?'A favor: $0.00':'$0.00'; });
+    return;
+  }
+  tbody.innerHTML = filtered.map(t=>{
+    const saldo=t.gastos-t.anticipos;
+    if(saldo>0) cobrar+=saldo; else favor+=Math.abs(saldo);
+    tg+=t.gastos; ta+=t.anticipos;
+    const [,mo]=t.mes.split('-');
+    const saldoColor=saldo>0?'var(--red)':saldo<0?'var(--green)':'var(--text-2)';
+    const badge=saldo>0?'<span class="badge badge-red">A cobrar</span>':saldo<0?'<span class="badge badge-green">A favor</span>':'<span class="badge badge-gray">Equilibrado</span>';
+    return `<tr>
+      <td><span class="row-link" onclick="nav('tramite',null)">${t.num}</span></td>
+      <td style="font-size:12px">${t.cliente}</td>
+      <td><span class="badge ${t.op==='IMP'?'badge-blue':'badge-purple'}" style="font-size:9px">${t.op}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-3)">${mesLabels[mo]} ${t.mes.split('-')[0]}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">$${t.gastos.toFixed(2)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">$${t.anticipos.toFixed(2)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:${saldoColor}">${(saldo>=0?'$':'-$')+Math.abs(saldo).toFixed(2)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+  const sn=tg-ta;
+  document.getElementById('r-badge-cobrar').textContent='A cobrar: $'+cobrar.toFixed(2);
+  document.getElementById('r-badge-favor').textContent='A favor: $'+favor.toFixed(2);
+  document.getElementById('r-tfoot-g').textContent='$'+tg.toFixed(2);
+  document.getElementById('r-tfoot-a').textContent='$'+ta.toFixed(2);
+  const se=document.getElementById('r-tfoot-s');
+  se.textContent=(sn>=0?'$':'-$')+Math.abs(sn).toFixed(2);
+  se.style.color=sn>0?'var(--red)':sn<0?'var(--green)':'var(--text)';
+}
+
+function resetReporteFilters() {
+  document.getElementById('r-year').value='2026';
+  document.getElementById('r-desde').value='1';
+  document.getElementById('r-hasta').value='5';
+  document.getElementById('r-cliente').value='';
+  document.getElementById('r-op').value='';
+  renderReportes();
+}
+// ─────────────────────────────────────────────────────────────────
+
 const pageTitles = {
   dashboard: 'Dashboard',
   bitacora: 'Bitácora de trámites',
   tramite: 'Trámite T26-281 · MEGASTOCKEC',
   liquidacion: 'Liquidación de importación',
+  reportes: 'Reporte financiero',
   auditoria: 'Historial de auditoría'
 };
 const topbarBadges = {
@@ -1141,6 +1411,7 @@ function nav(id, el) {
   document.getElementById('page-title').textContent = pageTitles[id] || id;
   document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
   if (id === 'liquidacion') renderLiqAnticipos();
+  if (id === 'reportes') renderReportes();
 }
 
 function setTab(el, targetId) {
