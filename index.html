@@ -550,7 +550,7 @@
         <div class="panel">
           <div class="panel-title">Trámites recientes</div>
           <table>
-            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Operación</th><th>BL / AWB</th><th>Estado</th><th>Arribo</th></tr></thead>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Operación</th><th>BL / AWB</th><th>Estado</th><th>Apertura</th></tr></thead>
             <tbody>
               <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-281</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">GDY0406929</td><td><span class="badge badge-amber">En proceso</span></td><td style="color:var(--text-3);font-size:12px">24 abr 2026</td></tr>
               <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-040</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">263379441</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">09 ene 2026</td></tr>
@@ -604,40 +604,44 @@
           <div class="panel">
             <div class="panel-title">Información general</div>
             <div class="field-row-3">
-              <div class="field"><label>N° trámite</label><input type="text" value="T26-281" readonly></div>
-              <div class="field"><label>Operación</label><select><option>Importación</option><option>Exportación</option></select></div>
-              <div class="field"><label>Fecha de arribo</label><input type="date" value="2026-04-24"></div>
+              <div class="field"><label>N° trámite</label><input type="text" data-field="numero" value="T26-281" readonly></div>
+              <div class="field"><label>Operación</label><select data-field="operacion" onchange="saveState()"><option>Importación</option><option>Exportación</option></select></div>
+              <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24" onchange="saveState()"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Cliente</label><select><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select></div>
-              <div class="field"><label>Mercadería importada</label><input type="text" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN"></div>
+              <div class="field"><label>Cliente</label><select data-field="cliente" onchange="saveState()"><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select></div>
+              <div class="field">
+                <label>Mercadería importada</label>
+                <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value);saveState()" placeholder="Ingresa o selecciona mercadería...">
+                <datalist id="mercaderia-list"></datalist>
+              </div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" value="GDY0406929"></div>
-              <div class="field"><label>Naviera</label><select><option>CMA CGM</option><option>MSC</option><option>HAPAG LLOYD</option><option>MAERSK</option><option>ONE</option><option>TIBA</option><option>TOLEPU</option><option>HARTROD</option><option>GACIL</option><option>MSL ECUADOR</option></select></div>
-              <div class="field"><label>Almacenera</label><select><option>INARPI</option><option>POSORJA</option><option>NAPORTEC</option><option>PUERTO BOLÍVAR</option><option>EMSA</option><option>CONTECON</option></select></div>
+              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl" value="GDY0406929" onchange="saveState()"></div>
+              <div class="field"><label>Naviera</label><select data-field="naviera" onchange="saveState()"><option>CMA CGM</option><option>MSC</option><option>HAPAG LLOYD</option><option>MAERSK</option><option>ONE</option><option>TIBA</option><option>TOLEPU</option><option>HARTROD</option><option>GACIL</option><option>MSL ECUADOR</option></select></div>
+              <div class="field"><label>Almacenera</label><select data-field="almacenera" onchange="saveState()"><option>INARPI</option><option>POSORJA</option><option>NAPORTEC</option><option>PUERTO BOLÍVAR</option><option>EMSA</option><option>CONTECON</option></select></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>DAI / DAE</label><input type="text" value="028-2026-10-00722383"></div>
-              <div class="field"><label>MRN</label><input type="text" value="CEC2026CMAU0082-0023-0000"></div>
-              <div class="field"><label>Liquidación SENAE</label><input type="text" value="51279053"></div>
+              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" value="028-2026-10-00722383" onchange="saveState()"></div>
+              <div class="field"><label>MRN</label><input type="text" data-field="mrn" value="CEC2026CMAU0082-0023-0000" onchange="saveState()"></div>
+              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae" value="51279053" onchange="saveState()"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Sub partida</label><input type="text" value="4804.11.00.00"></div>
-              <div class="field"><label>N° Entrega</label><input type="text" value="0802P"></div>
-              <div class="field"><label>Transporte</label><input type="text" value="SANTIAGO CALVOPIÑA"></div>
+              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida" value="4804.11.00.00" onchange="saveState()"></div>
+              <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega" value="0802P" onchange="saveState()"></div>
+              <div class="field"><label>Transporte</label><input type="text" data-field="transporte" value="SANTIAGO CALVOPIÑA" onchange="saveState()"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Proveedor</label><input type="text" value="EUROPCELL 663"></div>
-              <div class="field"><label>Factura comercial</label><input type="text" value="2026-322152"></div>
-              <div class="field"><label>Factura Intraservice</label><input type="text" value="2026-322152"></div>
+              <div class="field"><label>Proveedor</label><input type="text" data-field="proveedor" value="EUROPCELL 663" onchange="saveState()"></div>
+              <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152" onchange="saveState()"></div>
+              <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152" onchange="saveState()"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Contenedores</label><input type="text" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416"></div>
-              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" value="N/A"></div>
+              <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416" onchange="saveState()"></div>
+              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda" value="N/A" onchange="saveState()"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Observaciones</label><textarea>Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
+              <div class="field"><label>Observaciones</label><textarea data-field="obs" onchange="saveState()">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
               <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Documentos y gastos" readonly></div>
             </div>
           </div>
@@ -653,8 +657,8 @@
           </div>
 
           <div class="section-actions">
-            <button class="btn btn-ghost">Cancelar</button>
-            <button class="btn btn-primary" onclick="showNotif('Trámite guardado correctamente')">Guardar cambios</button>
+            <button class="btn btn-ghost" onclick="discardChanges()">Cancelar</button>
+            <button class="btn btn-primary" onclick="saveState();showNotif('Trámite guardado correctamente')">Guardar cambios</button>
           </div>
         </div>
 
@@ -1301,6 +1305,7 @@ function renderAll() {
   renderLiqAnticipos();
   renderCustomProps();
   renderTabLiquidacion();
+  saveState();
 }
 
 function addGasto() {
@@ -1335,6 +1340,33 @@ function attachAnticipoDoc(i) {
   renderAll();
   showNotif('Documento de respaldo adjuntado al anticipo');
 }
+
+// ── MERCADERÍA IMPORTADA — registro reutilizable ──────────────────
+const mercaderiaRegistry = [
+  'PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN',
+  'TELA TEJIDO PLANO 100% POLIÉSTER',
+  'CALZADO DEPORTIVO SUELA DE CAUCHO',
+  'MATERIA PRIMA PLÁSTICO PET RECICLADO',
+  'MAQUINARIA PARA PROCESAMIENTO DE ALIMENTOS',
+  'REPUESTOS AUTOMOTRICES ORIGINALES',
+  'PRODUCTOS COSMÉTICOS Y PERFUMERÍA',
+  'MATERIALES DE CONSTRUCCIÓN — PERFILES METÁLICOS',
+];
+
+function updateMercaderiaDatalist() {
+  const dl = document.getElementById('mercaderia-list');
+  if (dl) dl.innerHTML = mercaderiaRegistry.map(m => `<option value="${escHtml(m)}">`).join('');
+}
+
+function saveMercaderia(val) {
+  val = val.trim().toUpperCase();
+  if (val && !mercaderiaRegistry.includes(val)) {
+    mercaderiaRegistry.push(val);
+    updateMercaderiaDatalist();
+    showNotif('Mercadería guardada en el registro');
+  }
+}
+// ─────────────────────────────────────────────────────────────────
 
 const customProps = [];
 const customPropTemplates = ['Régimen aduanero','Canal de aforo','Certificado de origen','Tipo de carga','Peso neto (kg)','Número de bultos','Incoterm','Régimen de tributación','Agencia de aduanas','Tipo de embalaje'];
@@ -1596,6 +1628,63 @@ function resetReporteFilters() {
   document.getElementById('r-op').value='';
   setReportePeriodo('ytd');
 }
+// ── PERSISTENCIA LOCAL ────────────────────────────────────────────
+const LS_KEY = 'intraservice_v1';
+let stateReady = false;
+
+function readTramiteForm() {
+  const form = {};
+  document.querySelectorAll('#t-datos [data-field]').forEach(el => {
+    form[el.dataset.field] = el.value;
+  });
+  return form;
+}
+
+function applyTramiteForm(form) {
+  if (!form) return;
+  document.querySelectorAll('#t-datos [data-field]').forEach(el => {
+    if (form[el.dataset.field] !== undefined) el.value = form[el.dataset.field];
+  });
+}
+
+function saveState() {
+  if (!stateReady) return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      gastoData,
+      anticipoData,
+      customProps,
+      customPropTemplates,
+      mercaderiaRegistry,
+      tramiteForm: readTramiteForm(),
+    }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    const restore = (arr, src) => { if (src?.length) arr.splice(0, arr.length, ...src); };
+    restore(gastoData, s.gastoData);
+    restore(anticipoData, s.anticipoData);
+    restore(customProps, s.customProps);
+    restore(customPropTemplates, s.customPropTemplates);
+    restore(mercaderiaRegistry, s.mercaderiaRegistry);
+    applyTramiteForm(s.tramiteForm);
+  } catch(e) {}
+}
+
+function discardChanges() {
+  stateReady = false;
+  loadState();
+  renderAll();
+  updateMercaderiaDatalist();
+  updatePropTemplatesDatalist();
+  stateReady = true;
+  showNotif('Cambios descartados');
+}
 // ─────────────────────────────────────────────────────────────────
 
 const pageTitles = {
@@ -1638,8 +1727,11 @@ function showNotif(msg) {
   notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+loadState();
 renderAll();
 updatePresetButtons();
+updateMercaderiaDatalist();
+stateReady = true;
 </script>
 </body>
 </html>
