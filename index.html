@@ -505,10 +505,6 @@
     </div>
 
     <div class="nav-section">Finanzas</div>
-    <div class="nav-item" id="nav-liquidacion" onclick="nav('liquidacion',this)">
-      <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1"/><line x1="3.5" y1="9.5" x2="5.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Liquidaciones
-    </div>
     <div class="nav-item" id="nav-reportes" onclick="nav('reportes',this)">
       <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="9" width="3" height="5" rx="0.5" fill="currentColor" opacity=".8"/><rect x="6" y="5" width="3" height="9" rx="0.5" fill="currentColor" opacity=".8"/><rect x="11" y="2" width="3" height="12" rx="0.5" fill="currentColor" opacity=".8"/></svg>
       Reporte financiero
@@ -896,7 +892,7 @@
 
       </div>
 
-      <!-- ══ LIQUIDACIÓN ══ -->
+      <!-- ══ LIQUIDACIÓN (removed — now lives as tab inside tramite detail) ══
       <div class="screen" id="screen-liquidacion">
 
         <!-- PRE-LIQUIDACIÓN -->
@@ -999,7 +995,7 @@
             </div>
           </div>
         </div>
-      </div>
+      ══ end removed section ══ -->
 
       <!-- ══ REPORTES ══ -->
       <div class="screen" id="screen-reportes">
@@ -1606,13 +1602,11 @@ const pageTitles = {
   dashboard: 'Dashboard',
   bitacora: 'Bitácora de trámites',
   tramite: 'Trámite T26-281 · MEGASTOCKEC',
-  liquidacion: 'Liquidación de importación',
   reportes: 'Reporte financiero',
   auditoria: 'Historial de auditoría'
 };
 const topbarBadges = {
   tramite: '<span class="badge badge-amber">En proceso</span>',
-  liquidacion: '<span class="badge badge-amber">Pendiente</span>',
 };
 
 function nav(id, el) {
@@ -1623,7 +1617,6 @@ function nav(id, el) {
   else { const f = document.getElementById('nav-' + id); if (f) f.classList.add('active'); }
   document.getElementById('page-title').textContent = pageTitles[id] || id;
   document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
-  if (id === 'liquidacion') renderLiqAnticipos();
   if (id === 'reportes') renderReportes();
 }
 
