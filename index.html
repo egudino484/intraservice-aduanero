@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intraservice — Sistema Aduanero</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F4F1;
+    --surface: #FFFFFF;
+    --surface2: #F0EEE9;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.15);
+    --text: #1A1915;
+    --text-2: #6B6860;
+    --text-3: #9E9C97;
+    --blue: #1E4FBF;
+    --blue-light: #EEF3FF;
+    --blue-text: #1E4FBF;
+    --green: #1A6B3C;
+    --green-light: #EDFAF3;
+    --amber: #7A4A00;
+    --amber-light: #FFF8EC;
+    --red: #8B1F1F;
+    --red-light: #FFF0F0;
+    --purple: #4A2D8B;
+    --purple-light: #F3EEFF;
+    --accent: #1E4FBF;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --sidebar-w: 220px;
+    --topbar-h: 56px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--blue);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-name { font-size: 15px; font-weight: 500; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--text-3); font-family: 'DM Mono', monospace; }
+
+  .nav-section {
+    padding: 18px 20px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    color: var(--text-2);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active {
+    background: var(--blue-light);
+    color: var(--blue);
+    border-left-color: var(--blue);
+    font-weight: 500;
+  }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sidebar-footer-name { font-size: 12px; font-weight: 500; }
+  .sidebar-footer-role { font-size: 11px; color: var(--text-3); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  .topbar {
+    height: var(--topbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar h2 { font-size: 16px; font-weight: 500; letter-spacing: -0.3px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeIn 0.2s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 7px 14px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.12s;
+    font-weight: 400;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn-primary {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+  }
+  .btn-primary:hover { background: #163DA8; }
+  .btn-sm { padding: 4px 9px; font-size: 11px; }
+  .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .btn-danger { color: var(--red); border-color: #F09595; }
+  .btn-danger:hover { background: var(--red-light); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-blue  { background: var(--blue-light); color: var(--blue-text); }
+  .badge-red   { background: var(--red-light); color: var(--red); }
+  .badge-gray  { background: var(--surface2); color: var(--text-2); }
+  .badge-purple{ background: var(--purple-light); color: var(--purple); }
+
+  /* ── METRICS ── */
+  .metrics-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--text-3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'DM Mono', monospace; }
+  .metric-value { font-size: 26px; font-weight: 300; letter-spacing: -1px; }
+  .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .panel-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--text);
+  }
+
+  /* ── TABLES ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .total-row td { font-weight: 500; background: var(--surface2); }
+
+  .row-link { color: var(--blue); cursor: pointer; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+  .row-link:hover { text-decoration: underline; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    gap: 0;
+  }
+  .tab {
+    padding: 9px 18px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-2);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
+
+  /* ── FORM FIELDS ── */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'DM Mono', monospace; }
+  .field input, .field select, .field textarea {
+    padding: 8px 11px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    width: 100%;
+    transition: border-color 0.12s;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--blue);
+  }
+  .field input[readonly] { background: var(--surface2); color: var(--text-2); }
+  .field textarea { resize: vertical; min-height: 64px; }
+
+  /* ── GASTOS TABLE ── */
+  .gasto-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .gasto-table th {
+    text-align: left; padding: 8px 10px;
+    font-size: 10px; font-weight: 500; color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    font-family: 'DM Mono', monospace;
+  }
+  .gasto-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .gasto-table tr:last-child td { border-bottom: none; }
+  .gasto-table tr:hover td { background: var(--bg); }
+  .gasto-table td input, .gasto-table td select {
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    outline: none;
+    transition: all 0.12s;
+  }
+  .gasto-table td input:hover, .gasto-table td select:hover { border-color: var(--border-strong); background: var(--surface); }
+  .gasto-table td input:focus, .gasto-table td select:focus { border-color: var(--blue); background: var(--surface); }
+
+  /* ── TOTALES BAR ── */
+  .totales-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+  .total-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .total-card-label { font-size: 10px; color: var(--text-3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.07em; font-family: 'DM Mono', monospace; }
+  .total-card-val { font-size: 22px; font-weight: 300; letter-spacing: -0.5px; }
+
+  /* ── DOC CHIP ── */
+  .doc-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--blue);
+    background: var(--blue-light);
+    font-family: 'DM Mono', monospace;
+    transition: all 0.12s;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-chip:hover { background: #DDE8FF; }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.12s;
+  }
+  .upload-zone:hover { background: var(--bg); border-color: var(--blue); color: var(--blue); }
+  .upload-zone svg { width: 20px; height: 20px; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+
+  /* ── DOC ITEMS ── */
+  .doc-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 7px;
+    transition: all 0.12s;
+  }
+  .doc-item:hover { background: var(--bg); }
+  .doc-icon {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    background: var(--blue-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .doc-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .doc-meta { font-size: 11px; color: var(--text-3); min-width: 160px; text-align: right; }
+
+  /* ── AUDIT ── */
+  .audit-item { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .audit-item:last-child { border-bottom: none; }
+  .audit-line { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .audit-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 4px; }
+  .audit-dot.green { background: var(--green); }
+  .audit-dot.amber { background: var(--amber); }
+  .audit-dot.red { background: var(--red); }
+  .audit-text { font-size: 13px; }
+  .audit-meta { font-size: 11px; color: var(--text-3); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .filter-input, .filter-select {
+    padding: 7px 11px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+  }
+  .filter-input { width: 200px; }
+  .filter-input:focus, .filter-select:focus { border-color: var(--blue); }
+
+  /* ── STATUS INDICATOR ── */
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .status-dot.green { background: var(--green); }
+  .status-dot.amber { background: #D97706; }
+  .status-dot.red { background: #DC2626; }
+
+  /* ── SECTION DIVIDER ── */
+  .section-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+
+  /* ── NOTIFICATION ── */
+  .notif {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--text);
+    color: white;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+  .notif.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="6" height="8" rx="1" fill="white" opacity="0.9"/>
+            <rect x="10" y="2" width="6" height="5" rx="1" fill="white" opacity="0.6"/>
+            <rect x="10" y="9" width="6" height="7" rx="1" fill="white" opacity="0.6"/>
+            <rect x="2" y="12" width="6" height="4" rx="1" fill="white" opacity="0.5"/>
+          </svg>
+        </div>
+        <span class="logo-name">Intraservice</span>
+      </div>
+      <div class="logo-sub">Sistema Aduanero v1.0</div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <div class="nav-item" id="nav-dashboard" onclick="nav('dashboard',this)">
+      <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="1" width="5.5" height="5.5" rx="1" fill="currentColor" opacity=".8"/><rect x="8.5" y="1" width="5.5" height="5.5" rx="1" fill="currentColor" opacity=".8"/><rect x="1" y="8.5" width="5.5" height="5.5" rx="1" fill="currentColor" opacity=".5"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1" fill="currentColor" opacity=".5"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" id="nav-bitacora" onclick="nav('bitacora',this)">
+      <svg viewBox="0 0 15 15" fill="none"><rect x="2" y="1" width="11" height="13" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="5" x2="10.5" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4.5" y1="7.5" x2="10.5" y2="7.5" stroke="currentColor" stroke-width="1"/><line x1="4.5" y1="10" x2="8" y2="10" stroke="currentColor" stroke-width="1"/></svg>
+      Bitácora
+    </div>
+    <div class="nav-item active" id="nav-tramite" onclick="nav('tramite',this)">
+      <svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><line x1="7.5" y1="4.5" x2="7.5" y2="7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="7.5" y1="7.5" x2="10" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Detalle trámite
+    </div>
+
+    <div class="nav-section">Finanzas</div>
+    <div class="nav-item" id="nav-liquidacion" onclick="nav('liquidacion',this)">
+      <svg viewBox="0 0 15 15" fill="none"><rect x="1" y="3" width="13" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="1" y1="6.5" x2="14" y2="6.5" stroke="currentColor" stroke-width="1"/><line x1="3.5" y1="9.5" x2="5.5" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Liquidaciones
+    </div>
+
+    <div class="nav-section">Auditoría</div>
+    <div class="nav-item" id="nav-auditoria" onclick="nav('auditoria',this)">
+      <svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><line x1="7.5" y1="4" x2="7.5" y2="8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="7.5" cy="10.5" r=".8" fill="currentColor"/></svg>
+      Historial
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">EG</div>
+      <div>
+        <div class="sidebar-footer-name">Edison Gudiño</div>
+        <div class="sidebar-footer-role">Administrador</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2 id="page-title">Detalle del trámite</h2>
+        <span id="topbar-badge"></span>
+      </div>
+      <div class="topbar-right" id="topbar-actions">
+        <button class="btn btn-primary" onclick="nav('tramite',null)">+ Nuevo trámite</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="screen" id="screen-dashboard">
+        <div class="metrics-row">
+          <div class="metric"><div class="metric-label">Trámites del año</div><div class="metric-value">281</div><div class="metric-sub">enero – mayo 2026</div></div>
+          <div class="metric"><div class="metric-label">En proceso</div><div class="metric-value" style="color:var(--amber)">7</div><div class="metric-sub">requieren acción</div></div>
+          <div class="metric"><div class="metric-label">Concluidos</div><div class="metric-value" style="color:var(--green)">274</div><div class="metric-sub">año 2026</div></div>
+          <div class="metric"><div class="metric-label">Liquidaciones</div><div class="metric-value">3</div><div class="metric-sub">por enviar</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Trámites recientes</div>
+          <table>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Operación</th><th>BL / AWB</th><th>Estado</th><th>Arribo</th></tr></thead>
+            <tbody>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-281</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">GDY0406929</td><td><span class="badge badge-amber">En proceso</span></td><td style="color:var(--text-3);font-size:12px">24 abr 2026</td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-040</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">263379441</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">09 ene 2026</td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-039</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">0729-45663376</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">09 ene 2026</td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-038</span></td><td>AHCORP</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">012026011142</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">09 ene 2026</td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-027</span></td><td>ECUALIMFOOD</td><td>Exportación</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-40-00022980</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">07 ene 2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ BITÁCORA ══ -->
+      <div class="screen" id="screen-bitacora">
+        <div class="filters">
+          <input class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL, DAI...">
+          <select class="filter-select"><option>Todos los clientes</option><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select>
+          <select class="filter-select"><option>Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
+          <select class="filter-select"><option>Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente</option></select>
+          <input class="filter-select" type="month" value="2026-05">
+        </div>
+        <div class="panel" style="padding:0;overflow:hidden">
+          <table>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Op.</th><th>BL / AWB</th><th>Entrega</th><th>DAI / DAE</th><th>Naviera</th><th>Almacenera</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-281</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">GDY0406929</td><td style="font-family:'DM Mono',monospace;font-size:11px">0802P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00722383</td><td>CMA CGM</td><td>INARPI</td><td><span class="badge badge-amber">En proceso</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-001</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">MEDUW6491288</td><td style="font-family:'DM Mono',monospace;font-size:11px">0067P</td><td style="font-family:'DM Mono',monospace;font-size:11px">064-2026-10-00040680</td><td>MSC</td><td>PUERTO BOLÍVAR</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-003</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">HLCUMTR251141314</td><td style="font-family:'DM Mono',monospace;font-size:11px">0029P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00023488</td><td>HAPAG LLOYD</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-006</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">HHSE5114615YA</td><td style="font-family:'DM Mono',monospace;font-size:11px">0126P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00059738</td><td>MSL ECUADOR</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-010</span></td><td>AHCORP</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">012025122110</td><td style="font-family:'DM Mono',monospace;font-size:11px">0186P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00144681</td><td>TOLEPU</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-023</span></td><td>NOVA</td><td>EXP</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2025-40-02643778</td><td style="font-family:'DM Mono',monospace;font-size:11px">2122P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2025-40-02643778</td><td>CMA CGM</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-027</span></td><td>ECUALIMFOOD</td><td>EXP</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-40-00022980</td><td style="font-family:'DM Mono',monospace;font-size:11px">0027P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-40-00022980</td><td>ONE</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-037</span></td><td>AHCORP</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">143-26-00052-143701</td><td style="font-family:'DM Mono',monospace;font-size:11px">0301P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00275574</td><td>HARTROD</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-039</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">0729-45663376</td><td style="font-family:'DM Mono',monospace;font-size:11px">0084P</td><td style="font-family:'DM Mono',monospace;font-size:11px">055-2026-10-00041744</td><td>GACIL</td><td>EMSA</td><td><span class="badge badge-green">Concluido</span></td></tr>
+              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-040</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">263379441</td><td style="font-family:'DM Mono',monospace;font-size:11px">0247P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-21-00210063</td><td>MAERSK</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ TRÁMITE ══ -->
+      <div class="screen active" id="screen-tramite">
+        <div class="tabs">
+          <div class="tab" onclick="setTab(this,'t-datos')">Datos del trámite</div>
+          <div class="tab active" onclick="setTab(this,'t-docs')">Documentos y gastos</div>
+          <div class="tab" onclick="setTab(this,'t-estado')">Estado y auditoría</div>
+        </div>
+
+        <!-- TAB DATOS -->
+        <div id="t-datos" style="display:none">
+          <div class="panel">
+            <div class="panel-title">Información general</div>
+            <div class="field-row-3">
+              <div class="field"><label>N° trámite</label><input type="text" value="T26-281" readonly></div>
+              <div class="field"><label>Operación</label><select><option>Importación</option><option>Exportación</option></select></div>
+              <div class="field"><label>Fecha de arribo</label><input type="date" value="2026-04-24"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Cliente</label><select><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select></div>
+              <div class="field"><label>Mercadería importada</label><input type="text" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" value="GDY0406929"></div>
+              <div class="field"><label>Naviera</label><select><option>CMA CGM</option><option>MSC</option><option>HAPAG LLOYD</option><option>MAERSK</option><option>ONE</option><option>TIBA</option><option>TOLEPU</option><option>HARTROD</option><option>GACIL</option><option>MSL ECUADOR</option></select></div>
+              <div class="field"><label>Almacenera</label><select><option>INARPI</option><option>POSORJA</option><option>NAPORTEC</option><option>PUERTO BOLÍVAR</option><option>EMSA</option><option>CONTECON</option></select></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>DAI / DAE</label><input type="text" value="028-2026-10-00722383"></div>
+              <div class="field"><label>MRN</label><input type="text" value="CEC2026CMAU0082-0023-0000"></div>
+              <div class="field"><label>Liquidación SENAE</label><input type="text" value="51279053"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Sub partida</label><input type="text" value="4804.11.00.00"></div>
+              <div class="field"><label>N° Entrega</label><input type="text" value="0802P"></div>
+              <div class="field"><label>Transporte</label><input type="text" value="SANTIAGO CALVOPIÑA"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Proveedor</label><input type="text" value="EUROPCELL 663"></div>
+              <div class="field"><label>Factura comercial</label><input type="text" value="2026-322152"></div>
+              <div class="field"><label>Factura Intraservice</label><input type="text" value="2026-322152"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Contenedores</label><input type="text" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416"></div>
+              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" value="N/A"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Observaciones</label><textarea>Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
+              <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Documentos y gastos" readonly></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <span>Propiedades personalizadas</span>
+              <button class="btn btn-sm" onclick="addCustomProp()">+ Agregar propiedad</button>
+            </div>
+            <datalist id="prop-templates"></datalist>
+            <div id="custom-props-list"></div>
+            <p id="custom-props-empty" style="font-size:12px;color:var(--text-3);text-align:center;padding:14px 0;margin:0">Sin propiedades personalizadas. Haz clic en "+ Agregar propiedad" para añadir campos a medida.</p>
+          </div>
+
+          <div class="section-actions">
+            <button class="btn btn-ghost">Cancelar</button>
+            <button class="btn btn-primary" onclick="showNotif('Trámite guardado correctamente')">Guardar cambios</button>
+          </div>
+        </div>
+
+        <!-- TAB DOCUMENTOS Y GASTOS -->
+        <div id="t-docs">
+          <div class="totales-bar" style="grid-template-columns:repeat(4,1fr)">
+            <div class="total-card">
+              <div class="total-card-label">Total gastos</div>
+              <div class="total-card-val" id="resumen-total">$830.50</div>
+            </div>
+            <div class="total-card">
+              <div class="total-card-label">Total anticipos</div>
+              <div class="total-card-val" style="color:var(--green)" id="resumen-anticipos">$500.00</div>
+            </div>
+            <div class="total-card">
+              <div class="total-card-label">Comprobantes adjuntos</div>
+              <div class="total-card-val" id="resumen-docs">4 / 5</div>
+            </div>
+            <div class="total-card">
+              <div class="total-card-label">Sin comprobante</div>
+              <div class="total-card-val" style="color:var(--amber)" id="resumen-faltantes">1</div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <span>Gastos del trámite</span>
+              <button class="btn btn-sm" onclick="addGasto()">+ Agregar gasto</button>
+            </div>
+            <table class="gasto-table">
+              <thead>
+                <tr>
+                  <th style="width:22%">Concepto</th>
+                  <th style="width:16%">Proveedor</th>
+                  <th style="width:13%">N° factura</th>
+                  <th style="width:10%">Monto ($)</th>
+                  <th style="width:12%">Categoría</th>
+                  <th style="width:20%">Comprobante adjunto</th>
+                  <th style="width:7%"></th>
+                </tr>
+              </thead>
+              <tbody id="gastos-body"></tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td colspan="3" style="font-size:12px;font-family:'DM Mono',monospace">Total gastos</td>
+                  <td id="total-footer" style="font-family:'DM Mono',monospace;font-size:13px">$830.50</td>
+                  <td colspan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">
+              <span>Anticipos del cliente</span>
+              <button class="btn btn-sm" onclick="addAnticipo()">+ Agregar anticipo</button>
+            </div>
+            <table class="gasto-table" id="anticipos-table">
+              <thead>
+                <tr>
+                  <th style="width:20%">Fecha</th>
+                  <th style="width:22%">Descripción / referencia</th>
+                  <th style="width:13%">N° comprobante</th>
+                  <th style="width:12%">Monto ($)</th>
+                  <th style="width:12%">Forma de pago</th>
+                  <th style="width:14%">Documento respaldo</th>
+                  <th style="width:7%"></th>
+                </tr>
+              </thead>
+              <tbody id="anticipos-body"></tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td colspan="3" style="font-size:12px;font-family:'DM Mono',monospace">Total anticipos</td>
+                  <td id="anticipo-footer" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--green)">$500.00</td>
+                  <td colspan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">Documentos generales del expediente</div>
+            <div class="doc-item">
+              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
+              <div class="doc-name">BL_GDY0406929.pdf</div>
+              <div class="doc-meta">Guía de embarque · 245 KB · 24 abr <span class="badge badge-blue" style="margin-left:8px">Embarque</span></div>
+              <button class="btn btn-sm btn-ghost">Ver</button>
+            </div>
+            <div class="doc-item">
+              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
+              <div class="doc-name">FACT_2026-322152.pdf</div>
+              <div class="doc-meta">Factura comercial · 142 KB · 24 abr <span class="badge badge-blue" style="margin-left:8px">Embarque</span></div>
+              <button class="btn btn-sm btn-ghost">Ver</button>
+            </div>
+            <div class="doc-item">
+              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
+              <div class="doc-name">DAI_028-2026-10-00722383.pdf</div>
+              <div class="doc-meta">DAI · 512 KB · 26 abr <span class="badge badge-purple" style="margin-left:8px">Aduana</span></div>
+              <button class="btn btn-sm btn-ghost">Ver</button>
+            </div>
+            <div class="upload-zone" onclick="showNotif('Selecciona un archivo para subir')">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Arrastra archivos aquí o haz clic para subir documentos del expediente
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB ESTADO -->
+        <div id="t-estado" style="display:none">
+          <div class="panel">
+            <div class="panel-title">Cambiar estado del trámite</div>
+            <div class="field-row">
+              <div class="field">
+                <label>Nuevo estado</label>
+                <select>
+                  <option>En proceso</option>
+                  <option>Concluido</option>
+                  <option>Pendiente documentación</option>
+                  <option>Cancelado</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Motivo del cambio</label>
+                <input type="text" placeholder="Describir razón del cambio de estado...">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="showNotif('Estado actualizado y registrado en auditoría')">Registrar cambio de estado</button>
+          </div>
+          <div class="panel">
+            <div class="panel-title">Historial de cambios</div>
+            <div class="audit-item">
+              <div class="audit-line"><div class="audit-dot amber"></div></div>
+              <div><div class="audit-text">Liquidación generada → <strong>Saldo pendiente $88.34</strong></div><div class="audit-meta">Edison Gudiño · 02 may 2026 · 11:20 · "Saldo a favor del agente Fernando Arias"</div></div>
+            </div>
+            <div class="audit-item">
+              <div class="audit-line"><div class="audit-dot"></div></div>
+              <div><div class="audit-text">Estado → <strong>En proceso</strong></div><div class="audit-meta">Edison Gudiño · 26 abr 2026 · 09:32 · "DAI 028-2026-10-00722383 obtenida, iniciando aforo"</div></div>
+            </div>
+            <div class="audit-item">
+              <div class="audit-line"><div class="audit-dot"></div></div>
+              <div><div class="audit-text">Anticipo registrado → <strong>$2,000.00</strong></div><div class="audit-meta">Edison Gudiño · 25 abr 2026 · 15:10 · "Transferencia recibida del cliente"</div></div>
+            </div>
+            <div class="audit-item">
+              <div class="audit-line"><div class="audit-dot"></div></div>
+              <div><div class="audit-text">Trámite <strong>creado</strong></div><div class="audit-meta">Edison Gudiño · 24 abr 2026 · 08:00 · "Llegada de carga MEGASTOCKEC – BL GDY0406929"</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LIQUIDACIÓN ══ -->
+      <div class="screen" id="screen-liquidacion">
+
+        <!-- PRE-LIQUIDACIÓN -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>Pre-liquidación · <span style="font-family:'DM Mono',monospace">T26-281</span> · MEGASTOCKEC</span>
+            <span class="badge badge-blue">Cálculo CIF + impuestos</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:14px">Cálculo estimado de impuestos sobre la importación. Sub partida arancelaria <strong style="font-family:'DM Mono',monospace">4804.11.00.00</strong> · Cantidad <strong style="font-family:'DM Mono',monospace">95.580 kg</strong>.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+            <table class="gasto-table">
+              <thead><tr><th colspan="2" style="background:var(--surface2)">Valores de la mercadería</th></tr></thead>
+              <tbody>
+                <tr><td>FOB</td><td style="text-align:right;font-family:'DM Mono',monospace">$46,880.60</td></tr>
+                <tr><td>Flete</td><td style="text-align:right;font-family:'DM Mono',monospace">$8,534.40</td></tr>
+                <tr><td>CFR</td><td style="text-align:right;font-family:'DM Mono',monospace">$55,415.00</td></tr>
+                <tr><td>Seguro</td><td style="text-align:right;font-family:'DM Mono',monospace">$468.81</td></tr>
+                <tr class="total-row"><td>CIF</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px">$55,883.81</td></tr>
+              </tbody>
+            </table>
+            <table class="gasto-table">
+              <thead><tr><th>Impuesto</th><th>Tarifa</th><th style="text-align:right">Valor</th></tr></thead>
+              <tbody>
+                <tr><td>Ad Valorem</td><td style="font-family:'DM Mono',monospace;color:var(--text-2)">0%</td><td style="text-align:right;font-family:'DM Mono',monospace">$0.00</td></tr>
+                <tr><td>Fodinfa</td><td style="font-family:'DM Mono',monospace;color:var(--text-2)">0.5%</td><td style="text-align:right;font-family:'DM Mono',monospace">$279.42</td></tr>
+                <tr><td>IVA</td><td style="font-family:'DM Mono',monospace;color:var(--text-2)">15%</td><td style="text-align:right;font-family:'DM Mono',monospace">$8,424.49</td></tr>
+                <tr><td>Seguridad</td><td style="font-family:'DM Mono',monospace;color:var(--text-2)">10%</td><td style="text-align:right;font-family:'DM Mono',monospace">$870.39</td></tr>
+                <tr class="total-row"><td colspan="2">Total impuestos</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px">$9,574.30</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+            <button class="btn" onclick="showNotif('Pre-liquidación exportada a PDF')">Exportar pre-liquidación</button>
+          </div>
+        </div>
+
+        <!-- LIQUIDACIÓN FINAL -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>Liquidación final · <span style="font-family:'DM Mono',monospace">T26-281</span> · MEGASTOCKEC</span>
+            <span class="badge badge-amber">Pendiente</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">Gastos aduaneros pagados por Intraservice. Los valores se importan desde la pestaña Documentos y gastos del trámite.</p>
+          <table class="gasto-table">
+            <thead>
+              <tr>
+                <th style="width:24%">Servicio</th>
+                <th style="width:14%">Emisor</th>
+                <th style="width:16%">N° factura</th>
+                <th style="width:10%;text-align:right">Subtotal</th>
+                <th style="width:9%;text-align:right">IVA</th>
+                <th style="width:9%;text-align:right">Retención</th>
+                <th style="width:10%;text-align:right">Pagado Intraservice</th>
+                <th style="width:8%">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>V/B Consolidadora</td><td>CMA - CGM</td><td style="font-family:'DM Mono',monospace;font-size:11px">ECIC0320701</td><td style="text-align:right;font-family:'DM Mono',monospace">$840.00</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$840.00</td><td><span class="badge badge-green">Cancelado</span></td></tr>
+              <tr><td>Almacenaje</td><td>INARPI</td><td style="font-family:'DM Mono',monospace;font-size:11px">001-051-905457</td><td style="text-align:right;font-family:'DM Mono',monospace">$207.64</td><td style="text-align:right;font-family:'DM Mono',monospace">$31.15</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$238.79</td><td><span class="badge badge-green">Cancelado</span></td></tr>
+              <tr><td>Almacenaje</td><td>INARPI</td><td style="font-family:'DM Mono',monospace;font-size:11px">001-051-905528</td><td style="text-align:right;font-family:'DM Mono',monospace">$207.64</td><td style="text-align:right;font-family:'DM Mono',monospace">$31.15</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$238.79</td><td><span class="badge badge-green">Cancelado</span></td></tr>
+              <tr><td>Almacenaje</td><td>INARPI</td><td style="font-family:'DM Mono',monospace;font-size:11px">001-051-905701</td><td style="text-align:right;font-family:'DM Mono',monospace">$419.80</td><td style="text-align:right;font-family:'DM Mono',monospace">$62.97</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$482.77</td><td><span class="badge badge-green">Cancelado</span></td></tr>
+              <tr><td>Honorario Desaduanización</td><td>FERNANDO ARIAS</td><td style="font-family:'DM Mono',monospace;font-size:11px">002-002-006550</td><td style="text-align:right;font-family:'DM Mono',monospace">$320.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$48.00</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--red)">$80.00</td><td style="text-align:right;font-family:'DM Mono',monospace">$288.00</td><td><span class="badge badge-green">Cancelado</span></td></tr>
+              <tr class="total-row"><td colspan="3" style="font-family:'DM Mono',monospace;font-size:11px">TOTAL GASTOS PAGADOS</td><td style="text-align:right;font-family:'DM Mono',monospace">$1,995.08</td><td style="text-align:right;font-family:'DM Mono',monospace">$173.27</td><td style="text-align:right;font-family:'DM Mono',monospace;color:var(--red)">$80.00</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px">$2,088.34</td><td></td></tr>
+            </tbody>
+          </table>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+            <div class="panel" style="margin:0">
+              <div class="panel-title" style="font-size:12px;margin-bottom:12px">Anticipos recibidos del cliente</div>
+              <table class="gasto-table" id="liq-anticipos-table">
+                <thead><tr><th>Fecha</th><th>Referencia</th><th>Forma pago</th><th>Monto</th><th>Doc.</th></tr></thead>
+                <tbody id="liq-anticipos-body"></tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="3" style="font-family:'DM Mono',monospace;font-size:11px">Total anticipos</td>
+                    <td id="liq-total-anticipos" style="font-family:'DM Mono',monospace;color:var(--green)">$2,000.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="font-size:12px;color:var(--text-2)">Total gastos pagados</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:13px">$2,088.34</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                  <span style="font-size:12px;color:var(--text-2)">Total anticipos</span>
+                  <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--green)" id="liq-anticipo-sub">– $2,000.00</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:10px;border-top:1px solid var(--border)">
+                  <span style="font-size:13px;font-weight:500" id="liq-label">Saldo a cobrar al cliente</span>
+                  <span style="font-size:24px;font-weight:300;letter-spacing:-0.5px;font-family:'DM Mono',monospace" id="liq-saldo">$88.34</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end">
+              <div class="field" style="margin-bottom:8px"><label>Garantía por recuperar</label><select><option>NO</option><option>SÍ</option></select></div>
+              <button class="btn" onclick="showNotif('Generando vista previa del PDF...')">Vista previa PDF</button>
+              <button class="btn btn-primary" onclick="showNotif('Liquidación enviada al cliente por correo')">Enviar liquidación al cliente</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ AUDITORÍA ══ -->
+      <div class="screen" id="screen-auditoria">
+        <div class="filters">
+          <input class="filter-input" type="text" placeholder="Buscar por trámite o usuario...">
+          <select class="filter-select"><option>Todas las acciones</option><option>Cambio de estado</option><option>Gasto agregado</option><option>Documento cargado</option><option>Liquidación</option></select>
+          <input class="filter-select" type="month" value="2026-05">
+        </div>
+        <div class="panel">
+          <div class="panel-title">Registro de actividad del sistema</div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot amber"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-281</strong> · Liquidación generada · saldo <strong>$88.34 pendiente</strong></div><div class="audit-meta">Edison Gudiño · 02 may 2026 · 11:20 · "MEGASTOCKEC — saldo a favor de Fernando Arias"</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-281</strong> · Gasto agregado: Honorario Desaduanización · $368.00</div><div class="audit-meta">Edison Gudiño · 30 abr 2026 · 14:05</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-281</strong> · Comprobante adjunto: <span style="font-family:'DM Mono',monospace;font-size:11px">INARPI_905701.pdf</span></div><div class="audit-meta">Edison Gudiño · 29 abr 2026 · 10:02</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-281</strong> · Anticipo recibido · <strong>$2,000.00</strong> (transferencia)</div><div class="audit-meta">Edison Gudiño · 25 abr 2026 · 15:10</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot green"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-040</strong> · Estado cambiado a <strong>Concluido</strong></div><div class="audit-meta">Edison Gudiño · 22 ene 2026 · 16:45 · "MEGASTOCKEC — DAI 028-2026-21-00210063 cerrada"</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot green"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-027</strong> · Estado cambiado a <strong>Concluido</strong></div><div class="audit-meta">María Torres · 19 ene 2026 · 11:22 · "ECUALIMFOOD — exportación EXP 853-26 completada"</div></div></div>
+          <div class="audit-item"><div class="audit-line"><div class="audit-dot"></div></div><div><div class="audit-text"><strong style="font-family:'DM Mono',monospace;font-size:12px">T26-010</strong> · Documento cargado: <span style="font-family:'DM Mono',monospace;font-size:11px">FVEX25-12-00134.pdf</span></div><div class="audit-meta">María Torres · 16 ene 2026 · 14:30 · "AHCORP — factura comercial CREVIN"</div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+const gastoData = [
+  {concepto:'V/B Consolidadora', proveedor:'CMA - CGM', factura:'ECIC0320701', monto:840.00, cat:'V/B Consolidadora', doc:'ECIC0320701.pdf'},
+  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905457', monto:238.79, cat:'Almacenaje', doc:'INARPI_905457.pdf'},
+  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905528', monto:238.79, cat:'Almacenaje', doc:'INARPI_905528.pdf'},
+  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905701', monto:482.77, cat:'Almacenaje', doc:'INARPI_905701.pdf'},
+  {concepto:'Honorario Desaduanización', proveedor:'FERNANDO ARIAS', factura:'002-002-006550', monto:288.00, cat:'Agente aduanas', doc:'FA_006550.pdf'},
+];
+
+const anticipoData = [
+  {fecha:'2026-04-25', descripcion:'Anticipo MEGASTOCKEC — BL GDY0406929', comprobante:'TRF-2026-0281', monto:2000.00, forma:'Transferencia', doc:'TRF-2026-0281.pdf'},
+];
+
+const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" stroke="#1E4FBF" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" stroke="#1E4FBF" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" stroke="#1E4FBF" stroke-width=".7"/></svg>`;
+
+function totalGastos() { return gastoData.reduce((s,g) => s + g.monto, 0); }
+function totalAnticipos() { return anticipoData.reduce((s,a) => s + a.monto, 0); }
+
+function renderGastos() {
+  const tbody = document.getElementById('gastos-body');
+  tbody.innerHTML = '';
+  let conDoc = 0;
+  gastoData.forEach((g, i) => {
+    if (g.doc) conDoc++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${g.concepto}" onchange="gastoData[${i}].concepto=this.value"></td>
+      <td><input type="text" value="${g.proveedor}" onchange="gastoData[${i}].proveedor=this.value"></td>
+      <td><input type="text" value="${g.factura}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="gastoData[${i}].factura=this.value"></td>
+      <td><input type="number" value="${g.monto.toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="gastoData[${i}].monto=parseFloat(this.value)||0;renderAll()"></td>
+      <td><select onchange="gastoData[${i}].cat=this.value">${['V/B Consolidadora','THC / Flete','BL destino','Almacenaje','Agente aduanas','Transporte','Reembolso','Otros'].map(c=>`<option${g.cat===c?' selected':''}>${c}</option>`).join('')}</select></td>
+      <td>${g.doc ? `<span class="doc-chip">${docIcon}${g.doc}</span>` : `<button class="btn btn-sm" onclick="attachGastoDoc(${i})">+ Adjuntar</button>`}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeGasto(${i})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const total = totalGastos();
+  document.getElementById('total-footer').textContent = '$' + total.toFixed(2);
+  document.getElementById('resumen-total').textContent = '$' + total.toFixed(2);
+  document.getElementById('resumen-docs').textContent = conDoc + ' / ' + gastoData.length;
+  const falt = gastoData.length - conDoc;
+  document.getElementById('resumen-faltantes').textContent = falt;
+  document.getElementById('resumen-faltantes').style.color = falt > 0 ? 'var(--amber)' : 'var(--green)';
+}
+
+function renderAnticipos() {
+  const tbody = document.getElementById('anticipos-body');
+  tbody.innerHTML = '';
+  anticipoData.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="date" value="${a.fecha}" style="font-size:11px" onchange="anticipoData[${i}].fecha=this.value"></td>
+      <td><input type="text" value="${a.descripcion}" onchange="anticipoData[${i}].descripcion=this.value"></td>
+      <td><input type="text" value="${a.comprobante}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="anticipoData[${i}].comprobante=this.value"></td>
+      <td><input type="number" value="${a.monto.toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace;color:var(--green)" onchange="anticipoData[${i}].monto=parseFloat(this.value)||0;renderAll()"></td>
+      <td><select onchange="anticipoData[${i}].forma=this.value" style="font-size:11px">${['Transferencia','Depósito','Cheque','Efectivo','Otro'].map(f=>`<option${a.forma===f?' selected':''}>${f}</option>`).join('')}</select></td>
+      <td>${a.doc ? `<span class="doc-chip">${docIcon}${a.doc}</span>` : `<button class="btn btn-sm" onclick="attachAnticipoDoc(${i})">+ Adjuntar</button>`}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeAnticipo(${i})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const total = totalAnticipos();
+  document.getElementById('anticipo-footer').textContent = '$' + total.toFixed(2);
+  document.getElementById('resumen-anticipos').textContent = '$' + total.toFixed(2);
+}
+
+function renderLiqAnticipos() {
+  const tbody = document.getElementById('liq-anticipos-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  anticipoData.forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:11px;color:var(--text-2)">${a.fecha}</td>
+      <td style="font-size:12px">${a.descripcion}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--green)">$${a.monto.toFixed(2)}</td>
+      <td>${a.doc ? `<span class="doc-chip" style="font-size:10px">${docIcon}${a.doc}</span>` : `<span style="font-size:11px;color:var(--amber)">Sin doc.</span>`}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const ta = totalAnticipos();
+  const tg = totalGastos();
+  const saldo = tg - ta;
+  const liqTotal = document.getElementById('liq-total-anticipos');
+  const liqSub = document.getElementById('liq-anticipo-sub');
+  const liqSaldo = document.getElementById('liq-saldo');
+  const liqLabel = document.getElementById('liq-label');
+  if (liqTotal) liqTotal.textContent = '$' + ta.toFixed(2);
+  if (liqSub) liqSub.textContent = '– $' + ta.toFixed(2);
+  if (liqSaldo && liqLabel) {
+    if (saldo > 0) {
+      liqSaldo.textContent = '$' + saldo.toFixed(2);
+      liqSaldo.style.color = 'var(--red)';
+      liqLabel.textContent = 'Saldo a cobrar al cliente';
+    } else if (saldo < 0) {
+      liqSaldo.textContent = '$' + Math.abs(saldo).toFixed(2);
+      liqSaldo.style.color = 'var(--green)';
+      liqLabel.textContent = 'Saldo a favor del cliente';
+    } else {
+      liqSaldo.textContent = '$0.00';
+      liqSaldo.style.color = 'var(--text-2)';
+      liqLabel.textContent = 'Saldo en cero';
+    }
+  }
+}
+
+function renderAll() {
+  renderGastos();
+  renderAnticipos();
+  renderLiqAnticipos();
+  renderCustomProps();
+}
+
+function addGasto() {
+  gastoData.push({concepto:'Nuevo concepto', proveedor:'', factura:'', monto:0, cat:'Varios', doc:null});
+  renderAll();
+}
+function removeGasto(i) {
+  gastoData.splice(i, 1);
+  renderAll();
+  showNotif('Gasto eliminado');
+}
+function attachGastoDoc(i) {
+  const nombres = ['comprobante','factura','recibo','voucher','nota'];
+  gastoData[i].doc = nombres[i % nombres.length] + '_gasto_' + (i+1) + '.pdf';
+  renderAll();
+  showNotif('Comprobante adjuntado al gasto');
+}
+
+function addAnticipo() {
+  const today = new Date().toISOString().split('T')[0];
+  anticipoData.push({fecha:today, descripcion:'Nuevo anticipo', comprobante:'', monto:0, forma:'Transferencia', doc:null});
+  renderAll();
+  showNotif('Anticipo agregado');
+}
+function removeAnticipo(i) {
+  anticipoData.splice(i, 1);
+  renderAll();
+  showNotif('Anticipo eliminado');
+}
+function attachAnticipoDoc(i) {
+  anticipoData[i].doc = 'respaldo_anticipo_' + (i+1) + '.pdf';
+  renderAll();
+  showNotif('Documento de respaldo adjuntado al anticipo');
+}
+
+const customProps = [];
+const customPropTemplates = ['Régimen aduanero','Canal de aforo','Certificado de origen','Tipo de carga','Peso neto (kg)','Número de bultos','Incoterm','Régimen de tributación','Agencia de aduanas','Tipo de embalaje'];
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function updatePropTemplatesDatalist() {
+  const dl = document.getElementById('prop-templates');
+  if (dl) dl.innerHTML = customPropTemplates.map(t => `<option value="${escHtml(t)}">`).join('');
+}
+
+function saveCustomPropTemplate(name) {
+  name = name.trim();
+  if (name && !customPropTemplates.includes(name)) {
+    customPropTemplates.push(name);
+    updatePropTemplatesDatalist();
+  }
+}
+
+function renderCustomProps() {
+  const list = document.getElementById('custom-props-list');
+  const empty = document.getElementById('custom-props-empty');
+  if (!list) return;
+  list.innerHTML = '';
+  empty.style.display = customProps.length ? 'none' : 'block';
+  customProps.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;margin-bottom:10px';
+    row.innerHTML = `
+      <div class="field">
+        <label>Propiedad</label>
+        <input list="prop-templates" type="text" value="${escHtml(p.name)}" placeholder="Ej: Canal de aforo" onchange="customProps[${i}].name=this.value;saveCustomPropTemplate(this.value)">
+      </div>
+      <div class="field">
+        <label>Valor</label>
+        <input type="text" value="${escHtml(p.value)}" placeholder="Ingresa valor..." onchange="customProps[${i}].value=this.value">
+      </div>
+      <button class="btn btn-sm btn-danger" style="margin-bottom:1px" onclick="removeCustomProp(${i})">✕</button>
+    `;
+    list.appendChild(row);
+  });
+  updatePropTemplatesDatalist();
+}
+
+function addCustomProp() {
+  customProps.push({name:'', value:''});
+  renderCustomProps();
+}
+
+function removeCustomProp(i) {
+  customProps.splice(i, 1);
+  renderCustomProps();
+  showNotif('Propiedad eliminada');
+}
+
+const pageTitles = {
+  dashboard: 'Dashboard',
+  bitacora: 'Bitácora de trámites',
+  tramite: 'Trámite T26-281 · MEGASTOCKEC',
+  liquidacion: 'Liquidación de importación',
+  auditoria: 'Historial de auditoría'
+};
+const topbarBadges = {
+  tramite: '<span class="badge badge-amber">En proceso</span>',
+  liquidacion: '<span class="badge badge-amber">Pendiente</span>',
+};
+
+function nav(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else { const f = document.getElementById('nav-' + id); if (f) f.classList.add('active'); }
+  document.getElementById('page-title').textContent = pageTitles[id] || id;
+  document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
+  if (id === 'liquidacion') renderLiqAnticipos();
+}
+
+function setTab(el, targetId) {
+  document.querySelectorAll('#screen-tramite .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['t-datos', 't-docs', 't-estado'].forEach(id => {
+    document.getElementById(id).style.display = id === targetId ? 'block' : 'none';
+  });
+}
+
+let notifTimer;
+function showNotif(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+renderAll();
+</script>
+</body>
+</html>
