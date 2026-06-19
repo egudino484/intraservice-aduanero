@@ -15,6 +15,7 @@ app.use('/tramites/:tramiteId/gastos',    require('./routes/gastos'))
 app.use('/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
 app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
 app.use('/auditoria',                     require('./routes/auditoria'))
+app.use('/users',                         require('./routes/users'))
 
 app.get('/health', (_, res) => res.json({ ok: true }))
 
