@@ -1,10 +1,140 @@
 # Sistema Aduanero — Intraservice
 
-Prototipo de sistema de gestión de trámites aduaneros para la empresa **Intraservice**. Implementado como una SPA en un único archivo HTML, sin frameworks ni dependencias externas (solo Google Fonts).
+Sistema de gestión de trámites aduaneros para la empresa **Intraservice**. SPA en un único archivo HTML conectada a un backend Node.js + PostgreSQL desplegado en Railway.
 
-## Archivo principal
+## Estructura del proyecto
 
-- `sistema_aduanero_prototipo_2.html` — toda la app vive aquí (HTML + CSS + JS)
+```
+/
+├── index.html              # Frontend: toda la app (HTML + CSS + JS)
+├── package.json            # Solo para serve en Railway (frontend)
+├── backend/
+│   ├── index.js            # Entrypoint Express
+│   ├── package.json
+│   ├── .env                # Variables locales (no se sube a git)
+│   ├── db/
+│   │   ├── index.js        # Pool pg
+│   │   └── migrations/
+│   │       └── 001_schema.sql
+│   ├── lib/
+│   │   └── storage.js      # Manejo de archivos en /uploads (Railway Volume)
+│   ├── middleware/
+│   │   └── auth.js         # JWT verify → req.user
+│   └── routes/
+│       ├── auth.js         # POST /auth/login
+│       ├── tramites.js
+│       ├── gastos.js
+│       ├── anticipos.js
+│       ├── documentos.js
+│       ├── auditoria.js
+│       └── users.js        # Admin-only: GET/POST/PATCH /users
+└── uploads/                # Archivos locales (gitignored; en prod → Railway Volume)
+```
+
+## Archivos principales
+
+- `index.html` — frontend completo (HTML + CSS + JS)
+- `backend/index.js` — API Express (puerto 3000)
+
+## Deploy local
+
+### 1. Backend
+
+```bash
+cd backend
+cp .env.example .env      # editar con tus credenciales locales
+npm install
+node index.js             # API en http://localhost:3000
+```
+
+Variables requeridas en `backend/.env`:
+```
+DATABASE_URL=postgresql://user:pass@host:port/db
+JWT_SECRET=cualquier_string_secreto
+UPLOADS_DIR=./uploads     # carpeta local para archivos
+PORT=3000
+```
+
+Correr migración inicial (solo primera vez):
+```bash
+psql $DATABASE_URL -f db/migrations/001_schema.sql
+```
+
+Crear primer usuario admin (solo primera vez, desde psql):
+```sql
+INSERT INTO users (email, name, initials, role, password_hash)
+VALUES ('tu@email.com', 'Tu Nombre', 'TN', 'admin',
+  crypt('password123', gen_salt('bf')));
+```
+
+### 2. Frontend
+
+Abrir `index.html` directo en el navegador **o** servir con:
+```bash
+npx serve . -p 8080
+```
+
+> El frontend apunta a `API_URL = 'https://sistema-importacion-intraservice-production-0b8a.up.railway.app'` por defecto. Para apuntar al backend local, cambiar temporalmente esa constante en `index.html` a `http://localhost:3000`.
+
+---
+
+## Deploy en producción (Railway)
+
+### Infraestructura en Railway
+
+| Servicio | Tipo | Notas |
+|---|---|---|
+| `sistema-importacion-intraservice` | Node.js (backend) | Raíz `/backend` |
+| `postgres` | PostgreSQL | Creado con `railway add postgres` |
+| Volume | Disco persistente | Montado en `/uploads` del servicio backend |
+
+**Proyecto:** `sistema-importacion-intraservice`  
+**Workspace ID:** `91ade6ab-aa1c-41df-9a20-390673296b58`  
+**API URL producción:** `https://sistema-importacion-intraservice-production-0b8a.up.railway.app`  
+**GitHub repo:** `https://github.com/egudino484/intraservice-aduanero.git`
+
+### Deploy del backend
+
+```bash
+# Desde la raíz del proyecto
+railway login                                  # cuenta: edisong1395@gmail.com
+railway link --service sistema-importacion-intraservice
+cd backend
+railway up --detach                            # sube y despliega
+```
+
+Railway usa `backend/package.json` → `npm start` → `node index.js`.
+
+### Variables de entorno en Railway
+
+Están configuradas en el panel de Railway (no en `.env` del repo). Las clave son:
+
+```
+DATABASE_URL    # se inyecta automáticamente al agregar el servicio postgres
+JWT_SECRET      = intraservice_secret_2026
+UPLOADS_DIR     = /uploads
+PORT            = (Railway lo inyecta automáticamente)
+```
+
+Para verlas/editarlas: Railway dashboard → servicio → Variables.
+
+### Actualizar producción tras cambios
+
+```bash
+git add <archivos>
+git commit -m "descripción"
+git push origin main          # Railway puede hacer auto-deploy desde GitHub
+# o manual:
+railway up --detach
+```
+
+### Ver logs en producción
+
+```bash
+railway logs
+```
+
+---
 
 ## Módulos / pantallas
 
@@ -61,13 +191,24 @@ Formas de pago: Transferencia, Depósito, Cheque, Efectivo, Otro
 
 ## Stack técnico
 
+**Frontend**
 - HTML5 / CSS3 / Vanilla JS — sin build, sin bundler
 - Fuentes: `DM Sans` (UI) y `DM Mono` (valores numéricos y códigos)
 - CSS custom properties en `:root` para todo el sistema de diseño
 - Navegación por `nav(id)` + pantallas con `display:none/block`
 - Notificaciones toast con `showNotif(msg)`
-- Persistencia completa en `localStorage` (clave `LS_KEY`) — todos los datos del trámite, gastos y anticipos sobreviven recargas
-- Export PDF via `window.print()` con estilos `@media print` dedicados (`exportReportePDF()`)
+- Autenticación: JWT guardado en `localStorage` como `sa_token` (expiry 8h)
+- `apiFetch(path, opts)` — wrapper sobre `fetch` que inyecta el token y maneja 401
+- Debounced auto-save (800ms) para ediciones inline en tablas de gastos/anticipos
+- Export PDF via `window.print()` con estilos `@media print` (`exportReportePDF()`)
+
+**Backend**
+- Node.js + Express
+- PostgreSQL (Railway) vía `pg` pool — `backend/db/index.js`
+- JWT (`jsonwebtoken`) + bcrypt (`bcryptjs`) para auth
+- Multer para subida de archivos (≤5MB), almacenados en Railway Volume `/uploads`
+- Archivos servidos estáticamente en `/files/:key`
+- Roles: `admin`, `operador`, `visor`
 
 ## Sistema de diseño
 
