@@ -471,6 +471,26 @@
 </head>
 <body>
 
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+      <div class="logo-icon"><svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="8" rx="1" fill="white" opacity="0.9"/><rect x="10" y="2" width="6" height="5" rx="1" fill="white" opacity="0.6"/><rect x="10" y="9" width="6" height="7" rx="1" fill="white" opacity="0.6"/><rect x="2" y="12" width="6" height="4" rx="1" fill="white" opacity="0.5"/></svg></div>
+      <div><div class="logo-name">Intraservice</div><div class="logo-sub">Sistema Aduanero v1.0</div></div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Email</label>
+      <input id="login-email" type="email" placeholder="usuario@intraservice.com" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="field" style="margin-bottom:8px">
+      <label>Contraseña</label>
+      <input id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px"></div>
+    <button id="login-btn" class="btn btn-primary" style="width:100%;padding:9px" onclick="doLogin()">Ingresar</button>
+  </div>
+</div>
+
 <div class="app">
 
   <!-- SIDEBAR -->
@@ -517,11 +537,12 @@
     </div>
 
     <div class="sidebar-footer">
-      <div class="avatar">EG</div>
-      <div>
-        <div class="sidebar-footer-name">Edison Gudiño</div>
-        <div class="sidebar-footer-role">Administrador</div>
+      <div class="avatar" id="user-avatar">EG</div>
+      <div style="flex:1">
+        <div class="sidebar-footer-name" id="user-name">Edison Gudiño</div>
+        <div class="sidebar-footer-role" id="user-role">Administrador</div>
       </div>
+      <button class="btn btn-sm btn-ghost" onclick="logout()" title="Cerrar sesión" style="padding:4px 8px;color:var(--text-3);font-size:13px">⎋</button>
     </div>
   </div>
 
@@ -533,7 +554,7 @@
         <span id="topbar-badge"></span>
       </div>
       <div class="topbar-right" id="topbar-actions">
-        <button class="btn btn-primary" onclick="nav('tramite',null)">+ Nuevo trámite</button>
+        <button class="btn btn-primary" onclick="newTramite()">+ Nuevo trámite</button>
       </div>
     </div>
 
@@ -565,26 +586,15 @@
       <!-- ══ BITÁCORA ══ -->
       <div class="screen" id="screen-bitacora">
         <div class="filters">
-          <input class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL, DAI...">
-          <select class="filter-select"><option>Todos los clientes</option><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select>
-          <select class="filter-select"><option>Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
-          <select class="filter-select"><option>Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente</option></select>
-          <input class="filter-select" type="month" value="2026-05">
+          <input id="b-search" class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL..." oninput="renderBitacora()">
+          <select id="b-tipo" class="filter-select" onchange="renderBitacora()"><option value="">Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
+          <select id="b-estado" class="filter-select" onchange="renderBitacora()"><option value="">Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente documentación</option><option>Cancelado</option></select>
         </div>
         <div class="panel" style="padding:0;overflow:hidden">
           <table>
-            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Op.</th><th>BL / AWB</th><th>Entrega</th><th>DAI / DAE</th><th>Naviera</th><th>Almacenera</th><th>Estado</th></tr></thead>
-            <tbody>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-281</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">GDY0406929</td><td style="font-family:'DM Mono',monospace;font-size:11px">0802P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00722383</td><td>CMA CGM</td><td>INARPI</td><td><span class="badge badge-amber">En proceso</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-001</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">MEDUW6491288</td><td style="font-family:'DM Mono',monospace;font-size:11px">0067P</td><td style="font-family:'DM Mono',monospace;font-size:11px">064-2026-10-00040680</td><td>MSC</td><td>PUERTO BOLÍVAR</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-003</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">HLCUMTR251141314</td><td style="font-family:'DM Mono',monospace;font-size:11px">0029P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00023488</td><td>HAPAG LLOYD</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-006</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">HHSE5114615YA</td><td style="font-family:'DM Mono',monospace;font-size:11px">0126P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00059738</td><td>MSL ECUADOR</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-010</span></td><td>AHCORP</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">012025122110</td><td style="font-family:'DM Mono',monospace;font-size:11px">0186P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00144681</td><td>TOLEPU</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-023</span></td><td>NOVA</td><td>EXP</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2025-40-02643778</td><td style="font-family:'DM Mono',monospace;font-size:11px">2122P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2025-40-02643778</td><td>CMA CGM</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-027</span></td><td>ECUALIMFOOD</td><td>EXP</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-40-00022980</td><td style="font-family:'DM Mono',monospace;font-size:11px">0027P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-40-00022980</td><td>ONE</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-037</span></td><td>AHCORP</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">143-26-00052-143701</td><td style="font-family:'DM Mono',monospace;font-size:11px">0301P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-10-00275574</td><td>HARTROD</td><td>INARPI</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-039</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">0729-45663376</td><td style="font-family:'DM Mono',monospace;font-size:11px">0084P</td><td style="font-family:'DM Mono',monospace;font-size:11px">055-2026-10-00041744</td><td>GACIL</td><td>EMSA</td><td><span class="badge badge-green">Concluido</span></td></tr>
-              <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-040</span></td><td>MEGASTOCKEC</td><td>IMP</td><td style="font-family:'DM Mono',monospace;font-size:11px">263379441</td><td style="font-family:'DM Mono',monospace;font-size:11px">0247P</td><td style="font-family:'DM Mono',monospace;font-size:11px">028-2026-21-00210063</td><td>MAERSK</td><td>POSORJA</td><td><span class="badge badge-green">Concluido</span></td></tr>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Op.</th><th>BL / AWB</th><th>DAI / DAE</th><th>Naviera</th><th>Estado</th></tr></thead>
+            <tbody id="bitacora-body">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -658,7 +668,7 @@
 
           <div class="section-actions">
             <button class="btn btn-ghost" onclick="discardChanges()">Cancelar</button>
-            <button class="btn btn-primary" onclick="saveState();showNotif('Trámite guardado correctamente')">Guardar cambios</button>
+            <button class="btn btn-primary" onclick="saveTramiteForm()">Guardar cambios</button>
           </div>
         </div>
 
@@ -773,7 +783,7 @@
             <div class="field-row">
               <div class="field">
                 <label>Nuevo estado</label>
-                <select>
+                <select id="estado-select">
                   <option>En proceso</option>
                   <option>Concluido</option>
                   <option>Pendiente documentación</option>
@@ -782,29 +792,14 @@
               </div>
               <div class="field">
                 <label>Motivo del cambio</label>
-                <input type="text" placeholder="Describir razón del cambio de estado...">
+                <input id="estado-motivo" type="text" placeholder="Describir razón del cambio de estado...">
               </div>
             </div>
-            <button class="btn btn-primary" onclick="showNotif('Estado actualizado y registrado en auditoría')">Registrar cambio de estado</button>
+            <button class="btn btn-primary" onclick="registrarCambioEstado()">Registrar cambio de estado</button>
           </div>
           <div class="panel">
             <div class="panel-title">Historial de cambios</div>
-            <div class="audit-item">
-              <div class="audit-line"><div class="audit-dot amber"></div></div>
-              <div><div class="audit-text">Liquidación generada → <strong>Saldo pendiente $88.34</strong></div><div class="audit-meta">Edison Gudiño · 02 may 2026 · 11:20 · "Saldo a favor del agente Fernando Arias"</div></div>
-            </div>
-            <div class="audit-item">
-              <div class="audit-line"><div class="audit-dot"></div></div>
-              <div><div class="audit-text">Estado → <strong>En proceso</strong></div><div class="audit-meta">Edison Gudiño · 26 abr 2026 · 09:32 · "DAI 028-2026-10-00722383 obtenida, iniciando aforo"</div></div>
-            </div>
-            <div class="audit-item">
-              <div class="audit-line"><div class="audit-dot"></div></div>
-              <div><div class="audit-text">Anticipo registrado → <strong>$2,000.00</strong></div><div class="audit-meta">Edison Gudiño · 25 abr 2026 · 15:10 · "Transferencia recibida del cliente"</div></div>
-            </div>
-            <div class="audit-item">
-              <div class="audit-line"><div class="audit-dot"></div></div>
-              <div><div class="audit-text">Trámite <strong>creado</strong></div><div class="audit-meta">Edison Gudiño · 24 abr 2026 · 08:00 · "Llegada de carga MEGASTOCKEC – BL GDY0406929"</div></div>
-            </div>
+            <div id="tramite-historial"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:14px">Sin historial</p></div>
           </div>
         </div>
 
@@ -1139,38 +1134,291 @@
 <div class="notif" id="notif"></div>
 
 <script>
-const gastoData = [
-  {concepto:'V/B Consolidadora', proveedor:'CMA - CGM', factura:'ECIC0320701', monto:840.00, cat:'V/B Consolidadora', doc:'ECIC0320701.pdf'},
-  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905457', monto:238.79, cat:'Almacenaje', doc:'INARPI_905457.pdf'},
-  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905528', monto:238.79, cat:'Almacenaje', doc:'INARPI_905528.pdf'},
-  {concepto:'Almacenaje contenedor', proveedor:'INARPI', factura:'001-051-905701', monto:482.77, cat:'Almacenaje', doc:'INARPI_905701.pdf'},
-  {concepto:'Honorario Desaduanización', proveedor:'FERNANDO ARIAS', factura:'002-002-006550', monto:288.00, cat:'Agente aduanas', doc:'FA_006550.pdf'},
-];
+// ── CONFIG ────────────────────────────────────────────────────────
+const API_URL = 'https://sistema-importacion-intraservice-production-0b8a.up.railway.app';
 
-const anticipoData = [
-  {fecha:'2026-04-25', descripcion:'Anticipo MEGASTOCKEC — BL GDY0406929', comprobante:'TRF-2026-0281', monto:2000.00, forma:'Transferencia', doc:'TRF-2026-0281.pdf'},
+// ── STATE ─────────────────────────────────────────────────────────
+let currentUser = null;
+let currentTramiteId = null;
+let gastoData = [
 ];
+let anticipoData = [];
+
+// ── AUTH ──────────────────────────────────────────────────────────
+function getToken() { return localStorage.getItem('sa_token'); }
+
+async function apiFetch(path, opts = {}) {
+  const isForm = opts.body instanceof FormData;
+  const headers = { Authorization: 'Bearer ' + getToken() };
+  if (!isForm) headers['Content-Type'] = 'application/json';
+  try {
+    const res = await fetch(API_URL + path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
+    if (res.status === 401) { logout(); return null; }
+    return await res.json();
+  } catch(e) { showNotif('Error de conexión'); return null; }
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Ingresando...';
+  try {
+    const res = await fetch(API_URL + '/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Credenciales incorrectas');
+    localStorage.setItem('sa_token', data.token);
+    currentUser = data.user;
+    document.getElementById('login-overlay').style.display = 'none';
+    initApp();
+  } catch(e) { errEl.textContent = e.message; }
+  btn.disabled = false; btn.textContent = 'Ingresar';
+}
+
+function logout() {
+  localStorage.removeItem('sa_token');
+  currentUser = null;
+  gastoData = []; anticipoData = []; currentTramiteId = null;
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+function applyUserToUI() {
+  if (!currentUser) return;
+  document.getElementById('user-name').textContent = currentUser.name;
+  document.getElementById('user-avatar').textContent = currentUser.initials;
+  document.getElementById('user-role').textContent = { admin:'Administrador', operador:'Operador', visor:'Visor' }[currentUser.role] || currentUser.role;
+}
+
+async function initApp() {
+  applyUserToUI();
+  nav('dashboard', document.getElementById('nav-dashboard'));
+  loadDashboard();
+  loadBitacora();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+async function loadDashboard() {
+  const tramites = await apiFetch('/tramites');
+  if (!tramites) return;
+  const byE = e => tramites.filter(t => t.estado === e).length;
+  const metricsRow = document.querySelector('#screen-dashboard .metrics-row');
+  if (metricsRow) metricsRow.innerHTML = `
+    <div class="metric"><div class="metric-label">Trámites</div><div class="metric-value">${tramites.length}</div><div class="metric-sub">registrados</div></div>
+    <div class="metric"><div class="metric-label">En proceso</div><div class="metric-value" style="color:var(--amber)">${byE('En proceso')}</div><div class="metric-sub">requieren acción</div></div>
+    <div class="metric"><div class="metric-label">Concluidos</div><div class="metric-value" style="color:var(--green)">${byE('Concluido')}</div><div class="metric-sub">finalizados</div></div>
+    <div class="metric"><div class="metric-label">Pendiente doc.</div><div class="metric-value">${byE('Pendiente documentación')}</div><div class="metric-sub">revisar</div></div>
+  `;
+  const tbody = document.querySelector('#screen-dashboard .panel tbody');
+  if (!tbody) return;
+  const bc = { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' };
+  tbody.innerHTML = tramites.slice(0,7).map(t => `
+    <tr>
+      <td><span class="row-link" onclick="openTramite('${t.id}')">${t.numero}</span></td>
+      <td>${t.cliente}</td><td>${t.tipo}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${t.bl||'—'}</td>
+      <td><span class="badge badge-${bc[t.estado]||'gray'}">${t.estado}</span></td>
+      <td style="color:var(--text-3);font-size:12px">${fmtDate(t.created_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin trámites</td></tr>';
+}
+
+// ── BITÁCORA ──────────────────────────────────────────────────────
+let bitacoraData = [];
+async function loadBitacora() {
+  const data = await apiFetch('/tramites');
+  if (!data) return;
+  bitacoraData = data;
+  renderBitacora();
+}
+
+function renderBitacora() {
+  const search = (document.getElementById('b-search')?.value || '').toLowerCase();
+  const tipo = document.getElementById('b-tipo')?.value || '';
+  const estado = document.getElementById('b-estado')?.value || '';
+  const bc = { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' };
+  const filtered = bitacoraData.filter(t =>
+    (!search || t.numero.toLowerCase().includes(search) || t.cliente.toLowerCase().includes(search) || (t.bl||'').toLowerCase().includes(search) || (t.da||'').toLowerCase().includes(search)) &&
+    (!tipo || t.tipo === tipo) &&
+    (!estado || t.estado === estado)
+  );
+  const tbody = document.getElementById('bitacora-body');
+  if (!tbody) return;
+  tbody.innerHTML = filtered.length
+    ? filtered.map(t => `<tr>
+        <td><span class="row-link" onclick="openTramite('${t.id}')">${t.numero}</span></td>
+        <td>${t.cliente}</td>
+        <td>${t.tipo==='Importación'?'IMP':'EXP'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${t.bl||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${t.da||'—'}</td>
+        <td>${t.naviera||'—'}</td>
+        <td><span class="badge badge-${bc[t.estado]||'gray'}">${t.estado}</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin resultados</td></tr>';
+}
+
+// ── TRAMITE ───────────────────────────────────────────────────────
+async function openTramite(id) {
+  showNotif('Cargando trámite...');
+  currentTramiteId = id;
+  const data = await apiFetch('/tramites/' + id);
+  if (!data) return;
+  gastoData = data.gastos || [];
+  anticipoData = data.anticipos || [];
+  applyTramiteForm(data);
+  renderAll();
+  renderHistorial(data.historial || []);
+  pageTitles.tramite = 'Trámite ' + data.numero + ' · ' + data.cliente;
+  topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(data.estado) + '">' + data.estado + '</span>';
+  const estadoSel = document.getElementById('estado-select');
+  if (estadoSel) estadoSel.value = data.estado;
+  nav('tramite', document.getElementById('nav-tramite'));
+  setTab(document.querySelectorAll('#screen-tramite .tab')[1], 't-docs');
+}
+
+function badgeEstado(e) {
+  return { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' }[e] || 'gray';
+}
+
+async function newTramite() {
+  const numero = prompt('N° de trámite (ej: IMP-2026-043)');
+  if (!numero) return;
+  const cliente = prompt('Cliente') || '';
+  const tipo = confirm('¿Importación?\n(Cancelar = Exportación)') ? 'Importación' : 'Exportación';
+  const data = await apiFetch('/tramites', {
+    method: 'POST',
+    body: JSON.stringify({ numero, tipo, cliente })
+  });
+  if (!data || data.error) { showNotif(data?.error || 'Error al crear'); return; }
+  showNotif('Trámite creado');
+  loadBitacora();
+  openTramite(data.id);
+}
+
+async function saveTramiteForm() {
+  if (!currentTramiteId) { showNotif('No hay trámite abierto'); return; }
+  const form = readTramiteForm();
+  const res = await apiFetch('/tramites/' + currentTramiteId, {
+    method: 'PUT',
+    body: JSON.stringify({
+      numero: form.numero, tipo: form.operacion, cliente: form.cliente,
+      fecha_arribo: form.fechaApertura || null, bl: form.bl, naviera: form.naviera,
+      da: form.dai, factura_comercial: form.factCom,
+      factura_intraservice: form.factIntra, observaciones: form.obs,
+    })
+  });
+  if (res) { showNotif('Trámite guardado'); loadBitacora(); loadDashboard(); }
+}
+
+async function registrarCambioEstado() {
+  if (!currentTramiteId) return;
+  const estado = document.getElementById('estado-select').value;
+  const motivo = document.getElementById('estado-motivo').value;
+  const res = await apiFetch('/tramites/' + currentTramiteId + '/estado', {
+    method: 'PATCH',
+    body: JSON.stringify({ estado, motivo })
+  });
+  if (!res) return;
+  showNotif('Estado actualizado');
+  document.getElementById('estado-motivo').value = '';
+  topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(estado) + '">' + estado + '</span>';
+  document.getElementById('topbar-badge').innerHTML = topbarBadges.tramite;
+  const data = await apiFetch('/tramites/' + currentTramiteId);
+  if (data) renderHistorial(data.historial || []);
+  loadBitacora(); loadDashboard();
+}
+
+function renderHistorial(historial) {
+  const el = document.getElementById('tramite-historial');
+  if (!el) return;
+  if (!historial.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:14px">Sin historial</p>'; return; }
+  const dotColor = { Concluido:'green','Pendiente documentación':'red','En proceso':'amber' };
+  el.innerHTML = historial.map(h => `
+    <div class="audit-item">
+      <div class="audit-line"><div class="audit-dot ${dotColor[h.estado_nuevo]||''}"></div></div>
+      <div>
+        <div class="audit-text">Estado → <strong>${h.estado_nuevo}</strong>${h.motivo?' · '+h.motivo:''}</div>
+        <div class="audit-meta">${h.user_name||'—'} · ${fmtDate(h.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── AUDITORÍA ─────────────────────────────────────────────────────
+async function loadAuditoria() {
+  const data = await apiFetch('/auditoria');
+  if (!data) return;
+  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada' };
+  const dotC = { estado_cambiado:'green', gasto_agregado:'', documento_cargado:'', tramite_creado:'blue' };
+  const panel = document.querySelector('#screen-auditoria .panel');
+  if (!panel) return;
+  const title = panel.querySelector('.panel-title');
+  panel.innerHTML = '';
+  if (title) panel.appendChild(title);
+  if (!data.length) { panel.innerHTML += '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:20px">Sin actividad registrada</p>'; return; }
+  panel.innerHTML += data.map(a => `
+    <div class="audit-item">
+      <div class="audit-line"><div class="audit-dot ${dotC[a.accion]||''}"></div></div>
+      <div>
+        <div class="audit-text">${a.tramite_numero?`<strong style="font-family:'DM Mono',monospace;font-size:12px">${a.tramite_numero}</strong> · `:''}${labels[a.accion]||a.accion}</div>
+        <div class="audit-meta">${a.user_name||'—'} · ${fmtDate(a.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' });
+}
 
 const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" stroke="#1E4FBF" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" stroke="#1E4FBF" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" stroke="#1E4FBF" stroke-width=".7"/></svg>`;
 
-function totalGastos() { return gastoData.reduce((s,g) => s + g.monto, 0); }
-function totalAnticipos() { return anticipoData.reduce((s,a) => s + a.monto, 0); }
+function totalGastos() { return gastoData.reduce((s,g) => s + parseFloat(g.monto||0), 0); }
+function totalAnticipos() { return anticipoData.reduce((s,a) => s + parseFloat(a.monto||0), 0); }
+
+const gastoSaveTimers = {};
+function saveGastoField(id, field, value) {
+  const g = gastoData.find(g => g.id === id);
+  if (g) g[field] = field === 'monto' ? parseFloat(value)||0 : value;
+  renderAll();
+  clearTimeout(gastoSaveTimers[id]);
+  gastoSaveTimers[id] = setTimeout(() => {
+    const gasto = gastoData.find(g => g.id === id);
+    if (gasto && currentTramiteId) apiFetch('/tramites/'+currentTramiteId+'/gastos/'+id, { method:'PUT', body: JSON.stringify(gasto) });
+  }, 800);
+}
+
+const anticipoSaveTimers = {};
+function saveAnticipoField(id, field, value) {
+  const a = anticipoData.find(a => a.id === id);
+  if (a) a[field] = field === 'monto' ? parseFloat(value)||0 : value;
+  renderAll();
+  clearTimeout(anticipoSaveTimers[id]);
+  anticipoSaveTimers[id] = setTimeout(() => {
+    const ant = anticipoData.find(a => a.id === id);
+    if (ant && currentTramiteId) apiFetch('/tramites/'+currentTramiteId+'/anticipos/'+id, { method:'PUT', body: JSON.stringify(ant) });
+  }, 800);
+}
 
 function renderGastos() {
   const tbody = document.getElementById('gastos-body');
   tbody.innerHTML = '';
   let conDoc = 0;
-  gastoData.forEach((g, i) => {
-    if (g.doc) conDoc++;
+  const cats = ['Agente','Puerto','Transporte','Intraservice','Varios'];
+  gastoData.forEach(g => {
+    if (g.comprobante_url) conDoc++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="text" value="${g.concepto}" onchange="gastoData[${i}].concepto=this.value"></td>
-      <td><input type="text" value="${g.proveedor}" onchange="gastoData[${i}].proveedor=this.value"></td>
-      <td><input type="text" value="${g.factura}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="gastoData[${i}].factura=this.value"></td>
-      <td><input type="number" value="${g.monto.toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="gastoData[${i}].monto=parseFloat(this.value)||0;renderAll()"></td>
-      <td><select onchange="gastoData[${i}].cat=this.value">${['V/B Consolidadora','THC / Flete','BL destino','Almacenaje','Agente aduanas','Transporte','Reembolso','Otros'].map(c=>`<option${g.cat===c?' selected':''}>${c}</option>`).join('')}</select></td>
-      <td>${g.doc ? `<span class="doc-chip">${docIcon}${g.doc}</span>` : `<button class="btn btn-sm" onclick="attachGastoDoc(${i})">+ Adjuntar</button>`}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="removeGasto(${i})">✕</button></td>
+      <td><input type="text" value="${escHtml(g.concepto||'')}" onchange="saveGastoField('${g.id}','concepto',this.value)"></td>
+      <td><input type="text" value="${escHtml(g.proveedor||'')}" onchange="saveGastoField('${g.id}','proveedor',this.value)"></td>
+      <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
+      <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
+      <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
+      <td>${g.comprobante_url ? `<a class="doc-chip" href="${g.comprobante_url}" target="_blank">${docIcon}${g.comprobante_url.split('/').pop()}</a>` : `<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button>`}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeGasto('${g.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -1186,16 +1434,17 @@ function renderGastos() {
 function renderAnticipos() {
   const tbody = document.getElementById('anticipos-body');
   tbody.innerHTML = '';
-  anticipoData.forEach((a, i) => {
+  const formas = ['Transferencia','Depósito','Cheque','Efectivo','Otro'];
+  anticipoData.forEach(a => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="date" value="${a.fecha}" style="font-size:11px" onchange="anticipoData[${i}].fecha=this.value"></td>
-      <td><input type="text" value="${a.descripcion}" onchange="anticipoData[${i}].descripcion=this.value"></td>
-      <td><input type="text" value="${a.comprobante}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="anticipoData[${i}].comprobante=this.value"></td>
-      <td><input type="number" value="${a.monto.toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace;color:var(--green)" onchange="anticipoData[${i}].monto=parseFloat(this.value)||0;renderAll()"></td>
-      <td><select onchange="anticipoData[${i}].forma=this.value" style="font-size:11px">${['Transferencia','Depósito','Cheque','Efectivo','Otro'].map(f=>`<option${a.forma===f?' selected':''}>${f}</option>`).join('')}</select></td>
-      <td>${a.doc ? `<span class="doc-chip">${docIcon}${a.doc}</span>` : `<button class="btn btn-sm" onclick="attachAnticipoDoc(${i})">+ Adjuntar</button>`}</td>
-      <td><button class="btn btn-sm btn-danger" onclick="removeAnticipo(${i})">✕</button></td>
+      <td><input type="date" value="${a.fecha?.split('T')[0]||''}" style="font-size:11px" onchange="saveAnticipoField('${a.id}','fecha',this.value)"></td>
+      <td><input type="text" value="${escHtml(a.descripcion||'')}" onchange="saveAnticipoField('${a.id}','descripcion',this.value)"></td>
+      <td><input type="text" value="${escHtml(a.n_comprobante||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveAnticipoField('${a.id}','n_comprobante',this.value)"></td>
+      <td><input type="number" value="${parseFloat(a.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace;color:var(--green)" onchange="saveAnticipoField('${a.id}','monto',this.value)"></td>
+      <td><select onchange="saveAnticipoField('${a.id}','forma_pago',this.value)" style="font-size:11px">${formas.map(f=>`<option${a.forma_pago===f?' selected':''}>${f}</option>`).join('')}</select></td>
+      <td>${a.documento_url ? `<a class="doc-chip" href="${a.documento_url}" target="_blank">${docIcon}${a.documento_url.split('/').pop()}</a>` : `<button class="btn btn-sm" onclick="attachAnticipoDoc('${a.id}')">+ Adjuntar</button>`}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeAnticipo('${a.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -1211,11 +1460,11 @@ function renderLiqAnticipos() {
   anticipoData.forEach(a => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-size:11px;color:var(--text-2)">${a.fecha}</td>
-      <td style="font-size:12px">${a.descripcion}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--green)">$${a.monto.toFixed(2)}</td>
-      <td>${a.doc ? `<span class="doc-chip" style="font-size:10px">${docIcon}${a.doc}</span>` : `<span style="font-size:11px;color:var(--amber)">Sin doc.</span>`}</td>
+      <td style="font-size:11px;color:var(--text-2)">${(a.fecha||'').split('T')[0]}</td>
+      <td style="font-size:12px">${a.descripcion||''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma_pago||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--green)">$${parseFloat(a.monto||0).toFixed(2)}</td>
+      <td>${a.documento_url ? `<a class="doc-chip" style="font-size:10px" href="${a.documento_url}" target="_blank">${docIcon}doc</a>` : `<span style="font-size:11px;color:var(--amber)">Sin doc.</span>`}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1263,10 +1512,10 @@ function renderTabLiquidacion() {
   if (gb) {
     gb.innerHTML = gastoData.map(g => `
       <tr>
-        <td>${g.concepto}</td>
-        <td style="font-size:12px;color:var(--text-2)">${g.proveedor}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:11px">${g.factura}</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace">$${g.monto.toFixed(2)}</td>
+        <td>${g.concepto||''}</td>
+        <td style="font-size:12px;color:var(--text-2)">${g.proveedor||''}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${g.n_factura||''}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace">$${parseFloat(g.monto||0).toFixed(2)}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${g.monto.toFixed(2)}</td>
@@ -1281,10 +1530,10 @@ function renderTabLiquidacion() {
   if (ab) {
     ab.innerHTML = anticipoData.map(a => `
       <tr>
-        <td style="font-size:11px;color:var(--text-3)">${a.fecha}</td>
-        <td style="font-size:12px">${a.descripcion}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma}</td>
-        <td style="font-family:'DM Mono',monospace;color:var(--green)">$${a.monto.toFixed(2)}</td>
+        <td style="font-size:11px;color:var(--text-3)">${(a.fecha||'').split('T')[0]}</td>
+        <td style="font-size:12px">${a.descripcion||''}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">${a.forma_pago||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--green)">$${parseFloat(a.monto||0).toFixed(2)}</td>
       </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:10px;font-size:11px">Sin anticipos</td></tr>';
     set('tl-ta-footer', '$' + ta.toFixed(2));
   }
@@ -1302,40 +1551,100 @@ function renderAll() {
   renderLiqAnticipos();
   renderCustomProps();
   renderTabLiquidacion();
-  saveState();
 }
 
-function addGasto() {
-  gastoData.push({concepto:'Nuevo concepto', proveedor:'', factura:'', monto:0, cat:'Varios', doc:null});
+async function addGasto() {
+  if (!currentTramiteId) { showNotif('Abre un trámite primero'); return; }
+  const data = await apiFetch('/tramites/'+currentTramiteId+'/gastos', {
+    method:'POST', body: JSON.stringify({ concepto:'Nuevo concepto', monto:0, categoria:'Varios' })
+  });
+  if (!data || data.error) return;
+  gastoData.push(data);
   renderAll();
 }
-function removeGasto(i) {
-  gastoData.splice(i, 1);
+
+async function removeGasto(id) {
+  if (!currentTramiteId) return;
+  await apiFetch('/tramites/'+currentTramiteId+'/gastos/'+id, { method:'DELETE' });
+  gastoData = gastoData.filter(g => g.id !== id);
   renderAll();
   showNotif('Gasto eliminado');
 }
-function attachGastoDoc(i) {
-  const nombres = ['comprobante','factura','recibo','voucher','nota'];
-  gastoData[i].doc = nombres[i % nombres.length] + '_gasto_' + (i+1) + '.pdf';
-  renderAll();
-  showNotif('Comprobante adjuntado al gasto');
+
+async function attachGastoDoc(id) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5*1024*1024) { showNotif('Máximo 5MB'); return; }
+    const g = gastoData.find(g => g.id === id);
+    const fd = new FormData();
+    fd.append('concepto', g?.concepto||'');
+    fd.append('monto', g?.monto||0);
+    fd.append('categoria', g?.categoria||'Varios');
+    if (g?.proveedor) fd.append('proveedor', g.proveedor);
+    if (g?.n_factura) fd.append('n_factura', g.n_factura);
+    fd.append('comprobante', file);
+    const res = await fetch(API_URL+'/tramites/'+currentTramiteId+'/gastos/'+id, {
+      method:'PUT', headers:{Authorization:'Bearer '+getToken()}, body:fd
+    });
+    if (res.status === 401) { logout(); return; }
+    const updated = await res.json();
+    const idx = gastoData.findIndex(g => g.id === id);
+    if (idx >= 0) gastoData[idx] = updated;
+    renderAll();
+    showNotif('Comprobante adjuntado');
+  };
+  input.click();
 }
 
-function addAnticipo() {
+async function addAnticipo() {
+  if (!currentTramiteId) { showNotif('Abre un trámite primero'); return; }
   const today = new Date().toISOString().split('T')[0];
-  anticipoData.push({fecha:today, descripcion:'Nuevo anticipo', comprobante:'', monto:0, forma:'Transferencia', doc:null});
+  const data = await apiFetch('/tramites/'+currentTramiteId+'/anticipos', {
+    method:'POST', body: JSON.stringify({ fecha:today, descripcion:'Nuevo anticipo', monto:0, forma_pago:'Transferencia' })
+  });
+  if (!data || data.error) return;
+  anticipoData.push(data);
   renderAll();
   showNotif('Anticipo agregado');
 }
-function removeAnticipo(i) {
-  anticipoData.splice(i, 1);
+
+async function removeAnticipo(id) {
+  if (!currentTramiteId) return;
+  await apiFetch('/tramites/'+currentTramiteId+'/anticipos/'+id, { method:'DELETE' });
+  anticipoData = anticipoData.filter(a => a.id !== id);
   renderAll();
   showNotif('Anticipo eliminado');
 }
-function attachAnticipoDoc(i) {
-  anticipoData[i].doc = 'respaldo_anticipo_' + (i+1) + '.pdf';
-  renderAll();
-  showNotif('Documento de respaldo adjuntado al anticipo');
+
+async function attachAnticipoDoc(id) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5*1024*1024) { showNotif('Máximo 5MB'); return; }
+    const a = anticipoData.find(a => a.id === id);
+    const fd = new FormData();
+    fd.append('fecha', a?.fecha||new Date().toISOString().split('T')[0]);
+    fd.append('descripcion', a?.descripcion||'');
+    fd.append('monto', a?.monto||0);
+    fd.append('forma_pago', a?.forma_pago||'Transferencia');
+    if (a?.n_comprobante) fd.append('n_comprobante', a.n_comprobante);
+    fd.append('documento', file);
+    const res = await fetch(API_URL+'/tramites/'+currentTramiteId+'/anticipos/'+id, {
+      method:'PUT', headers:{Authorization:'Bearer '+getToken()}, body:fd
+    });
+    if (res.status === 401) { logout(); return; }
+    const updated = await res.json();
+    const idx = anticipoData.findIndex(a => a.id === id);
+    if (idx >= 0) anticipoData[idx] = updated;
+    renderAll();
+    showNotif('Documento adjuntado');
+  };
+  input.click();
 }
 
 // ── MERCADERÍA IMPORTADA — registro reutilizable ──────────────────
@@ -1626,9 +1935,6 @@ function resetReporteFilters() {
   setReportePeriodo('ytd');
 }
 // ── PERSISTENCIA LOCAL ────────────────────────────────────────────
-const LS_KEY = 'intraservice_v1';
-let stateReady = false;
-
 function readTramiteForm() {
   const form = {};
   document.querySelectorAll('#t-datos [data-field]').forEach(el => {
@@ -1637,49 +1943,26 @@ function readTramiteForm() {
   return form;
 }
 
-function applyTramiteForm(form) {
-  if (!form) return;
-  document.querySelectorAll('#t-datos [data-field]').forEach(el => {
-    if (form[el.dataset.field] !== undefined) el.value = form[el.dataset.field];
-  });
-}
-
-function saveState() {
-  if (!stateReady) return;
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      gastoData,
-      anticipoData,
-      customProps,
-      customPropTemplates,
-      mercaderiaRegistry,
-      tramiteForm: readTramiteForm(),
-    }));
-  } catch(e) {}
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    const restore = (arr, src) => { if (src?.length) arr.splice(0, arr.length, ...src); };
-    restore(gastoData, s.gastoData);
-    restore(anticipoData, s.anticipoData);
-    restore(customProps, s.customProps);
-    restore(customPropTemplates, s.customPropTemplates);
-    restore(mercaderiaRegistry, s.mercaderiaRegistry);
-    applyTramiteForm(s.tramiteForm);
-  } catch(e) {}
+function applyTramiteForm(data) {
+  if (!data) return;
+  const set = (field, val) => {
+    const el = document.querySelector('#t-datos [data-field="'+field+'"]');
+    if (el && val !== undefined && val !== null) el.value = val;
+  };
+  set('numero', data.numero);
+  set('operacion', data.tipo);
+  set('cliente', data.cliente);
+  set('fechaApertura', data.fecha_arribo ? data.fecha_arribo.split('T')[0] : '');
+  set('bl', data.bl);
+  set('naviera', data.naviera);
+  set('dai', data.da);
+  set('factCom', data.factura_comercial);
+  set('factIntra', data.factura_intraservice);
+  set('obs', data.observaciones);
 }
 
 function discardChanges() {
-  stateReady = false;
-  loadState();
-  renderAll();
-  updateMercaderiaDatalist();
-  updatePropTemplatesDatalist();
-  stateReady = true;
+  if (currentTramiteId) openTramite(currentTramiteId);
   showNotif('Cambios descartados');
 }
 // ─────────────────────────────────────────────────────────────────
@@ -1704,6 +1987,9 @@ function nav(id, el) {
   document.getElementById('page-title').textContent = pageTitles[id] || id;
   document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
   if (id === 'reportes') renderReportes();
+  if (id === 'auditoria') loadAuditoria();
+  if (id === 'dashboard') loadDashboard();
+  if (id === 'bitacora') loadBitacora();
 }
 
 function setTab(el, targetId) {
@@ -1724,11 +2010,24 @@ function showNotif(msg) {
   notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
-loadState();
-renderAll();
+// ── BOOT ──────────────────────────────────────────────────────────
 updatePresetButtons();
 updateMercaderiaDatalist();
-stateReady = true;
+
+(function boot() {
+  const token = getToken();
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp * 1000 < Date.now()) { logout(); return; }
+      currentUser = { id: payload.id, email: payload.email, name: payload.name, initials: payload.initials, role: payload.role };
+      document.getElementById('login-overlay').style.display = 'none';
+      initApp();
+    } catch(e) { logout(); }
+  } else {
+    document.getElementById('login-overlay').style.display = 'flex';
+  }
+})();
 </script>
 </body>
 </html>
