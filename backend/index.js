@@ -3,6 +3,14 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const { UPLOADS_DIR } = require('./lib/storage')
+const db = require('./db')
+
+// Run pending migrations at startup (idempotent)
+db.query(`
+  ALTER TABLE tramites DROP CONSTRAINT IF EXISTS tramites_tipo_check;
+  ALTER TABLE tramites ADD CONSTRAINT tramites_tipo_check
+    CHECK (tipo IN ('Importación', 'Exportación', 'Otro'));
+`).then(() => console.log('Migrations OK')).catch(e => console.error('Migration error:', e.message))
 
 const app = express()
 app.use(cors())
