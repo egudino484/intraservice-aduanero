@@ -37,13 +37,18 @@ router.post('/', auth, adminOnly, async (req, res) => {
 
 // PATCH /users/:id
 router.patch('/:id', auth, adminOnly, async (req, res) => {
-  const { role, active } = req.body
+  const { role, active, password } = req.body
   try {
     const fields = []
     const vals = []
     let i = 1
     if (role !== undefined) { fields.push(`role=$${i++}`); vals.push(role) }
     if (active !== undefined) { fields.push(`active=$${i++}`); vals.push(active) }
+    if (password !== undefined) {
+      if (password.length < 6) return res.status(400).json({ error: 'Contraseña mínimo 6 caracteres' })
+      const hash = await bcrypt.hash(password, 10)
+      fields.push(`password_hash=$${i++}`); vals.push(hash)
+    }
     if (!fields.length) return res.status(400).json({ error: 'Nada que actualizar' })
     vals.push(req.params.id)
     const { rows } = await db.query(

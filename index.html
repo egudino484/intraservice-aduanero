@@ -643,6 +643,20 @@
             <button class="btn btn-sm btn-primary" onclick="showNewUserForm()">+ Nuevo usuario</button>
           </div>
 
+          <!-- FORM CAMBIAR CONTRASEÑA -->
+          <div id="change-pass-form" style="display:none;background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Cambiar contraseña de <span id="cp-user-name" style="color:var(--blue)"></span></div>
+            <div class="field-row">
+              <div class="field"><label>Nueva contraseña</label><input id="cp-pass" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
+              <div class="field"><label>Confirmar contraseña</label><input id="cp-pass2" type="password" placeholder="Repetir contraseña" autocomplete="new-password"></div>
+            </div>
+            <div id="cp-error" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:14px"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="saveChangePass()">Guardar contraseña</button>
+              <button class="btn btn-ghost btn-sm" onclick="hideChangePassForm()">Cancelar</button>
+            </div>
+          </div>
+
           <!-- FORM NUEVO USUARIO -->
           <div id="new-user-form" style="display:none;background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:16px">
             <div class="field-row-3" style="margin-bottom:12px">

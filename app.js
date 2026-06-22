@@ -291,6 +291,7 @@ async function loadUsuarios() {
     const accionBtn = (u.id === meId)
       ? '<span style="font-size:11px;color:var(--text-3)">Tú</span>'
       : `<button class="btn btn-sm ${u.active ? 'btn-danger' : 'btn-ghost'}" onclick="toggleUserActive('${u.id}',${!u.active})">${u.active ? 'Desactivar' : 'Activar'}</button>`;
+    const claveBtn = `<button class="btn btn-sm btn-ghost" onclick="showChangePassForm('${u.id}','${escHtml(u.name)}')">Cambiar clave</button>`;
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
@@ -308,7 +309,7 @@ async function loadUsuarios() {
       </td>
       <td><span class="badge ${activeBadge}">${activeLabel}</span></td>
       <td style="font-size:11px;color:var(--text-3)">${fmtDate(u.created_at)}</td>
-      <td>${accionBtn}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">${claveBtn}${accionBtn}</td>
     </tr>`;
   });
   tbody.innerHTML = rows.join('');
@@ -325,8 +326,44 @@ async function toggleUserActive(id, active) {
   loadUsuarios();
 }
 
+let changePassUserId = null;
+
+function showChangePassForm(id, name) {
+  changePassUserId = id;
+  document.getElementById('cp-user-name').textContent = name;
+  document.getElementById('cp-pass').value = '';
+  document.getElementById('cp-pass2').value = '';
+  document.getElementById('cp-error').textContent = '';
+  document.getElementById('change-pass-form').style.display = 'block';
+  document.getElementById('new-user-form').style.display = 'none';
+  document.getElementById('cp-pass').focus();
+}
+
+function hideChangePassForm() {
+  changePassUserId = null;
+  document.getElementById('change-pass-form').style.display = 'none';
+}
+
+async function saveChangePass() {
+  const pass = document.getElementById('cp-pass').value;
+  const pass2 = document.getElementById('cp-pass2').value;
+  const errEl = document.getElementById('cp-error');
+  errEl.textContent = '';
+  if (!pass) { errEl.textContent = 'Ingresa la nueva contraseña'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Mínimo 6 caracteres'; return; }
+  if (pass !== pass2) { errEl.textContent = 'Las contraseñas no coinciden'; return; }
+  const res = await apiFetch('/users/' + changePassUserId, { method: 'PATCH', body: JSON.stringify({ password: pass }) });
+  if (res && !res.error) {
+    showNotif('Contraseña actualizada');
+    hideChangePassForm();
+  } else {
+    errEl.textContent = res?.error || 'Error al actualizar';
+  }
+}
+
 function showNewUserForm() {
   document.getElementById('new-user-form').style.display = 'block';
+  document.getElementById('change-pass-form').style.display = 'none';
   document.getElementById('nu-name').focus();
 }
 
