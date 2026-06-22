@@ -2,6 +2,6 @@
   "name": "sistema-aduanero-intraservice",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx serve . -p ${PORT:-3000}"
+    "start": "node backend/index.js"
   }
 }

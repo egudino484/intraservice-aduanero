@@ -19,5 +19,9 @@ app.use('/users',                         require('./routes/users'))
 
 app.get('/health', (_, res) => res.json({ ok: true }))
 
+// Serve frontend for all non-API routes
+app.use(express.static(path.join(__dirname, '..')))
+app.get('*', (_, res) => res.sendFile(path.join(__dirname, '../index.html')))
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`API corriendo en puerto ${PORT}`))
