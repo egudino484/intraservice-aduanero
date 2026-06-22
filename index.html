@@ -1434,7 +1434,12 @@ async function loadUsuarios() {
     </tr>`;
   });
   tbody.innerHTML = rows.join('');
+  const screen = document.getElementById('screen-usuarios');
+  const rect = screen ? screen.getBoundingClientRect() : null;
   console.log('[loadUsuarios] rows escritas:', rows.length);
+  console.log('[loadUsuarios] screen rect:', rect);
+  console.log('[loadUsuarios] screen display:', screen ? getComputedStyle(screen).display : 'N/A');
+  console.log('[loadUsuarios] panel visible:', document.querySelector('#screen-usuarios .panel') ? getComputedStyle(document.querySelector('#screen-usuarios .panel')).display : 'N/A');
 }
 
 async function updateUser(id, changes) {
