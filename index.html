@@ -152,7 +152,7 @@
 
   /* ── SCREENS ── */
   .screen { display: none; animation: fadeIn 0.2s ease; }
-  .screen.active { display: block; }
+  .screen.active { display: block !important; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
   /* ── BUTTONS ── */
@@ -1396,7 +1396,9 @@ function renderHistorial(historial) {
 
 // ── USUARIOS ──────────────────────────────────────────────────────
 async function loadUsuarios() {
+  console.log('[loadUsuarios] inicio');
   const data = await apiFetch('/users');
+  console.log('[loadUsuarios] data:', data);
   if (!data) return;
   const tbody = document.getElementById('usuarios-body');
   if (!tbody) return;
@@ -1432,6 +1434,7 @@ async function loadUsuarios() {
     </tr>`;
   });
   tbody.innerHTML = rows.join('');
+  console.log('[loadUsuarios] rows escritas:', rows.length);
 }
 
 async function updateUser(id, changes) {
