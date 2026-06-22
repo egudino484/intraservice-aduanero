@@ -1435,11 +1435,13 @@ async function loadUsuarios() {
   });
   tbody.innerHTML = rows.join('');
   const screen = document.getElementById('screen-usuarios');
-  const rect = screen ? screen.getBoundingClientRect() : null;
+  const content = document.querySelector('.content');
+  const main = document.querySelector('.main');
   console.log('[loadUsuarios] rows escritas:', rows.length);
-  console.log('[loadUsuarios] screen rect:', rect);
-  console.log('[loadUsuarios] screen display:', screen ? getComputedStyle(screen).display : 'N/A');
-  console.log('[loadUsuarios] panel visible:', document.querySelector('#screen-usuarios .panel') ? getComputedStyle(document.querySelector('#screen-usuarios .panel')).display : 'N/A');
+  console.log('[loadUsuarios] screen rect:', screen?.getBoundingClientRect());
+  console.log('[loadUsuarios] content rect:', content?.getBoundingClientRect());
+  console.log('[loadUsuarios] main rect:', main?.getBoundingClientRect());
+  console.log('[loadUsuarios] screen parentElement:', screen?.parentElement?.className);
 }
 
 async function updateUser(id, changes) {
