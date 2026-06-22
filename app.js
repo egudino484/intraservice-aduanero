@@ -4,8 +4,8 @@ const API_URL = '';
 // ── STATE ─────────────────────────────────────────────────────────
 let currentUser = null;
 let currentTramiteId = null;
-let gastoData = [
-];
+let creatingMode = false;
+let gastoData = [];
 let anticipoData = [];
 
 // ── AUTH ──────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ function logout() {
   localStorage.removeItem('sa_token');
   currentUser = null;
   gastoData = []; anticipoData = []; currentTramiteId = null;
+  const navTramite = document.getElementById('nav-tramite');
+  if (navTramite) navTramite.style.display = 'none';
   document.getElementById('login-overlay').style.display = 'flex';
 }
 
@@ -129,6 +131,7 @@ function renderBitacora() {
 
 // ── TRAMITE ───────────────────────────────────────────────────────
 async function openTramite(id) {
+  exitCreatingMode();
   showNotif('Cargando trámite...');
   currentTramiteId = id;
   const data = await apiFetch('/tramites/' + id);
@@ -142,7 +145,9 @@ async function openTramite(id) {
   topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(data.estado) + '">' + data.estado + '</span>';
   const estadoSel = document.getElementById('estado-select');
   if (estadoSel) estadoSel.value = data.estado;
-  nav('tramite', document.getElementById('nav-tramite'));
+  const navTramite = document.getElementById('nav-tramite');
+  if (navTramite) navTramite.style.display = '';
+  nav('tramite', navTramite);
   setTab(document.querySelectorAll('#screen-tramite .tab')[1], 't-docs');
 }
 
@@ -150,24 +155,64 @@ function badgeEstado(e) {
   return { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' }[e] || 'gray';
 }
 
-async function newTramite() {
-  const numero = prompt('N° de trámite (ej: IMP-2026-043)');
-  if (!numero) return;
-  const cliente = prompt('Cliente') || '';
-  const tipo = confirm('¿Importación?\n(Cancelar = Exportación)') ? 'Importación' : 'Exportación';
-  const data = await apiFetch('/tramites', {
-    method: 'POST',
-    body: JSON.stringify({ numero, tipo, cliente })
+function exitCreatingMode() {
+  creatingMode = false;
+  const numEl = document.querySelector('[data-field="numero"]');
+  if (numEl) numEl.setAttribute('readonly', '');
+  ['tab-docs', 'tab-estado', 'tab-liquidacion'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
   });
-  if (!data || data.error) { showNotif(data?.error || 'Error al crear'); return; }
-  showNotif('Trámite creado');
-  loadBitacora();
-  openTramite(data.id);
+  const saveBtn = document.querySelector('#t-datos .section-actions .btn-primary');
+  if (saveBtn) saveBtn.textContent = 'Guardar cambios';
+}
+
+function newTramiteUI() {
+  creatingMode = true;
+  currentTramiteId = null;
+  gastoData = []; anticipoData = [];
+  document.querySelectorAll('#t-datos [data-field]').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  const numEl = document.querySelector('[data-field="numero"]');
+  if (numEl) numEl.removeAttribute('readonly');
+  ['tab-docs', 'tab-estado', 'tab-liquidacion'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const datosTab = document.getElementById('tab-datos');
+  if (datosTab) setTab(datosTab, 't-datos');
+  const saveBtn = document.querySelector('#t-datos .section-actions .btn-primary');
+  if (saveBtn) saveBtn.textContent = 'Crear trámite';
+  pageTitles.tramite = 'Nuevo trámite';
+  topbarBadges.tramite = '';
+  const navTramite = document.getElementById('nav-tramite');
+  if (navTramite) navTramite.style.display = '';
+  nav('tramite', navTramite);
 }
 
 async function saveTramiteForm() {
-  if (!currentTramiteId) { showNotif('No hay trámite abierto'); return; }
   const form = readTramiteForm();
+  if (creatingMode) {
+    if (!form.numero || !form.cliente) { showNotif('N° trámite y cliente son requeridos'); return; }
+    const res = await apiFetch('/tramites', {
+      method: 'POST',
+      body: JSON.stringify({
+        numero: form.numero, tipo: form.operacion || 'Importación',
+        cliente: form.cliente, fecha_arribo: form.fechaApertura || null,
+        bl: form.bl, naviera: form.naviera, da: form.dai,
+        factura_comercial: form.factCom, factura_intraservice: form.factIntra,
+        observaciones: form.obs,
+      })
+    });
+    if (!res || res.error) { showNotif(res?.error || 'Error al crear'); return; }
+    showNotif('Trámite creado');
+    loadBitacora(); loadDashboard();
+    openTramite(res.id);
+    return;
+  }
+  if (!currentTramiteId) { showNotif('No hay trámite abierto'); return; }
   const res = await apiFetch('/tramites/' + currentTramiteId, {
     method: 'PUT',
     body: JSON.stringify({
@@ -911,6 +956,13 @@ function applyTramiteForm(data) {
 }
 
 function discardChanges() {
+  if (creatingMode) {
+    exitCreatingMode();
+    const navTramite = document.getElementById('nav-tramite');
+    if (navTramite && !currentTramiteId) navTramite.style.display = 'none';
+    nav('bitacora', document.getElementById('nav-bitacora'));
+    return;
+  }
   if (currentTramiteId) openTramite(currentTramiteId);
   showNotif('Cambios descartados');
 }
@@ -929,6 +981,10 @@ const topbarBadges = {
 };
 
 function nav(id, el) {
+  if (id === 'tramite' && !currentTramiteId && !creatingMode) {
+    showNotif('Selecciona un trámite desde la Bitácora');
+    return nav('bitacora', document.getElementById('nav-bitacora'));
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));

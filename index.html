@@ -58,7 +58,7 @@
       <svg viewBox="0 0 15 15" fill="none"><rect x="2" y="1" width="11" height="13" rx="1.5" stroke="currentColor" stroke-width="1.2"/><line x1="4.5" y1="5" x2="10.5" y2="5" stroke="currentColor" stroke-width="1"/><line x1="4.5" y1="7.5" x2="10.5" y2="7.5" stroke="currentColor" stroke-width="1"/><line x1="4.5" y1="10" x2="8" y2="10" stroke="currentColor" stroke-width="1"/></svg>
       Bitácora
     </div>
-    <div class="nav-item active" id="nav-tramite" onclick="nav('tramite',this)">
+    <div class="nav-item" id="nav-tramite" style="display:none" onclick="nav('tramite',this)">
       <svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.2"/><line x1="7.5" y1="4.5" x2="7.5" y2="7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="7.5" y1="7.5" x2="10" y2="9.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
       Detalle trámite
     </div>
@@ -96,9 +96,7 @@
         <h2 id="page-title">Detalle del trámite</h2>
         <span id="topbar-badge"></span>
       </div>
-      <div class="topbar-right" id="topbar-actions">
-        <button class="btn btn-primary" onclick="newTramite()">+ Nuevo trámite</button>
-      </div>
+      <div class="topbar-right" id="topbar-actions"></div>
     </div>
 
     <div class="content">
@@ -132,6 +130,7 @@
           <input id="b-search" class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL..." oninput="renderBitacora()">
           <select id="b-tipo" class="filter-select" onchange="renderBitacora()"><option value="">Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
           <select id="b-estado" class="filter-select" onchange="renderBitacora()"><option value="">Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente documentación</option><option>Cancelado</option></select>
+          <button class="btn btn-primary btn-sm" onclick="newTramiteUI()">+ Nuevo trámite</button>
         </div>
         <div class="panel" style="padding:0;overflow:hidden">
           <table>
@@ -146,10 +145,10 @@
       <!-- ══ TRÁMITE ══ -->
       <div class="screen active" id="screen-tramite">
         <div class="tabs">
-          <div class="tab" onclick="setTab(this,'t-datos')">Datos del trámite</div>
-          <div class="tab active" onclick="setTab(this,'t-docs')">Documentos y gastos</div>
-          <div class="tab" onclick="setTab(this,'t-estado')">Estado y auditoría</div>
-          <div class="tab" onclick="setTab(this,'t-liquidacion')">Liquidación</div>
+          <div class="tab" id="tab-datos" onclick="setTab(this,'t-datos')">Datos del trámite</div>
+          <div class="tab active" id="tab-docs" onclick="setTab(this,'t-docs')">Documentos y gastos</div>
+          <div class="tab" id="tab-estado" onclick="setTab(this,'t-estado')">Estado y auditoría</div>
+          <div class="tab" id="tab-liquidacion" onclick="setTab(this,'t-liquidacion')">Liquidación</div>
         </div>
 
         <!-- TAB DATOS -->
