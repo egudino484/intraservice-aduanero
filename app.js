@@ -565,7 +565,7 @@ function renderTabLiquidacion() {
         <td style="text-align:right;font-family:'DM Mono',monospace">$${parseFloat(g.monto||0).toFixed(2)}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${g.monto.toFixed(2)}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${parseFloat(g.monto||0).toFixed(2)}</td>
       </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:12px;font-size:12px">Sin gastos registrados</td></tr>';
     set('tl-subtotal-f', '$' + tg.toFixed(2));
     set('tl-iva-f', '$0.00');
