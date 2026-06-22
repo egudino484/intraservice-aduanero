@@ -464,7 +464,10 @@ function renderGastos() {
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
       <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
-      <td>${g.comprobante_url ? `<a class="doc-chip" href="${g.comprobante_url}" target="_blank">${docIcon}${g.comprobante_url.split('/').pop()}</a>` : `<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button>`}</td>
+      <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${g.comprobante_url
+        ? `<span class="doc-chip" onclick="openPreview('${g.comprobante_url}','${escHtml(g.comprobante_url.split('/').pop())}')" style="cursor:pointer" title="Ver archivo">${docIcon}comprobante</span><a href="${g.comprobante_url}" download class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:11px" title="Descargar">↓</a>`
+        : `<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button>`
+      }</td>
       <td><button class="btn btn-sm btn-danger" onclick="removeGasto('${g.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -490,7 +493,10 @@ function renderAnticipos() {
       <td><input type="text" value="${escHtml(a.n_comprobante||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveAnticipoField('${a.id}','n_comprobante',this.value)"></td>
       <td><input type="number" value="${parseFloat(a.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace;color:var(--green)" onchange="saveAnticipoField('${a.id}','monto',this.value)"></td>
       <td><select onchange="saveAnticipoField('${a.id}','forma_pago',this.value)" style="font-size:11px">${formas.map(f=>`<option${a.forma_pago===f?' selected':''}>${f}</option>`).join('')}</select></td>
-      <td>${a.documento_url ? `<a class="doc-chip" href="${a.documento_url}" target="_blank">${docIcon}${a.documento_url.split('/').pop()}</a>` : `<button class="btn btn-sm" onclick="attachAnticipoDoc('${a.id}')">+ Adjuntar</button>`}</td>
+      <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${a.documento_url
+        ? `<span class="doc-chip" onclick="openPreview('${a.documento_url}','${escHtml(a.documento_url.split('/').pop())}')" style="cursor:pointer" title="Ver archivo">${docIcon}documento</span><a href="${a.documento_url}" download class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:11px" title="Descargar">↓</a>`
+        : `<button class="btn btn-sm" onclick="attachAnticipoDoc('${a.id}')">+ Adjuntar</button>`
+      }</td>
       <td><button class="btn btn-sm btn-danger" onclick="removeAnticipo('${a.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -1135,9 +1141,10 @@ function renderDocumentos() {
   el.innerHTML = documentoData.map(d => `
     <div class="doc-item">
       <div class="doc-icon">${docSvg}</div>
-      <div class="doc-name"><a href="${d.file_url}" target="_blank" style="color:var(--blue);text-decoration:none">${escHtml(d.nombre)}</a></div>
+      <div class="doc-name" style="cursor:pointer;color:var(--blue)" onclick="openPreview('${d.file_url}','${escHtml(d.nombre)}')">${escHtml(d.nombre)}</div>
       <div class="doc-meta">${d.tipo||'Otro'} · ${d.size_bytes ? Math.round(d.size_bytes/1024)+' KB' : ''} · ${fmtDate(d.created_at)}</div>
-      <button class="btn btn-sm btn-ghost" onclick="window.open('${d.file_url}','_blank')">Ver</button>
+      <button class="btn btn-sm btn-ghost" onclick="openPreview('${d.file_url}','${escHtml(d.nombre)}')">Vista previa</button>
+      <a href="${d.file_url}" download="${escHtml(d.nombre)}" class="btn btn-sm btn-ghost">↓ Descargar</a>
       <button class="btn btn-sm btn-danger" onclick="deleteDocumento('${d.id}')">✕</button>
     </div>`).join('');
 }
@@ -1178,6 +1185,34 @@ async function deleteDocumento(id) {
   renderDocumentos();
   showNotif('Documento eliminado');
 }
+
+// ── PREVIEW MODAL ─────────────────────────────────────────────────
+function openPreview(url, name) {
+  const modal = document.getElementById('preview-modal');
+  const content = document.getElementById('preview-content');
+  const displayName = name || url.split('/').pop();
+  document.getElementById('preview-filename').textContent = displayName;
+  const dl = document.getElementById('preview-download-btn');
+  dl.href = url;
+  dl.download = displayName;
+  const ext = url.split('.').pop().split('?')[0].toLowerCase();
+  const isImg = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
+  if (isImg) {
+    content.innerHTML = `<img src="${url}" style="max-width:100%;max-height:80vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,0.6)">`;
+  } else if (ext === 'pdf') {
+    content.innerHTML = `<iframe src="${url}" style="width:min(960px,90vw);height:80vh;border:none;border-radius:6px;background:#fff"></iframe>`;
+  } else {
+    content.innerHTML = `<div style="text-align:center;color:rgba(255,255,255,0.8);padding:40px"><p style="font-size:14px;margin-bottom:16px">Sin vista previa para este tipo de archivo</p><a href="${url}" target="_blank" class="btn btn-primary">Abrir en nueva pestaña</a></div>`;
+  }
+  modal.style.display = 'flex';
+}
+
+function closePreview() {
+  document.getElementById('preview-modal').style.display = 'none';
+  document.getElementById('preview-content').innerHTML = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
 
 // ── BOOT ──────────────────────────────────────────────────────────
 updatePresetButtons();

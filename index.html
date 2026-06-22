@@ -713,6 +713,18 @@
   </div>
 </div>
 
+<!-- PREVIEW MODAL -->
+<div id="preview-modal" onclick="closePreview()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.88);flex-direction:column">
+  <div onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
+    <span id="preview-filename" style="font-weight:500;font-size:13px;font-family:'DM Mono',monospace;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)"></span>
+    <div style="display:flex;gap:8px">
+      <a id="preview-download-btn" class="btn btn-sm btn-primary" download>↓ Descargar</a>
+      <button class="btn btn-sm btn-ghost" onclick="closePreview()">✕ Cerrar</button>
+    </div>
+  </div>
+  <div id="preview-content" onclick="event.stopPropagation()" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:20px;min-height:0"></div>
+</div>
+
 <!-- NOTIFICATION -->
 <div class="notif" id="notif"></div>
 
