@@ -1398,14 +1398,23 @@ function renderHistorial(historial) {
 async function loadUsuarios() {
   const data = await apiFetch('/users');
   if (!data) return;
-  const roles = { admin:'Administrador', operador:'Operador', visor:'Visor' };
   const tbody = document.getElementById('usuarios-body');
   if (!tbody) return;
-  tbody.innerHTML = data.map(u => `
-    <tr>
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin usuarios</td></tr>';
+    return;
+  }
+  const meId = currentUser ? currentUser.id : null;
+  const rows = data.map(u => {
+    const activeBadge = u.active ? 'badge-green' : 'badge-gray';
+    const activeLabel = u.active ? 'Activo' : 'Inactivo';
+    const accionBtn = (u.id === meId)
+      ? '<span style="font-size:11px;color:var(--text-3)">Tú</span>'
+      : `<button class="btn btn-sm ${u.active ? 'btn-danger' : 'btn-ghost'}" onclick="toggleUserActive('${u.id}',${!u.active})">${u.active ? 'Desactivar' : 'Activar'}</button>`;
+    return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <div class="avatar" style="width:26px;height:26px;font-size:10px;flex-shrink:0">${u.initials}</div>
+          <div class="avatar" style="width:26px;height:26px;font-size:10px;flex-shrink:0">${u.initials || '?'}</div>
           <span style="font-weight:500">${u.name}</span>
         </div>
       </td>
@@ -1417,12 +1426,12 @@ async function loadUsuarios() {
           <option value="admin"${u.role==='admin'?' selected':''}>Administrador</option>
         </select>
       </td>
-      <td><span class="badge ${u.active?'badge-green':'badge-gray'}">${u.active?'Activo':'Inactivo'}</span></td>
+      <td><span class="badge ${activeBadge}">${activeLabel}</span></td>
       <td style="font-size:11px;color:var(--text-3)">${fmtDate(u.created_at)}</td>
-      <td>
-        ${u.id !== currentUser.id ? `<button class="btn btn-sm ${u.active?'btn-danger':'btn-ghost'}" onclick="toggleUserActive('${u.id}',${!u.active})">${u.active?'Desactivar':'Activar'}</button>` : '<span style="font-size:11px;color:var(--text-3)">Tú</span>'}
-      </td>
-    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin usuarios</td></tr>';
+      <td>${accionBtn}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
 }
 
 async function updateUser(id, changes) {
