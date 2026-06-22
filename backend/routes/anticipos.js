@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
 // POST /tramites/:tramiteId/anticipos
 router.post('/', auth, upload.single('documento'), async (req, res) => {
   const { fecha, descripcion, n_comprobante, monto, forma_pago } = req.body
-  if (!fecha || !descripcion || !monto || !forma_pago) return res.status(400).json({ error: 'fecha, descripcion, monto y forma_pago requeridos' })
+  if (!fecha || !descripcion || monto == null || monto === '' || !forma_pago) return res.status(400).json({ error: 'fecha, descripcion, monto y forma_pago requeridos' })
 
   let documento_url = null, documento_key = null
   if (req.file) {

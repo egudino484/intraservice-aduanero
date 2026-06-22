@@ -7,6 +7,7 @@ let currentTramiteId = null;
 let creatingMode = false;
 let gastoData = [];
 let anticipoData = [];
+let documentoData = [];
 
 // ── AUTH ──────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('sa_token'); }
@@ -47,7 +48,7 @@ async function doLogin() {
 function logout() {
   localStorage.removeItem('sa_token');
   currentUser = null;
-  gastoData = []; anticipoData = []; currentTramiteId = null;
+  gastoData = []; anticipoData = []; documentoData = []; currentTramiteId = null;
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = 'none';
   document.getElementById('login-overlay').style.display = 'flex';
@@ -65,6 +66,10 @@ function applyUserToUI() {
 
 async function initApp() {
   applyUserToUI();
+  updateNavierasDatalist();
+  updateAlmacenerasDatalist();
+  updateClientesDatalist();
+  updateMercaderiaDatalist();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -101,6 +106,9 @@ async function loadBitacora() {
   const data = await apiFetch('/tramites');
   if (!data) return;
   bitacoraData = data;
+  // Agregar clientes del sistema al datalist
+  data.forEach(t => { if (t.cliente) saveCliente(t.cliente); });
+  updateClientesDatalist();
   renderBitacora();
 }
 
@@ -138,8 +146,10 @@ async function openTramite(id) {
   if (!data) return;
   gastoData = data.gastos || [];
   anticipoData = data.anticipos || [];
+  documentoData = data.documentos || [];
   applyTramiteForm(data);
   renderAll();
+  renderDocumentos();
   renderHistorial(data.historial || []);
   pageTitles.tramite = 'Trámite ' + data.numero + ' · ' + data.cliente;
   topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(data.estado) + '">' + data.estado + '</span>';
@@ -194,6 +204,12 @@ function newTramiteUI() {
 
 async function saveTramiteForm() {
   const form = readTramiteForm();
+  const navieraVal = document.querySelector('[data-field="naviera"]')?.value || '';
+  const almaceneraVal = document.querySelector('[data-field="almacenera"]')?.value || '';
+  const clienteVal = document.querySelector('[data-field="cliente"]')?.value || '';
+  if (navieraVal) saveNaviera(navieraVal);
+  if (almaceneraVal) saveAlmacenera(almaceneraVal);
+  if (clienteVal) saveCliente(clienteVal);
   if (creatingMode) {
     if (!form.numero || !form.cliente) { showNotif('N° trámite y cliente son requeridos'); return; }
     const res = await apiFetch('/tramites', {
@@ -545,6 +561,7 @@ function renderAll() {
   renderLiqAnticipos();
   renderCustomProps();
   renderTabLiquidacion();
+  renderDocumentos();
 }
 
 async function addGasto() {
@@ -667,6 +684,57 @@ function saveMercaderia(val) {
   }
 }
 // ─────────────────────────────────────────────────────────────────
+
+// ── NAVIERAS ─────────────────────────────────────────────────────
+const navieraRegistry = JSON.parse(localStorage.getItem('sa_navieras') || 'null') || [
+  'CMA CGM','MSC','HAPAG LLOYD','MAERSK','ONE','TIBA','TOLEPU','HARTROD','GACIL','MSL ECUADOR'
+];
+function updateNavierasDatalist() {
+  const dl = document.getElementById('navieras-list');
+  if (dl) dl.innerHTML = navieraRegistry.map(n => `<option value="${escHtml(n)}">`).join('');
+}
+function saveNaviera(val) {
+  val = (val || '').trim().toUpperCase();
+  if (val && !navieraRegistry.includes(val)) {
+    navieraRegistry.push(val);
+    localStorage.setItem('sa_navieras', JSON.stringify(navieraRegistry));
+    updateNavierasDatalist();
+  }
+}
+
+// ── ALMACENERAS ───────────────────────────────────────────────────
+const almaceneraRegistry = JSON.parse(localStorage.getItem('sa_almaceneras') || 'null') || [
+  'INARPI','POSORJA','NAPORTEC','PUERTO BOLÍVAR','EMSA','CONTECON'
+];
+function updateAlmacenerasDatalist() {
+  const dl = document.getElementById('almaceneras-list');
+  if (dl) dl.innerHTML = almaceneraRegistry.map(a => `<option value="${escHtml(a)}">`).join('');
+}
+function saveAlmacenera(val) {
+  val = (val || '').trim().toUpperCase();
+  if (val && !almaceneraRegistry.includes(val)) {
+    almaceneraRegistry.push(val);
+    localStorage.setItem('sa_almaceneras', JSON.stringify(almaceneraRegistry));
+    updateAlmacenerasDatalist();
+  }
+}
+
+// ── CLIENTES ──────────────────────────────────────────────────────
+const clienteRegistry = JSON.parse(localStorage.getItem('sa_clientes') || 'null') || [
+  'MEGASTOCKEC','AHCORP','NOVA','ECUALIMFOOD','PRODUCOMERCIO'
+];
+function updateClientesDatalist() {
+  const dl = document.getElementById('clientes-list');
+  if (dl) dl.innerHTML = clienteRegistry.map(c => `<option value="${escHtml(c)}">`).join('');
+}
+function saveCliente(val) {
+  val = (val || '').trim().toUpperCase();
+  if (val && !clienteRegistry.includes(val)) {
+    clienteRegistry.push(val);
+    localStorage.setItem('sa_clientes', JSON.stringify(clienteRegistry));
+    updateClientesDatalist();
+  }
+}
 
 const customProps = [];
 const customPropTemplates = ['Régimen aduanero','Canal de aforo','Certificado de origen','Tipo de carga','Peso neto (kg)','Número de bultos','Incoterm','Régimen de tributación','Agencia de aduanas','Tipo de embalaje'];
@@ -1017,9 +1085,65 @@ function showNotif(msg) {
   notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+// ── DOCUMENTOS DEL EXPEDIENTE ─────────────────────────────────────
+const docSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg>`;
+
+function renderDocumentos() {
+  const el = document.getElementById('documentos-list');
+  if (!el) return;
+  if (!documentoData.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:16px 0">Sin documentos adjuntos</p>';
+    return;
+  }
+  el.innerHTML = documentoData.map(d => `
+    <div class="doc-item">
+      <div class="doc-icon">${docSvg}</div>
+      <div class="doc-name"><a href="${d.file_url}" target="_blank" style="color:var(--blue);text-decoration:none">${escHtml(d.nombre)}</a></div>
+      <div class="doc-meta">${d.tipo||'Otro'} · ${d.size_bytes ? Math.round(d.size_bytes/1024)+' KB' : ''} · ${fmtDate(d.created_at)}</div>
+      <button class="btn btn-sm btn-ghost" onclick="window.open('${d.file_url}','_blank')">Ver</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteDocumento('${d.id}')">✕</button>
+    </div>`).join('');
+}
+
+function triggerDocUpload() {
+  const input = document.getElementById('doc-file-input');
+  if (input) input.click();
+}
+
+async function handleDocFiles(files) {
+  if (!currentTramiteId) { showNotif('Abre un trámite primero'); return; }
+  for (const file of files) {
+    if (file.size > 5*1024*1024) { showNotif(file.name + ': máximo 5MB'); continue; }
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('nombre', file.name);
+    fd.append('tipo', 'Otro');
+    const res = await fetch(API_URL+'/tramites/'+currentTramiteId+'/documentos', {
+      method:'POST', headers:{Authorization:'Bearer '+getToken()}, body:fd
+    });
+    if (res.status === 401) { logout(); return; }
+    const data = await res.json();
+    if (data && !data.error) {
+      documentoData.push(data);
+      showNotif(file.name + ' subido');
+    } else {
+      showNotif(data?.error || 'Error al subir ' + file.name);
+    }
+  }
+  renderDocumentos();
+  document.getElementById('doc-file-input').value = '';
+}
+
+async function deleteDocumento(id) {
+  if (!currentTramiteId) return;
+  await apiFetch('/tramites/'+currentTramiteId+'/documentos/'+id, { method:'DELETE' });
+  documentoData = documentoData.filter(d => d.id !== id);
+  renderDocumentos();
+  showNotif('Documento eliminado');
+}
+
 // ── BOOT ──────────────────────────────────────────────────────────
 updatePresetButtons();
-updateMercaderiaDatalist();
 
 (function boot() {
   const token = getToken();

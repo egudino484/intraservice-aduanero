@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
 // POST /tramites/:tramiteId/gastos
 router.post('/', auth, upload.single('comprobante'), async (req, res) => {
   const { concepto, proveedor, n_factura, monto, categoria } = req.body
-  if (!concepto || !monto || !categoria) return res.status(400).json({ error: 'concepto, monto y categoria requeridos' })
+  if (!concepto || monto == null || monto === '' || !categoria) return res.status(400).json({ error: 'concepto, monto y categoria requeridos' })
 
   let comprobante_url = null, comprobante_key = null
   if (req.file) {

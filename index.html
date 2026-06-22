@@ -157,11 +157,11 @@
             <div class="panel-title">Información general</div>
             <div class="field-row-3">
               <div class="field"><label>N° trámite</label><input type="text" data-field="numero" value="T26-281" readonly></div>
-              <div class="field"><label>Operación</label><select data-field="operacion" onchange="saveState()"><option>Importación</option><option>Exportación</option></select></div>
+              <div class="field"><label>Operación</label><select data-field="operacion" onchange="saveState()"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
               <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24" onchange="saveState()"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Cliente</label><select data-field="cliente" onchange="saveState()"><option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option></select></div>
+              <div class="field"><label>Cliente</label><input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value);saveState()" placeholder="Ingresa o selecciona cliente..."><datalist id="clientes-list"></datalist></div>
               <div class="field">
                 <label>Mercadería importada</label>
                 <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value);saveState()" placeholder="Ingresa o selecciona mercadería...">
@@ -170,8 +170,8 @@
             </div>
             <div class="field-row-3">
               <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl" value="GDY0406929" onchange="saveState()"></div>
-              <div class="field"><label>Naviera</label><select data-field="naviera" onchange="saveState()"><option>CMA CGM</option><option>MSC</option><option>HAPAG LLOYD</option><option>MAERSK</option><option>ONE</option><option>TIBA</option><option>TOLEPU</option><option>HARTROD</option><option>GACIL</option><option>MSL ECUADOR</option></select></div>
-              <div class="field"><label>Almacenera</label><select data-field="almacenera" onchange="saveState()"><option>INARPI</option><option>POSORJA</option><option>NAPORTEC</option><option>PUERTO BOLÍVAR</option><option>EMSA</option><option>CONTECON</option></select></div>
+              <div class="field"><label>Naviera</label><input list="navieras-list" type="text" data-field="naviera" id="campo-naviera" onchange="saveNaviera(this.value);saveState()" placeholder="Ingresa o selecciona naviera..."><datalist id="navieras-list"></datalist></div>
+              <div class="field"><label>Almacenera</label><input list="almaceneras-list" type="text" data-field="almacenera" id="campo-almacenera" onchange="saveAlmacenera(this.value);saveState()" placeholder="Ingresa o selecciona almacenera..."><datalist id="almaceneras-list"></datalist></div>
             </div>
             <div class="field-row-3">
               <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" value="028-2026-10-00722383" onchange="saveState()"></div>
@@ -293,28 +293,12 @@
 
           <div class="panel">
             <div class="panel-title">Documentos generales del expediente</div>
-            <div class="doc-item">
-              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
-              <div class="doc-name">BL_GDY0406929.pdf</div>
-              <div class="doc-meta">Guía de embarque · 245 KB · 24 abr <span class="badge badge-blue" style="margin-left:8px">Embarque</span></div>
-              <button class="btn btn-sm btn-ghost">Ver</button>
-            </div>
-            <div class="doc-item">
-              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
-              <div class="doc-name">FACT_2026-322152.pdf</div>
-              <div class="doc-meta">Factura comercial · 142 KB · 24 abr <span class="badge badge-blue" style="margin-left:8px">Embarque</span></div>
-              <button class="btn btn-sm btn-ghost">Ver</button>
-            </div>
-            <div class="doc-item">
-              <div class="doc-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg></div>
-              <div class="doc-name">DAI_028-2026-10-00722383.pdf</div>
-              <div class="doc-meta">DAI · 512 KB · 26 abr <span class="badge badge-purple" style="margin-left:8px">Aduana</span></div>
-              <button class="btn btn-sm btn-ghost">Ver</button>
-            </div>
-            <div class="upload-zone" onclick="showNotif('Selecciona un archivo para subir')">
+            <div id="documentos-list"></div>
+            <div class="upload-zone" id="upload-zone" onclick="triggerDocUpload()">
               <svg viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               Arrastra archivos aquí o haz clic para subir documentos del expediente
             </div>
+            <input type="file" id="doc-file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx" multiple onchange="handleDocFiles(this.files)">
           </div>
         </div>
 
