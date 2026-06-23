@@ -7,6 +7,7 @@ let currentTramiteId = null;
 let creatingMode = false;
 let gastoData = [];
 let anticipoData = [];
+let etiquetasData = [];
 let documentoData = [];
 
 // ── AUTH ──────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ async function doLogin() {
 function logout() {
   localStorage.removeItem('sa_token');
   currentUser = null;
-  gastoData = []; anticipoData = []; documentoData = []; currentTramiteId = null;
+  gastoData = []; anticipoData = []; documentoData = []; etiquetasData = []; currentTramiteId = null;
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = 'none';
   document.getElementById('login-overlay').style.display = 'flex';
@@ -70,6 +71,7 @@ async function initApp() {
   updateAlmacenerasDatalist();
   updateClientesDatalist();
   updateMercaderiaDatalist();
+  renderEtiquetaColorPicker();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -96,6 +98,7 @@ async function loadDashboard() {
       <td>${t.cliente}</td><td>${t.tipo}</td>
       <td style="font-family:'DM Mono',monospace;font-size:11px">${t.bl||'—'}</td>
       <td><span class="badge badge-${bc[t.estado]||'gray'}">${t.estado}</span></td>
+      <td>${etiquetasHtml(t.etiquetas)}</td>
       <td style="color:var(--text-3);font-size:12px">${fmtDate(t.created_at)}</td>
     </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin trámites</td></tr>';
 }
@@ -147,9 +150,13 @@ async function openTramite(id) {
   gastoData = data.gastos || [];
   anticipoData = data.anticipos || [];
   documentoData = data.documentos || [];
+  customProps.length = 0;
+  (data.custom_props || []).forEach(p => customProps.push(p));
+  etiquetasData = data.etiquetas || [];
   applyTramiteForm(data);
   renderAll();
   renderDocumentos();
+  renderEtiquetas();
   renderHistorial(data.historial || []);
   pageTitles.tramite = 'Trámite ' + data.numero + ' · ' + data.cliente;
   topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(data.estado) + '">' + data.estado + '</span>';
@@ -220,6 +227,7 @@ async function saveTramiteForm() {
         bl: form.bl, naviera: form.naviera, da: form.dai,
         factura_comercial: form.factCom, factura_intraservice: form.factIntra,
         observaciones: form.obs,
+        custom_props: customProps, etiquetas: etiquetasData,
       })
     });
     if (!res || res.error) { showNotif(res?.error || 'Error al crear'); return; }
@@ -236,6 +244,7 @@ async function saveTramiteForm() {
       fecha_arribo: form.fechaApertura || null, bl: form.bl, naviera: form.naviera,
       da: form.dai, factura_comercial: form.factCom,
       factura_intraservice: form.factIntra, observaciones: form.obs,
+      custom_props: customProps, etiquetas: etiquetasData,
     })
   });
   if (res) { showNotif('Trámite guardado'); loadBitacora(); loadDashboard(); }
@@ -777,6 +786,59 @@ function saveCliente(val) {
     localStorage.setItem('sa_clientes', JSON.stringify(clienteRegistry));
     updateClientesDatalist();
   }
+}
+
+// ── ETIQUETAS ─────────────────────────────────────────────────────
+const ETIQUETA_COLORS = [
+  {name:'Azul',   hex:'#1E4FBF'}, {name:'Verde',   hex:'#1A6B3C'},
+  {name:'Ámbar',  hex:'#D97706'}, {name:'Rojo',    hex:'#DC2626'},
+  {name:'Morado', hex:'#7C3AED'}, {name:'Teal',    hex:'#0F766E'},
+  {name:'Rosa',   hex:'#DB2777'}, {name:'Gris',    hex:'#6B7280'},
+];
+let selectedEtiquetaColor = ETIQUETA_COLORS[0].hex;
+
+function renderEtiquetaColorPicker() {
+  const el = document.getElementById('etiqueta-color-picker');
+  if (!el) return;
+  el.innerHTML = ETIQUETA_COLORS.map(c => `
+    <span onclick="selectedEtiquetaColor='${c.hex}';renderEtiquetaColorPicker()" title="${c.name}"
+      style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${c.hex};cursor:pointer;
+             box-shadow:${selectedEtiquetaColor===c.hex?'0 0 0 2px #fff,0 0 0 4px '+c.hex:'none'};transition:box-shadow .15s"></span>
+  `).join('');
+}
+
+function renderEtiquetas() {
+  const el = document.getElementById('etiquetas-chips');
+  if (!el) return;
+  renderEtiquetaColorPicker();
+  el.innerHTML = etiquetasData.map((e,i) => `
+    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;
+                 background:${e.color};color:#fff;font-size:12px;font-weight:500;cursor:default">
+      ${escHtml(e.text)}
+      <span onclick="removeEtiqueta(${i})" style="cursor:pointer;opacity:.8;line-height:1;font-size:14px" title="Eliminar">×</span>
+    </span>
+  `).join('') || '<span style="font-size:12px;color:var(--text-3)">Sin etiquetas</span>';
+}
+
+function addEtiqueta() {
+  const input = document.getElementById('etiqueta-input');
+  const text = (input?.value || '').trim();
+  if (!text) { input?.focus(); return; }
+  etiquetasData.push({ text, color: selectedEtiquetaColor });
+  if (input) input.value = '';
+  renderEtiquetas();
+}
+
+function removeEtiqueta(i) {
+  etiquetasData.splice(i, 1);
+  renderEtiquetas();
+}
+
+function etiquetasHtml(etiquetas) {
+  if (!etiquetas || !etiquetas.length) return '—';
+  return etiquetas.map(e =>
+    `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${e.color};color:#fff;font-size:11px;font-weight:500;margin:1px 2px">${escHtml(e.text)}</span>`
+  ).join('');
 }
 
 const customProps = [];

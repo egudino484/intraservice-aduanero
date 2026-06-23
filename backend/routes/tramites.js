@@ -51,14 +51,14 @@ router.get('/:id', auth, async (req, res) => {
 
 // POST /tramites
 router.post('/', auth, async (req, res) => {
-  const { numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones } = req.body
+  const { numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas } = req.body
   if (!numero || !tipo || !cliente) return res.status(400).json({ error: 'numero, tipo y cliente son requeridos' })
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO tramites (numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, req.user.id]
+      `INSERT INTO tramites (numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.user.id]
     )
     await db.query(
       `INSERT INTO auditoria (tramite_id, user_id, accion, detalle) VALUES ($1,$2,'tramite_creado',$3)`,
@@ -73,13 +73,14 @@ router.post('/', auth, async (req, res) => {
 
 // PUT /tramites/:id
 router.put('/:id', auth, async (req, res) => {
-  const { numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones } = req.body
+  const { numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas } = req.body
   try {
     const { rows } = await db.query(
       `UPDATE tramites SET numero=$1, tipo=$2, cliente=$3, fecha_arribo=$4, bl=$5, naviera=$6, da=$7,
-       factura_comercial=$8, factura_intraservice=$9, factura_agente=$10, observaciones=$11
-       WHERE id=$12 RETURNING *`,
-      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, req.params.id]
+       factura_comercial=$8, factura_intraservice=$9, factura_agente=$10, observaciones=$11,
+       custom_props=$12, etiquetas=$13
+       WHERE id=$14 RETURNING *`,
+      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.params.id]
     )
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
     res.json(rows[0])

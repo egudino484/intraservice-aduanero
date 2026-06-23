@@ -112,7 +112,7 @@
         <div class="panel">
           <div class="panel-title">Trámites recientes</div>
           <table>
-            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Operación</th><th>BL / AWB</th><th>Estado</th><th>Apertura</th></tr></thead>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Operación</th><th>BL / AWB</th><th>Estado</th><th>Etiquetas</th><th>Apertura</th></tr></thead>
             <tbody>
               <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-281</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">GDY0406929</td><td><span class="badge badge-amber">En proceso</span></td><td style="color:var(--text-3);font-size:12px">24 abr 2026</td></tr>
               <tr><td><span class="row-link" onclick="nav('tramite',null)">T26-040</span></td><td>MEGASTOCKEC</td><td>Importación</td><td style="font-family:'DM Mono',monospace;font-size:11px">263379441</td><td><span class="badge badge-green">Concluido</span></td><td style="color:var(--text-3);font-size:12px">09 ene 2026</td></tr>
@@ -198,6 +198,18 @@
             </div>
           </div>
 
+          <!-- ETIQUETAS -->
+          <div class="panel">
+            <div class="panel-title"><span>Etiquetas</span></div>
+            <div id="etiquetas-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:20px"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="etiqueta-input" type="text" placeholder="Nueva etiqueta..." style="max-width:200px" onkeydown="if(event.key==='Enter'){event.preventDefault();addEtiqueta()}">
+              <div id="etiqueta-color-picker" style="display:flex;gap:5px;align-items:center"></div>
+              <button class="btn btn-sm" onclick="addEtiqueta()">+ Agregar</button>
+            </div>
+          </div>
+
+          <!-- PROPIEDADES PERSONALIZADAS -->
           <div class="panel">
             <div class="panel-title">
               <span>Propiedades personalizadas</span>

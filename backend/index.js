@@ -10,6 +10,8 @@ db.query(`
   ALTER TABLE tramites DROP CONSTRAINT IF EXISTS tramites_tipo_check;
   ALTER TABLE tramites ADD CONSTRAINT tramites_tipo_check
     CHECK (tipo IN ('Importación', 'Exportación', 'Otro'));
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS custom_props JSONB DEFAULT '[]';
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS etiquetas   JSONB DEFAULT '[]';
 `).then(() => console.log('Migrations OK')).catch(e => console.error('Migration error:', e.message))
 
 const app = express()
