@@ -71,6 +71,7 @@ async function initApp() {
   updateAlmacenerasDatalist();
   updateClientesDatalist();
   updateMercaderiaDatalist();
+  updateEtiquetasDatalist();
   renderEtiquetaColorPicker();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
@@ -110,7 +111,10 @@ async function loadBitacora() {
   if (!data) return;
   bitacoraData = data;
   // Agregar clientes del sistema al datalist
-  data.forEach(t => { if (t.cliente) saveCliente(t.cliente); });
+  data.forEach(t => {
+    if (t.cliente) saveCliente(t.cliente);
+    (t.etiquetas || []).forEach(e => saveEtiquetaToRegistry(e.text, e.color));
+  });
   updateClientesDatalist();
   renderBitacora();
 }
@@ -797,6 +801,29 @@ const ETIQUETA_COLORS = [
 ];
 let selectedEtiquetaColor = ETIQUETA_COLORS[0].hex;
 
+// Registry: [{text, color}] — persisted in localStorage
+const etiquetaRegistry = JSON.parse(localStorage.getItem('sa_etiquetas') || '[]');
+
+function saveEtiquetaToRegistry(text, color) {
+  if (!text) return;
+  const existing = etiquetaRegistry.find(e => e.text.toLowerCase() === text.toLowerCase());
+  if (!existing) {
+    etiquetaRegistry.push({ text, color });
+    localStorage.setItem('sa_etiquetas', JSON.stringify(etiquetaRegistry));
+    updateEtiquetasDatalist();
+  }
+}
+
+function updateEtiquetasDatalist() {
+  const dl = document.getElementById('etiquetas-list');
+  if (dl) dl.innerHTML = etiquetaRegistry.map(e => `<option value="${escHtml(e.text)}">`).join('');
+}
+
+function onEtiquetaInputChange(val) {
+  const found = etiquetaRegistry.find(e => e.text.toLowerCase() === val.trim().toLowerCase());
+  if (found) { selectedEtiquetaColor = found.color; renderEtiquetaColorPicker(); }
+}
+
 function renderEtiquetaColorPicker() {
   const el = document.getElementById('etiqueta-color-picker');
   if (!el) return;
@@ -824,7 +851,10 @@ function addEtiqueta() {
   const input = document.getElementById('etiqueta-input');
   const text = (input?.value || '').trim();
   if (!text) { input?.focus(); return; }
-  etiquetasData.push({ text, color: selectedEtiquetaColor });
+  const found = etiquetaRegistry.find(e => e.text.toLowerCase() === text.toLowerCase());
+  const color = found ? found.color : selectedEtiquetaColor;
+  etiquetasData.push({ text: found ? found.text : text, color });
+  saveEtiquetaToRegistry(text, color);
   if (input) input.value = '';
   renderEtiquetas();
 }

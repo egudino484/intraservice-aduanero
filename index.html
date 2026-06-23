@@ -203,7 +203,8 @@
             <div class="panel-title"><span>Etiquetas</span></div>
             <div id="etiquetas-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:20px"></div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input id="etiqueta-input" type="text" placeholder="Nueva etiqueta..." style="max-width:200px" onkeydown="if(event.key==='Enter'){event.preventDefault();addEtiqueta()}">
+              <input id="etiqueta-input" list="etiquetas-list" type="text" placeholder="Nueva etiqueta..." style="max-width:200px" oninput="onEtiquetaInputChange(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();addEtiqueta()}">
+              <datalist id="etiquetas-list"></datalist>
               <div id="etiqueta-color-picker" style="display:flex;gap:5px;align-items:center"></div>
               <button class="btn btn-sm" onclick="addEtiqueta()">+ Agregar</button>
             </div>
