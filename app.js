@@ -9,6 +9,7 @@ let gastoData = [];
 let anticipoData = [];
 let etiquetasData = [];
 let documentoData = [];
+let currentScreen = 'dashboard';
 
 // ── AUTH ──────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('sa_token'); }
@@ -62,6 +63,7 @@ function applyUserToUI() {
   document.getElementById('user-role').textContent = { admin:'Administrador', operador:'Operador', visor:'Visor' }[currentUser.role] || currentUser.role;
   if (currentUser.role === 'admin') {
     document.getElementById('nav-usuarios').style.display = 'flex';
+    document.getElementById('nav-feedback').style.display = 'flex';
   }
 }
 
@@ -1177,7 +1179,8 @@ const pageTitles = {
   tramite: 'Trámite T26-281 · MEGASTOCKEC',
   reportes: 'Reporte financiero',
   auditoria: 'Historial de auditoría',
-  usuarios: 'Gestión de usuarios'
+  usuarios: 'Gestión de usuarios',
+  feedback: 'Feedback de usuarios'
 };
 const topbarBadges = {
   tramite: '<span class="badge badge-amber">En proceso</span>',
@@ -1195,11 +1198,13 @@ function nav(id, el) {
   else { const f = document.getElementById('nav-' + id); if (f) f.classList.add('active'); }
   document.getElementById('page-title').textContent = pageTitles[id] || id;
   document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
+  currentScreen = id;
   if (id === 'reportes') renderReportes();
   if (id === 'auditoria') loadAuditoria();
   if (id === 'dashboard') loadDashboard();
   if (id === 'bitacora') loadBitacora();
   if (id === 'usuarios') loadUsuarios();
+  if (id === 'feedback') loadFeedback();
 }
 
 function setTab(el, targetId) {
@@ -1305,6 +1310,56 @@ function closePreview() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+
+// ── FEEDBACK ──────────────────────────────────────────────────────
+function openFeedbackModal() {
+  document.getElementById('feedback-pantalla-label').textContent = pageTitles[currentScreen] || currentScreen;
+  document.getElementById('feedback-mensaje').value = '';
+  document.getElementById('feedback-error').textContent = '';
+  document.getElementById('feedback-modal').style.display = 'flex';
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedback-modal').style.display = 'none';
+}
+
+async function submitFeedback() {
+  const mensaje = document.getElementById('feedback-mensaje').value.trim();
+  const errEl = document.getElementById('feedback-error');
+  if (!mensaje) { errEl.textContent = 'Escribe un mensaje antes de enviar'; return; }
+  const data = await apiFetch('/feedback', {
+    method: 'POST',
+    body: JSON.stringify({ pantalla: currentScreen, mensaje })
+  });
+  if (!data || data.error) { errEl.textContent = data?.error || 'Error al enviar feedback'; return; }
+  closeFeedbackModal();
+  showNotif('Feedback enviado, ¡gracias!');
+}
+
+async function loadFeedback() {
+  const body = document.getElementById('feedback-body');
+  if (!body) return;
+  const pantalla = document.getElementById('fb-pantalla').value;
+  const desde = document.getElementById('fb-desde').value;
+  const hasta = document.getElementById('fb-hasta').value;
+  const params = new URLSearchParams();
+  if (pantalla) params.set('pantalla', pantalla);
+  if (desde) params.set('desde', desde);
+  if (hasta) params.set('hasta', hasta);
+  const rows = await apiFetch('/feedback' + (params.toString() ? '?' + params.toString() : ''));
+  if (!rows) return;
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin feedback registrado</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(f => `
+    <tr>
+      <td style="font-size:12px;color:var(--text-3)">${fmtDate(f.created_at)}</td>
+      <td><span class="badge badge-blue">${escHtml(pageTitles[f.pantalla] || f.pantalla)}</span></td>
+      <td style="font-size:12px">${escHtml(f.user_name || '—')}</td>
+      <td style="font-size:13px">${escHtml(f.mensaje)}</td>
+    </tr>`).join('');
+}
 
 // ── BOOT ──────────────────────────────────────────────────────────
 updatePresetButtons();

@@ -12,6 +12,14 @@ db.query(`
     CHECK (tipo IN ('Importación', 'Exportación', 'Otro'));
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS custom_props JSONB DEFAULT '[]';
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS etiquetas   JSONB DEFAULT '[]';
+  CREATE TABLE IF NOT EXISTS feedback (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    pantalla    TEXT NOT NULL,
+    mensaje     TEXT NOT NULL,
+    user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
 `).then(() => console.log('Migrations OK')).catch(e => console.error('Migration error:', e.message))
 
 const app = express()
@@ -26,6 +34,7 @@ app.use('/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
 app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
 app.use('/auditoria',                     require('./routes/auditoria'))
 app.use('/users',                         require('./routes/users'))
+app.use('/feedback',                      require('./routes/feedback'))
 
 app.get('/health', (_, res) => res.json({ ok: true }))
 

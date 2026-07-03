@@ -459,3 +459,7 @@
     pointer-events: none;
   }
   .notif.show { opacity: 1; transform: translateY(0); }
+
+  /* ── FEEDBACK FAB ── */
+  #feedback-fab { transition: transform 0.15s, background 0.15s; }
+  #feedback-fab:hover { background: #163DA8; transform: scale(1.06); }
