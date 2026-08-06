@@ -29,6 +29,21 @@ router.get('/', auth, async (req, res) => {
   } catch { res.status(500).json({ error: 'Error interno' }) }
 })
 
+// GET /tramites/next-numero — sugerencia de consecutivo del año (debe ir antes de /:id)
+router.get('/next-numero', auth, async (req, res) => {
+  const yy = String(new Date().getFullYear()).slice(-2)
+  const prefijo = `T${yy}-`
+  try {
+    const { rows } = await db.query(
+      `SELECT COALESCE(MAX(SUBSTRING(numero FROM '^T\\d{2}-(\\d+)$')::int), 0) AS ultimo
+       FROM tramites WHERE numero ~ $1`,
+      [`^T${yy}-\\d+$`]
+    )
+    const secuencia = Number(rows[0].ultimo) + 1
+    res.json({ numero: prefijo + String(secuencia).padStart(3, '0'), prefijo, secuencia })
+  } catch { res.status(500).json({ error: 'Error interno' }) }
+})
+
 // GET /tramites/:id
 router.get('/:id', auth, async (req, res) => {
   try {

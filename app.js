@@ -213,6 +213,19 @@ function newTramiteUI() {
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
+  suggestNextNumero();
+}
+
+// Sugiere el siguiente consecutivo del año. Solo sugerencia: el campo queda editable
+// y no se pisa si el usuario ya escribió algo mientras cargaba.
+async function suggestNextNumero() {
+  const numEl = document.querySelector('[data-field="numero"]');
+  if (!numEl) return;
+  numEl.placeholder = 'Cargando sugerencia...';
+  const res = await apiFetch('/tramites/next-numero');
+  numEl.placeholder = '';
+  if (!res || res.error || !res.numero) return;
+  if (creatingMode && !numEl.value) numEl.value = res.numero;
 }
 
 async function saveTramiteForm() {
