@@ -188,7 +188,7 @@
               <div class="field"><label>Transporte</label><input type="text" data-field="transporte" value="SANTIAGO CALVOPIÑA" onchange="saveState()"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Proveedor</label><input type="text" data-field="proveedor" value="EUROPCELL 663" onchange="saveState()"></div>
+              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value);saveState()" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
               <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152" onchange="saveState()"></div>
               <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152" onchange="saveState()"></div>
             </div>

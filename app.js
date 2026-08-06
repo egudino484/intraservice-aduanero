@@ -73,8 +73,10 @@ async function initApp() {
   updateAlmacenerasDatalist();
   updateClientesDatalist();
   updateMercaderiaDatalist();
+  updateProveedoresDatalist();
   updateEtiquetasDatalist();
   renderEtiquetaColorPicker();
+  loadProveedores();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -210,10 +212,19 @@ function newTramiteUI() {
   if (saveBtn) saveBtn.textContent = 'Crear trámite';
   pageTitles.tramite = 'Nuevo trámite';
   topbarBadges.tramite = '';
+  const fechaEl = document.querySelector('[data-field="fechaApertura"]');
+  if (fechaEl) fechaEl.value = todayISO();
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
   suggestNextNumero();
+}
+
+// Fecha de hoy en zona local (toISOString daría el día siguiente por la tarde en UTC-5)
+function todayISO() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 // Sugiere el siguiente consecutivo del año. Solo sugerencia: el campo queda editable
@@ -488,7 +499,7 @@ function renderGastos() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" value="${escHtml(g.concepto||'')}" onchange="saveGastoField('${g.id}','concepto',this.value)"></td>
-      <td><input type="text" value="${escHtml(g.proveedor||'')}" onchange="saveGastoField('${g.id}','proveedor',this.value)"></td>
+      <td><input list="proveedores-list" type="text" value="${escHtml(g.proveedor||'')}" placeholder="Ingresa o selecciona proveedor..." onchange="saveProveedor(this.value);saveGastoField('${g.id}','proveedor',this.value)"></td>
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
       <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
@@ -805,6 +816,35 @@ function saveCliente(val) {
     localStorage.setItem('sa_clientes', JSON.stringify(clienteRegistry));
     updateClientesDatalist();
   }
+}
+
+// ── PROVEEDORES ───────────────────────────────────────────────────
+// A diferencia de navieras/clientes, se siembra desde el servidor (proveedores ya
+// usados en gastos) para que la lista sea la misma en todos los navegadores.
+const proveedorRegistry = JSON.parse(localStorage.getItem('sa_proveedores') || '[]');
+function updateProveedoresDatalist() {
+  const html = proveedorRegistry.map(p => `<option value="${escHtml(p)}">`).join('');
+  document.querySelectorAll('#proveedores-list, .proveedores-list').forEach(dl => dl.innerHTML = html);
+}
+function saveProveedor(val) {
+  val = (val || '').trim().toUpperCase();
+  if (val && !proveedorRegistry.includes(val)) {
+    proveedorRegistry.push(val);
+    proveedorRegistry.sort();
+    localStorage.setItem('sa_proveedores', JSON.stringify(proveedorRegistry));
+    updateProveedoresDatalist();
+  }
+}
+async function loadProveedores() {
+  const data = await apiFetch('/proveedores');
+  if (!Array.isArray(data)) return;
+  data.forEach(p => {
+    const v = (p || '').trim().toUpperCase();
+    if (v && !proveedorRegistry.includes(v)) proveedorRegistry.push(v);
+  });
+  proveedorRegistry.sort();
+  localStorage.setItem('sa_proveedores', JSON.stringify(proveedorRegistry));
+  updateProveedoresDatalist();
 }
 
 // ── ETIQUETAS ─────────────────────────────────────────────────────
