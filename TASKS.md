@@ -20,7 +20,9 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [ ] **T6 · Pestaña "Documentos" del trámite** — M — Pestaña dedicada para cargar y almacenar múltiples archivos asociados al trámite (hoy los documentos generales viven dentro de "Documentos y gastos").
 
-- [ ] **T7 · Descarga múltiple en ZIP** — M — En "Documentos generales del expediente": selección múltiple (checkbox) + botón "Descargar seleccionados (.ZIP)". Backend: `POST /documentos/zip` con lista de ids → stream con `archiver` desde `/uploads`, validando permisos por trámite.
+- [x] **T7 · Descarga múltiple en ZIP** — M — Checkbox por documento, "seleccionar todos", contador y botón "Descargar seleccionados (.ZIP)". *`POST /tramites/:id/documentos/zip` arma el zip con `archiver` desde el volumen; filtra por `tramite_id` (probado: un id de otro trámite se ignora), renombra duplicados dentro del zip y saltea archivos ausentes. La descarga va por fetch + blob porque la ruta necesita el token. Verificado en producción: 3 documentos → zip de 1.47MB con los 3 nombres correctos.*
+  - ⚠️ **`archiver` debe quedar en el `package.json` de la RAÍZ.** Railway construye desde la raíz y usa su `start`; `backend/package.json` no se instala en el deploy. Declararlo solo ahí dejó el servicio caído con `MODULE_NOT_FOUND`.
+  - ⚠️ **Pinneado a `archiver@^7`**: la v8 dejó de exportar la función `archiver('zip')` y pasó a exportar clases.
 
 - [ ] **T8 · Fecha de llegada en Información general** — S — Agregar el campo al form de datos del trámite. ⚠️ Confirmar si es campo nuevo o si es la "fecha de arribo" ya existente.
 
