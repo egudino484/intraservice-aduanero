@@ -465,6 +465,32 @@ const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><re
 function totalGastos() { return gastoData.reduce((s,g) => s + parseFloat(g.monto||0), 0); }
 function totalAnticipos() { return anticipoData.reduce((s,a) => s + parseFloat(a.monto||0), 0); }
 
+// Comprobantes de un gasto. Contempla los gastos viejos que aún traen el
+// comprobante 1:1 en comprobante_url y todavía no pasaron por la migración.
+function gastoArchivos(g) {
+  if (Array.isArray(g.archivos) && g.archivos.length) return g.archivos;
+  if (g.comprobante_url) return [{ id: null, url: g.comprobante_url, nombre: g.comprobante_url.split('/').pop() }];
+  return [];
+}
+
+function recorta(nombre, max = 18) {
+  const n = nombre || 'comprobante';
+  return n.length > max ? n.slice(0, max - 1) + '…' : n;
+}
+
+// Chip de un comprobante: ver · descargar · quitar.
+// Los comprobantes viejos sin fila propia (a.id null) no se pueden quitar acá.
+function chipArchivo(gastoId, a) {
+  const nombre = a.nombre || 'comprobante';
+  const quitar = a.id
+    ? `<span onclick="removeGastoArchivo('${gastoId}','${a.id}')" style="cursor:pointer;color:var(--red)" title="Quitar">✕</span>`
+    : '';
+  return `<span class="doc-chip" title="${escHtml(nombre)}">`
+    + `<span onclick="openPreview('${a.url}','${escHtml(nombre)}')" style="cursor:pointer">${docIcon}${escHtml(recorta(nombre))}</span>`
+    + `<a href="${a.url}" download style="color:var(--blue);text-decoration:none" title="Descargar">↓</a>`
+    + quitar + `</span>`;
+}
+
 const gastoSaveTimers = {};
 function saveGastoField(id, field, value) {
   // El backend guarda el proveedor en mayúsculas; se refleja igual en pantalla
@@ -498,7 +524,8 @@ function renderGastos() {
   let conDoc = 0;
   const cats = ['Agente','Puerto','Transporte','Intraservice','Varios'];
   gastoData.forEach(g => {
-    if (g.comprobante_url) conDoc++;
+    const archivos = gastoArchivos(g);
+    if (archivos.length) conDoc++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" value="${escHtml(g.concepto||'')}" onchange="saveGastoField('${g.id}','concepto',this.value)"></td>
@@ -506,10 +533,9 @@ function renderGastos() {
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
       <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
-      <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${g.comprobante_url
-        ? `<span class="doc-chip" onclick="openPreview('${g.comprobante_url}','${escHtml(g.comprobante_url.split('/').pop())}')" style="cursor:pointer" title="Ver archivo">${docIcon}comprobante</span><a href="${g.comprobante_url}" download class="btn btn-sm btn-ghost" style="padding:2px 6px;font-size:11px" title="Descargar">↓</a>`
-        : `<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button>`
-      }</td>
+      <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${
+        archivos.map(a => chipArchivo(g.id, a)).join('')
+      }<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button></td>
       <td><button class="btn btn-sm btn-danger" onclick="removeGasto('${g.id}')">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -669,30 +695,39 @@ async function removeGasto(id) {
 
 async function attachGastoDoc(id) {
   const input = document.createElement('input');
-  input.type = 'file'; input.accept = '.pdf,.jpg,.jpeg,.png';
+  input.type = 'file'; input.accept = '.pdf,.jpg,.jpeg,.png'; input.multiple = true;
   input.onchange = async () => {
-    const file = input.files[0];
-    if (!file) return;
-    if (file.size > 5*1024*1024) { showNotif('Máximo 5MB'); return; }
-    const g = gastoData.find(g => g.id === id);
+    const files = [...input.files];
+    if (!files.length) return;
+    const pesados = files.filter(f => f.size > 5*1024*1024);
+    if (pesados.length) { showNotif('Máximo 5MB por archivo: ' + pesados.map(f=>f.name).join(', ')); return; }
     const fd = new FormData();
-    fd.append('concepto', g?.concepto||'');
-    fd.append('monto', g?.monto||0);
-    fd.append('categoria', g?.categoria||'Varios');
-    if (g?.proveedor) fd.append('proveedor', g.proveedor);
-    if (g?.n_factura) fd.append('n_factura', g.n_factura);
-    fd.append('comprobante', file);
-    const res = await fetch(API_URL+'/tramites/'+currentTramiteId+'/gastos/'+id, {
-      method:'PUT', headers:{Authorization:'Bearer '+getToken()}, body:fd
+    files.forEach(f => fd.append('archivos', f));
+    const res = await fetch(API_URL+'/tramites/'+currentTramiteId+'/gastos/'+id+'/archivos', {
+      method:'POST', headers:{Authorization:'Bearer '+getToken()}, body:fd
     });
     if (res.status === 401) { logout(); return; }
-    const updated = await res.json();
-    const idx = gastoData.findIndex(g => g.id === id);
-    if (idx >= 0) gastoData[idx] = updated;
+    const archivos = await res.json();
+    if (archivos.error) { showNotif(archivos.error); return; }
+    const g = gastoData.find(g => g.id === id);
+    if (g) g.archivos = archivos;
     renderAll();
-    showNotif('Comprobante adjuntado');
+    showNotif(files.length === 1 ? 'Comprobante adjuntado' : files.length + ' comprobantes adjuntados');
   };
   input.click();
+}
+
+async function removeGastoArchivo(gastoId, archivoId) {
+  if (!currentTramiteId || !archivoId) return;
+  const res = await apiFetch('/tramites/'+currentTramiteId+'/gastos/'+gastoId+'/archivos/'+archivoId, { method:'DELETE' });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo quitar'); return; }
+  const g = gastoData.find(g => g.id === gastoId);
+  if (g) {
+    g.archivos = (g.archivos || []).filter(a => a.id !== archivoId);
+    if (!g.archivos.length) { g.comprobante_url = null; g.comprobante_key = null; }
+  }
+  renderAll();
+  showNotif('Comprobante quitado');
 }
 
 async function addAnticipo() {

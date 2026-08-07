@@ -20,6 +20,23 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  CREATE TABLE IF NOT EXISTS gasto_archivos (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    gasto_id    UUID NOT NULL REFERENCES gastos(id) ON DELETE CASCADE,
+    url         TEXT NOT NULL,
+    key         TEXT,
+    nombre      TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_gasto_archivos_gasto ON gasto_archivos(gasto_id);
+  -- Migra los comprobantes 1:1 ya existentes a la tabla nueva (idempotente)
+  INSERT INTO gasto_archivos (gasto_id, url, key, nombre)
+  SELECT g.id, g.comprobante_url, g.comprobante_key,
+         regexp_replace(regexp_replace(COALESCE(g.comprobante_key, g.comprobante_url), '^.*/', ''),
+                        '^[0-9a-fA-F-]{36}-', '')
+  FROM gastos g
+  WHERE g.comprobante_url IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM gasto_archivos a WHERE a.gasto_id = g.id AND a.url = g.comprobante_url);
 `).then(() => console.log('Migrations OK')).catch(e => console.error('Migration error:', e.message))
 
 const app = express()

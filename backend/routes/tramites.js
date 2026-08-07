@@ -54,7 +54,15 @@ router.get('/:id', auth, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
 
     const [gastos, anticipos, documentos, estados] = await Promise.all([
-      db.query('SELECT * FROM gastos WHERE tramite_id = $1 ORDER BY created_at', [req.params.id]),
+      db.query(
+        `SELECT g.*, COALESCE(
+           json_agg(json_build_object('id', a.id, 'url', a.url, 'nombre', a.nombre)
+                    ORDER BY a.created_at) FILTER (WHERE a.id IS NOT NULL), '[]') AS archivos
+         FROM gastos g
+         LEFT JOIN gasto_archivos a ON a.gasto_id = g.id
+         WHERE g.tramite_id = $1
+         GROUP BY g.id
+         ORDER BY g.created_at`, [req.params.id]),
       db.query('SELECT * FROM anticipos WHERE tramite_id = $1 ORDER BY fecha', [req.params.id]),
       db.query('SELECT * FROM documentos WHERE tramite_id = $1 ORDER BY created_at', [req.params.id]),
       db.query('SELECT te.*, u.name AS user_name FROM tramite_estados te JOIN users u ON u.id = te.created_by WHERE te.tramite_id = $1 ORDER BY te.created_at DESC', [req.params.id])
