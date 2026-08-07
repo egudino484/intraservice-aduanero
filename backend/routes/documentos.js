@@ -80,7 +80,8 @@ router.post('/zip', auth, async (req, res) => {
       zip.file(ruta, { name: nombre })
     }
     await zip.finalize()
-  } catch {
+  } catch (err) {
+    console.error('Error armando zip:', err.message)
     if (!res.headersSent) res.status(500).json({ error: 'Error interno' })
   }
 })
