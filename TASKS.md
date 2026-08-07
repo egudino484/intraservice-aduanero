@@ -11,7 +11,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [ ] **T3 · Operación "Otro" + régimen aduanero** — M — Al elegir "Otro" en Operación, habilitar campo para especificar (y persistir el valor como opción futura, similar a etiquetas custom). Al elegir Importación: régimen `21 – Importación Temporal`, `10 – Importación para el Consumo`, `Otro (especificar)`. Al elegir Exportación: `49 – Exportación Temporal`, `Exportación Definitiva`, `Otro (especificar)`. Migración: columnas `operacion_otro`, `regimen`, `regimen_otro`.
 
-- [ ] **T4 · Múltiples comprobantes por gasto** — M — En "Gastos de trámite" → "Comprobante adjunto", permitir cargar varios archivos en vez de uno solo. Backend: la relación hoy es 1:1 → tabla `gasto_archivos` (o `documentos` con `gasto_id`). Frontend: input `multiple`, lista con borrado individual y contador en la celda. Ajustar la métrica de "gastos sin comprobante" (pendiente = 0 archivos).
+- [x] **T4 · Múltiples comprobantes por gasto** — M — "Comprobante adjunto" acepta varios archivos (hasta 10 por vez, 5MB c/u), con chip por archivo para ver, descargar y quitar individualmente. *Tabla `gasto_archivos` (1:N) + migración idempotente en `backend/index.js` que reubicó los 4 comprobantes 1:1 existentes; `comprobante_url/key` quedan por compatibilidad. `POST /gastos/:id/archivos` y `DELETE .../archivos/:archivoId`; el PUT de gasto pasó a ser solo de campos de texto. Al borrar un gasto se borran sus archivos del volumen. La métrica "sin comprobante" cuenta archivos. Verificado en producción: subida de 2 archivos a la vez, borrado individual y limpieza del volumen.*
 
 ## P2 — Productividad
 
@@ -25,6 +25,8 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 - [ ] **T8 · Fecha de llegada en Información general** — S — Agregar el campo al form de datos del trámite. ⚠️ Confirmar si es campo nuevo o si es la "fecha de arribo" ya existente.
 
 - [x] **T9 · Fecha de trámite default = fecha actual** — S — "Nuevo trámite" pobla la fecha de apertura con la fecha de hoy, editable. *`todayISO()` en `app.js` usa fecha local a propósito: `toISOString()` daría el día siguiente después de las 19:00 en UTC-5. Verificado en producción.*
+
+- [ ] **T13 · `/files/...` inexistente devuelve `index.html` con 200** — S — El catch-all `app.get('*')` de `backend/index.js` atrapa las rutas de archivos que no existen, así que un comprobante borrado o con ruta rota responde 200 con el HTML de la app en vez de 404. Excluir el prefijo `/files` del catch-all.
 
 - [ ] **T12 · `saveState()` no existe** — S — Se invoca en 19 handlers `onchange` de `index.html` pero no está definido en `app.js`: cada cambio en esos campos tira un `ReferenceError` en consola. No rompe nada visible porque lo que va antes en el handler sí ejecuta, y los datos se guardan por otras vías (botón "Guardar cambios", autosave de gastos). Definirlo o quitar las llamadas.
 
