@@ -15,7 +15,8 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 ## P2 — Productividad
 
-- [ ] **T5 · Dropdown de proveedores en gastos** — S/M — El campo "Proveedor" debe ser desplegable con los proveedores ya registrados, permitiendo texto libre para nuevos (se registran solos). Backend: `GET /proveedores` (`SELECT DISTINCT proveedor FROM gastos` como paso 1). Frontend: `<input list>` + `<datalist>`, conserva la edición inline.
+- [x] **T5 · Dropdown de proveedores en gastos** — S/M — El campo "Proveedor" es desplegable con los proveedores ya registrados y admite texto libre para nuevos. Aplicado a la columna Proveedor de la tabla de gastos y al campo de Información general. *Backend: `GET /proveedores` (`backend/routes/proveedores.js`) + normalización a mayúsculas al guardar en `routes/gastos.js`. Frontend: registro `proveedorRegistry` sembrado desde el servidor, `<input list>` + `<datalist>`. Datos existentes normalizados en prod (1 fila: `mega` → `MEGA`). Verificado en producción.*
+  - Pendiente decidir: la columna Proveedor de "Detalle de gastos pagados" (pestaña Liquidación) sigue siendo texto plano. Esa tabla es un espejo de solo lectura — ninguna celda es editable — así que poner el desplegable ahí implica volverla editable y cablear el guardado.
 
 - [ ] **T6 · Pestaña "Documentos" del trámite** — M — Pestaña dedicada para cargar y almacenar múltiples archivos asociados al trámite (hoy los documentos generales viven dentro de "Documentos y gastos").
 
@@ -23,7 +24,9 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [ ] **T8 · Fecha de llegada en Información general** — S — Agregar el campo al form de datos del trámite. ⚠️ Confirmar si es campo nuevo o si es la "fecha de arribo" ya existente.
 
-- [ ] **T9 · Fecha de trámite default = fecha actual** — S — En "Nuevo trámite", poblar el campo de fecha con la fecha del sistema al abrir el form. Editable.
+- [x] **T9 · Fecha de trámite default = fecha actual** — S — "Nuevo trámite" pobla la fecha de apertura con la fecha de hoy, editable. *`todayISO()` en `app.js` usa fecha local a propósito: `toISOString()` daría el día siguiente después de las 19:00 en UTC-5. Verificado en producción.*
+
+- [ ] **T12 · `saveState()` no existe** — S — Se invoca en 19 handlers `onchange` de `index.html` pero no está definido en `app.js`: cada cambio en esos campos tira un `ReferenceError` en consola. No rompe nada visible porque lo que va antes en el handler sí ejecuta, y los datos se guardan por otras vías (botón "Guardar cambios", autosave de gastos). Definirlo o quitar las llamadas.
 
 ## P3 — Reportería
 

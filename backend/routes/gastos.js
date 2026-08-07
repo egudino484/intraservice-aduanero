@@ -7,6 +7,13 @@ const { uploadFile, deleteFile } = require('../lib/storage')
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
 
+// Los proveedores se guardan siempre en mayúsculas y sin espacios sobrantes:
+// así el desplegable de /proveedores no repite "mega" y "MEGA" como dos entradas.
+const normProveedor = v => {
+  const s = (v == null ? '' : String(v)).trim().toUpperCase()
+  return s === '' ? null : s
+}
+
 // GET /tramites/:tramiteId/gastos
 router.get('/', auth, async (req, res) => {
   try {
@@ -30,7 +37,7 @@ router.post('/', auth, upload.single('comprobante'), async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO gastos (tramite_id, concepto, proveedor, n_factura, monto, categoria, comprobante_url, comprobante_key)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [req.params.tramiteId, concepto, proveedor, n_factura, monto, categoria, comprobante_url, comprobante_key]
+      [req.params.tramiteId, concepto, normProveedor(proveedor), n_factura, monto, categoria, comprobante_url, comprobante_key]
     )
     await db.query(
       `INSERT INTO auditoria (tramite_id, user_id, accion, detalle) VALUES ($1,$2,'gasto_agregado',$3)`,
@@ -57,7 +64,7 @@ router.put('/:id', auth, upload.single('comprobante'), async (req, res) => {
     const { rows } = await db.query(
       `UPDATE gastos SET concepto=$1, proveedor=$2, n_factura=$3, monto=$4, categoria=$5, comprobante_url=$6, comprobante_key=$7
        WHERE id=$8 RETURNING *`,
-      [concepto, proveedor, n_factura, monto, categoria, comprobante_url, comprobante_key, req.params.id]
+      [concepto, normProveedor(proveedor), n_factura, monto, categoria, comprobante_url, comprobante_key, req.params.id]
     )
     res.json(rows[0])
   } catch { res.status(500).json({ error: 'Error interno' }) }

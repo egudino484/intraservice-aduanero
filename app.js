@@ -467,6 +467,9 @@ function totalAnticipos() { return anticipoData.reduce((s,a) => s + parseFloat(a
 
 const gastoSaveTimers = {};
 function saveGastoField(id, field, value) {
+  // El backend guarda el proveedor en mayúsculas; se refleja igual en pantalla
+  // para no mostrar un valor distinto al que quedó grabado.
+  if (field === 'proveedor') value = (value || '').trim().toUpperCase();
   const g = gastoData.find(g => g.id === id);
   if (g) g[field] = field === 'monto' ? parseFloat(value)||0 : value;
   renderAll();
