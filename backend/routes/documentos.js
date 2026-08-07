@@ -1,9 +1,12 @@
 const router = require('express').Router({ mergeParams: true })
 const multer = require('multer')
+const fs = require('fs')
+const path = require('path')
+const archiver = require('archiver')
 const { v4: uuid } = require('uuid')
 const db = require('../db')
 const auth = require('../middleware/auth')
-const { uploadFile, deleteFile } = require('../lib/storage')
+const { uploadFile, deleteFile, UPLOADS_DIR } = require('../lib/storage')
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
 
@@ -40,6 +43,46 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
     )
     res.status(201).json(rows[0])
   } catch { res.status(500).json({ error: 'Error interno' }) }
+})
+
+// POST /tramites/:tramiteId/documentos/zip — descarga varios documentos en un .zip
+router.post('/zip', auth, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : []
+  if (!ids.length) return res.status(400).json({ error: 'Sin documentos seleccionados' })
+
+  try {
+    // El filtro por tramite_id es lo que impide armar un zip con documentos de otro trámite
+    const { rows } = await db.query(
+      'SELECT nombre, file_key FROM documentos WHERE tramite_id = $1 AND id = ANY($2::uuid[]) ORDER BY created_at',
+      [req.params.tramiteId, ids]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
+
+    const tramite = await db.query('SELECT numero FROM tramites WHERE id = $1', [req.params.tramiteId])
+    const base = (tramite.rows[0]?.numero || 'documentos').replace(/[^\w.-]+/g, '_')
+
+    res.attachment(`${base}-documentos.zip`)
+    const zip = archiver('zip', { zlib: { level: 9 } })
+    zip.on('error', () => res.destroy())
+    zip.pipe(res)
+
+    const usados = new Set()
+    for (const d of rows) {
+      const ruta = path.join(UPLOADS_DIR, d.file_key)
+      if (!fs.existsSync(ruta)) continue
+      // Dos documentos pueden llamarse igual; dentro del zip no pueden
+      let nombre = d.nombre
+      for (let i = 2; usados.has(nombre); i++) {
+        const ext = path.extname(d.nombre)
+        nombre = `${path.basename(d.nombre, ext)} (${i})${ext}`
+      }
+      usados.add(nombre)
+      zip.file(ruta, { name: nombre })
+    }
+    await zip.finalize()
+  } catch {
+    if (!res.headersSent) res.status(500).json({ error: 'Error interno' })
+  }
 })
 
 // DELETE /tramites/:tramiteId/documentos/:id

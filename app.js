@@ -1319,15 +1319,45 @@ function showNotif(msg) {
 // ── DOCUMENTOS DEL EXPEDIENTE ─────────────────────────────────────
 const docSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg>`;
 
+// Ids de documentos tildados para la descarga en zip
+let docsSeleccionados = new Set();
+
+function toggleDocSel(id, checked) {
+  if (checked) docsSeleccionados.add(id); else docsSeleccionados.delete(id);
+  renderDocsToolbar();
+}
+
+function toggleDocSelTodos(checked) {
+  docsSeleccionados = checked ? new Set(documentoData.map(d => d.id)) : new Set();
+  renderDocumentos();
+}
+
+function renderDocsToolbar() {
+  const el = document.getElementById('docs-toolbar');
+  if (!el) return;
+  const n = docsSeleccionados.size;
+  const todos = documentoData.length > 0 && n === documentoData.length;
+  el.innerHTML = `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);cursor:pointer">
+      <input type="checkbox" ${todos ? 'checked' : ''} onchange="toggleDocSelTodos(this.checked)"> Seleccionar todos
+    </label>
+    <span style="font-size:12px;color:var(--text-3)">${n ? n + ' seleccionado' + (n > 1 ? 's' : '') : ''}</span>
+    <button class="btn btn-sm" ${n ? '' : 'disabled'} onclick="descargarDocsZip()">↓ Descargar seleccionados (.ZIP)</button>`;
+}
+
 function renderDocumentos() {
   const el = document.getElementById('documentos-list');
   if (!el) return;
+  // Descartar selecciones de documentos que ya no existen
+  docsSeleccionados = new Set([...docsSeleccionados].filter(id => documentoData.some(d => d.id === id)));
   if (!documentoData.length) {
     el.innerHTML = '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:16px 0">Sin documentos adjuntos</p>';
+    renderDocsToolbar();
     return;
   }
   el.innerHTML = documentoData.map(d => `
     <div class="doc-item">
+      <input type="checkbox" ${docsSeleccionados.has(d.id) ? 'checked' : ''} onchange="toggleDocSel('${d.id}',this.checked)" title="Seleccionar para descarga múltiple">
       <div class="doc-icon">${docSvg}</div>
       <div class="doc-name" style="cursor:pointer;color:var(--blue)" onclick="openPreview('${d.file_url}','${escHtml(d.nombre)}')">${escHtml(d.nombre)}</div>
       <div class="doc-meta">${d.tipo||'Otro'} · ${d.size_bytes ? Math.round(d.size_bytes/1024)+' KB' : ''} · ${fmtDate(d.created_at)}</div>
@@ -1335,6 +1365,28 @@ function renderDocumentos() {
       <a href="${d.file_url}" download="${escHtml(d.nombre)}" class="btn btn-sm btn-ghost">↓ Descargar</a>
       <button class="btn btn-sm btn-danger" onclick="deleteDocumento('${d.id}')">✕</button>
     </div>`).join('');
+  renderDocsToolbar();
+}
+
+async function descargarDocsZip() {
+  if (!currentTramiteId || !docsSeleccionados.size) return;
+  showNotif('Preparando .ZIP...');
+  // No se puede usar un <a download> porque la ruta necesita el token
+  const res = await fetch(API_URL + '/tramites/' + currentTramiteId + '/documentos/zip', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [...docsSeleccionados] })
+  });
+  if (res.status === 401) { logout(); return; }
+  if (!res.ok) { showNotif('No se pudo generar el .ZIP'); return; }
+  const blob = await res.blob();
+  const nombre = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/)?.[1] || 'documentos.zip';
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showNotif(docsSeleccionados.size + ' documento(s) descargados');
 }
 
 function triggerDocUpload() {
