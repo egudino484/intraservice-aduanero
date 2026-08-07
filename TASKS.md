@@ -28,7 +28,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T9 · Fecha de trámite default = fecha actual** — S — "Nuevo trámite" pobla la fecha de apertura con la fecha de hoy, editable. *`todayISO()` en `app.js` usa fecha local a propósito: `toISOString()` daría el día siguiente después de las 19:00 en UTC-5. Verificado en producción.*
 
-- [ ] **T13 · `/files/...` inexistente devuelve `index.html` con 200** — S — El catch-all `app.get('*')` de `backend/index.js` atrapa las rutas de archivos que no existen, así que un comprobante borrado o con ruta rota responde 200 con el HTML de la app en vez de 404. Excluir el prefijo `/files` del catch-all.
+- [x] **T13 · `/files/...` inexistente devuelve `index.html` con 200** — S — El catch-all de `backend/index.js` ahora excluye el prefijo `/files`: un archivo que no está en el volumen responde 404 en vez de 200 con el HTML de la app. *Verificado en producción.*
 
 - [ ] **T12 · `saveState()` no existe** — S — Se invoca en 19 handlers `onchange` de `index.html` pero no está definido en `app.js`: cada cambio en esos campos tira un `ReferenceError` en consola. No rompe nada visible porque lo que va antes en el handler sí ejecuta, y los datos se guardan por otras vías (botón "Guardar cambios", autosave de gastos). Definirlo o quitar las llamadas.
 

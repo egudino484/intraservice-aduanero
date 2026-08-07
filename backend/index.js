@@ -58,7 +58,12 @@ app.get('/health', (_, res) => res.json({ ok: true }))
 
 // Serve frontend for all non-API routes
 app.use(express.static(path.join(__dirname, '..')))
-app.get('*', (_, res) => res.sendFile(path.join(__dirname, '../index.html')))
+app.get('*', (req, res) => {
+  // Un archivo inexistente debe dar 404, no el HTML de la app: si cae acá es
+  // porque express.static no lo encontró en el volumen.
+  if (req.path.startsWith('/files/')) return res.status(404).json({ error: 'Archivo no encontrado' })
+  res.sendFile(path.join(__dirname, '../index.html'))
+})
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`API corriendo en puerto ${PORT}`))
