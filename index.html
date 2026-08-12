@@ -161,43 +161,43 @@
             <div class="panel-title">Información general</div>
             <div class="field-row-3">
               <div class="field"><label>N° trámite</label><input type="text" data-field="numero" value="T26-281" readonly></div>
-              <div class="field"><label>Operación</label><select data-field="operacion" onchange="saveState()"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
-              <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24" onchange="saveState()"></div>
+              <div class="field"><label>Operación</label><select data-field="operacion"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
+              <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Cliente</label><input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value);saveState()" placeholder="Ingresa o selecciona cliente..."><datalist id="clientes-list"></datalist></div>
+              <div class="field"><label>Cliente</label><input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value)" placeholder="Ingresa o selecciona cliente..."><datalist id="clientes-list"></datalist></div>
               <div class="field">
                 <label>Mercadería importada</label>
-                <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value);saveState()" placeholder="Ingresa o selecciona mercadería...">
+                <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value)" placeholder="Ingresa o selecciona mercadería...">
                 <datalist id="mercaderia-list"></datalist>
               </div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl" value="GDY0406929" onchange="saveState()"></div>
-              <div class="field"><label>Naviera</label><input list="navieras-list" type="text" data-field="naviera" id="campo-naviera" onchange="saveNaviera(this.value);saveState()" placeholder="Ingresa o selecciona naviera..."><datalist id="navieras-list"></datalist></div>
-              <div class="field"><label>Almacenera</label><input list="almaceneras-list" type="text" data-field="almacenera" id="campo-almacenera" onchange="saveAlmacenera(this.value);saveState()" placeholder="Ingresa o selecciona almacenera..."><datalist id="almaceneras-list"></datalist></div>
+              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl" value="GDY0406929"></div>
+              <div class="field"><label>Naviera</label><input list="navieras-list" type="text" data-field="naviera" id="campo-naviera" onchange="saveNaviera(this.value)" placeholder="Ingresa o selecciona naviera..."><datalist id="navieras-list"></datalist></div>
+              <div class="field"><label>Almacenera</label><input list="almaceneras-list" type="text" data-field="almacenera" id="campo-almacenera" onchange="saveAlmacenera(this.value)" placeholder="Ingresa o selecciona almacenera..."><datalist id="almaceneras-list"></datalist></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" value="028-2026-10-00722383" onchange="saveState()"></div>
-              <div class="field"><label>MRN</label><input type="text" data-field="mrn" value="CEC2026CMAU0082-0023-0000" onchange="saveState()"></div>
-              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae" value="51279053" onchange="saveState()"></div>
+              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" value="028-2026-10-00722383"></div>
+              <div class="field"><label>MRN</label><input type="text" data-field="mrn" value="CEC2026CMAU0082-0023-0000"></div>
+              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae" value="51279053"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida" value="4804.11.00.00" onchange="saveState()"></div>
-              <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega" value="0802P" onchange="saveState()"></div>
-              <div class="field"><label>Transporte</label><input type="text" data-field="transporte" value="SANTIAGO CALVOPIÑA" onchange="saveState()"></div>
+              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida" value="4804.11.00.00"></div>
+              <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega" value="0802P"></div>
+              <div class="field"><label>Transporte</label><input type="text" data-field="transporte" value="SANTIAGO CALVOPIÑA"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value);saveState()" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
-              <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152" onchange="saveState()"></div>
-              <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152" onchange="saveState()"></div>
+              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value)" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
+              <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152"></div>
+              <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416" onchange="saveState()"></div>
-              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda" value="N/A" onchange="saveState()"></div>
+              <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416"></div>
+              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda" value="N/A"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Observaciones</label><textarea data-field="obs" onchange="saveState()">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
+              <div class="field"><label>Observaciones</label><textarea data-field="obs">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
               <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Documentos y gastos" readonly></div>
             </div>
           </div>

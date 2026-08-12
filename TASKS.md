@@ -30,7 +30,9 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T13 · `/files/...` inexistente devuelve `index.html` con 200** — S — El catch-all de `backend/index.js` ahora excluye el prefijo `/files`: un archivo que no está en el volumen responde 404 en vez de 200 con el HTML de la app. *Verificado en producción.*
 
-- [ ] **T12 · `saveState()` no existe** — S — Se invoca en 19 handlers `onchange` de `index.html` pero no está definido en `app.js`: cada cambio en esos campos tira un `ReferenceError` en consola. No rompe nada visible porque lo que va antes en el handler sí ejecuta, y los datos se guardan por otras vías (botón "Guardar cambios", autosave de gastos). Definirlo o quitar las llamadas.
+- [x] **T12 · `saveState()` no existe** — S — Se quitaron las 19 llamadas de los `onchange` de `index.html`. No se definió la función: el guardado real ya pasa por el botón "Guardar cambios", y un autosave del form sería un cambio de comportamiento a decidir aparte (ver T14).
+
+- [ ] **T14 · 10 campos del trámite no se guardan** — M — `readTramiteForm()` lee los 20 campos del form, pero `saveTramiteForm()` solo manda 10 al backend. Se pierden en silencio: **mercadería, almacenera, MRN, liquidación SENAE, sub partida, N° entrega, transporte, proveedor, contenedores y CDA/garantía/póliza**. El usuario los edita, ve "Guardado" y al recargar vuelven vacíos, porque `applyTramiteForm()` tampoco los repuebla. Requiere columnas nuevas en `tramites` (o meterlos en `custom_props`) + mapearlos en el POST/PUT y en `applyTramiteForm`.
 
 ## P3 — Reportería
 
