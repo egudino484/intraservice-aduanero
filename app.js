@@ -250,6 +250,7 @@ const CAMPOS_EXTRA = {
   transporte: 'transporte', proveedor: 'proveedor',
   contenedores: 'contenedores', cda: 'cda',
   operacionOtro: 'operacion_otro', regimen: 'regimen', regimenOtro: 'regimen_otro',
+  fechaLlegada: 'fecha_llegada',
 };
 
 // Regímenes según la operación. OTRO_REGIMEN habilita el campo libre.
@@ -1422,7 +1423,11 @@ function applyTramiteForm(data) {
   // Las opciones de régimen dependen de la operación: hay que armarlas antes
   // de asignar el valor guardado, o el select lo descarta.
   onOperacionChange();
-  for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) set(campo, data[col] ?? '');
+  for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) {
+    const v = data[col] ?? '';
+    // Las columnas DATE llegan como ISO completo; el input type=date solo toma YYYY-MM-DD
+    set(campo, typeof v === 'string' && v.includes('T') ? v.split('T')[0] : v);
+  }
   onRegimenChange();
   actualizarSugerenciasOperacion();
 }

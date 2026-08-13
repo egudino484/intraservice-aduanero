@@ -47,6 +47,8 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS proveedor    TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS contenedores TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cda          TEXT;
+  -- Fecha de llegada de la mercadería, distinta de la apertura del trámite
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_llegada DATE;
   -- Operación "Otro" y régimen aduanero
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS operacion_otro TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen        TEXT;

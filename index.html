@@ -169,6 +169,9 @@
               <div class="field"><label>Operación</label><select data-field="operacion" onchange="onOperacionChange()"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
               <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24"></div>
             </div>
+            <div class="field-row-3">
+              <div class="field"><label>Fecha de llegada</label><input type="date" data-field="fechaLlegada"></div>
+            </div>
             <div class="field-row-3" id="fila-regimen">
               <div class="field" id="campo-operacion-otro" style="display:none"><label>Especificar operación</label><input list="operacion-otro-list" type="text" data-field="operacionOtro" placeholder="¿Qué tipo de operación?"><datalist id="operacion-otro-list"></datalist></div>
               <div class="field" id="campo-regimen"><label>Régimen</label><select data-field="regimen" onchange="onRegimenChange()"></select></div>
