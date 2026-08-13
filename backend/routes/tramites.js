@@ -1,6 +1,8 @@
 const router = require('express').Router()
+const ExcelJS = require('exceljs')
 const db = require('../db')
 const auth = require('../middleware/auth')
+const { calcular } = require('../lib/preliquidacion')
 
 // GET /tramites
 router.get('/', auth, async (req, res) => {
@@ -73,8 +75,87 @@ router.get('/:id', auth, async (req, res) => {
 })
 
 // Campos de texto sueltos del form; se guardan tal cual llegan
-const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada']
-const extraValores = body => EXTRA.map(c => body[c] ?? null)
+const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada','preliquidacion']
+// preliquidacion es JSONB: va aparte porque hay que serializarla
+const extraValores = body => EXTRA.map(c =>
+  c === 'preliquidacion' ? JSON.stringify(body.preliquidacion || {}) : (body[c] ?? null))
+
+// GET /tramites/:id/preliquidacion.xlsx — preliquidación + gastos + saldo
+router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
+  try {
+    const t = await db.query('SELECT * FROM tramites WHERE id=$1', [req.params.id])
+    if (!t.rows[0]) return res.status(404).json({ error: 'No encontrado' })
+    const tramite = t.rows[0]
+
+    const [gastos, anticipos] = await Promise.all([
+      db.query('SELECT concepto, proveedor, n_factura, monto, categoria FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
+      db.query('SELECT fecha, descripcion, n_comprobante, monto, forma_pago FROM anticipos WHERE tramite_id=$1 ORDER BY fecha', [req.params.id]),
+    ])
+    const p = calcular(tramite.preliquidacion)
+    const totalGastos = gastos.rows.reduce((s, g) => s + Number(g.monto || 0), 0)
+    const totalAnticipos = anticipos.rows.reduce((s, a) => s + Number(a.monto || 0), 0)
+
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Preliquidación')
+    ws.columns = [{ width: 34 }, { width: 20 }, { width: 16 }, { width: 16 }, { width: 14 }]
+
+    const titulo = txt => {
+      const f = ws.addRow([txt])
+      f.font = { bold: true, size: 12 }
+      ws.addRow([])
+      return f
+    }
+    const cab = valores => {
+      const f = ws.addRow(valores)
+      f.font = { bold: true }
+      return f
+    }
+    const dinero = fila => { fila.eachCell(c => { if (typeof c.value === 'number') c.numFmt = '#,##0.00' }) }
+
+    titulo(`Preliquidación · ${tramite.numero} · ${tramite.cliente}`)
+    ws.addRow(['Operación', tramite.tipo === 'Otro' ? (tramite.operacion_otro || 'Otro') : tramite.tipo])
+    ws.addRow(['Régimen', tramite.regimen === 'Otro (especificar)' ? (tramite.regimen_otro || '') : (tramite.regimen || '')])
+    ws.addRow(['Sub partida', tramite.sub_partida || ''])
+    ws.addRow(['BL / AWB', tramite.bl || ''])
+    ws.addRow(['DAI / DAE', tramite.da || ''])
+    ws.addRow([])
+
+    cab(['Valores de la mercadería', 'USD'])
+    ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], ['Seguro', p.seguro], ['CIF', p.cif]]
+      .forEach(([k, v]) => dinero(ws.addRow([k, v])))
+    ws.addRow([])
+
+    cab(['Impuesto', 'Tarifa %', 'Valor USD'])
+    ;[['Ad Valorem', p.tarifas.adValorem, p.impuestos.adValorem],
+      ['Fodinfa', p.tarifas.fodinfa, p.impuestos.fodinfa],
+      ['IVA', p.tarifas.iva, p.impuestos.iva],
+      ['Seguridad', p.tarifas.seguridad, p.impuestos.seguridad]]
+      .forEach(f => dinero(ws.addRow(f)))
+    dinero(cab(['Total impuestos', '', p.totalImpuestos]))
+    ws.addRow([])
+
+    cab(['Gastos pagados', 'Proveedor', 'N° factura', 'Categoría', 'Monto USD'])
+    gastos.rows.forEach(g => dinero(ws.addRow([g.concepto, g.proveedor || '', g.n_factura || '', g.categoria || '', Number(g.monto || 0)])))
+    dinero(cab(['Total gastos', '', '', '', totalGastos]))
+    ws.addRow([])
+
+    cab(['Anticipos del cliente', 'Referencia', 'N° comprobante', 'Forma de pago', 'Monto USD'])
+    anticipos.rows.forEach(a => dinero(ws.addRow([
+      a.fecha ? new Date(a.fecha).toISOString().slice(0, 10) : '', a.descripcion || '',
+      a.n_comprobante || '', a.forma_pago || '', Number(a.monto || 0)])))
+    dinero(cab(['Total anticipos', '', '', '', totalAnticipos]))
+    ws.addRow([])
+
+    dinero(cab(['Saldo (gastos − anticipos)', '', '', '', totalGastos - totalAnticipos]))
+
+    res.attachment(`${(tramite.numero || 'tramite').replace(/[^\w.-]+/g, '_')}-preliquidacion.xlsx`)
+    await wb.xlsx.write(res)
+    res.end()
+  } catch (err) {
+    console.error('Error armando xlsx:', err.message)
+    if (!res.headersSent) res.status(500).json({ error: 'Error interno' })
+  }
+})
 
 // POST /tramites
 router.post('/', auth, async (req, res) => {

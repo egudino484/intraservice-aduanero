@@ -162,7 +162,9 @@ async function openTramite(id) {
   customProps.length = 0;
   (data.custom_props || []).forEach(p => customProps.push(p));
   etiquetasData = data.etiquetas || [];
+  preliqData = data.preliquidacion || {};
   applyTramiteForm(data);
+  renderPreliquidacion(true);
   renderAll();
   renderDocumentos();
   renderEtiquetas();
@@ -286,6 +288,7 @@ function onOperacionChange() {
   const campoOtro = document.getElementById('campo-operacion-otro');
   if (campoOtro) campoOtro.style.display = op === 'Otro' ? '' : 'none';
   onRegimenChange();
+  renderPreliquidacion();
 }
 
 function onRegimenChange() {
@@ -947,6 +950,166 @@ async function loadProveedores() {
   proveedorRegistry.sort();
   localStorage.setItem('sa_proveedores', JSON.stringify(proveedorRegistry));
   updateProveedoresDatalist();
+}
+
+// ── PRELIQUIDACIÓN ────────────────────────────────────────────────
+// Mismo cálculo que backend/lib/preliquidacion.js: cada impuesto se apoya en
+// los anteriores. Si se toca uno, hay que tocar el otro.
+const TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguridad: 0 };
+let preliqData = {};
+let preliqTimer = null;
+
+function calcPreliq(p) {
+  const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
+  const fob = n(p.fob), flete = n(p.flete), seguro = n(p.seguro);
+  const cfr = fob + flete, cif = cfr + seguro;
+  const adValorem = cif * n(p.adValorem) / 100;
+  const fodinfa   = cif * n(p.fodinfa) / 100;
+  const iva       = (cif + adValorem + fodinfa) * n(p.iva) / 100;
+  const seguridad = (adValorem + fodinfa + iva) * n(p.seguridad) / 100;
+  return { fob, flete, seguro, cfr, cif, adValorem, fodinfa, iva, seguridad,
+           total: adValorem + fodinfa + iva + seguridad };
+}
+
+// forzarValores=true reescribe los inputs (al abrir un trámite); en los
+// recálculos se dejan como están para no pisar lo que se está tipeando.
+function renderPreliquidacion(forzarValores = false) {
+  const panel = document.getElementById('panel-preliquidacion');
+  if (!panel) return;
+  // El feedback pedía preliquidaciones para importaciones
+  const esImportacion = document.querySelector('[data-field="operacion"]')?.value === 'Importación';
+  panel.style.display = esImportacion ? '' : 'none';
+  if (!esImportacion) return;
+
+  const p = { ...TARIFAS_DEFECTO, ...preliqData };
+  if (forzarValores) {
+    const val = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+    val('pl-fob', p.fob); val('pl-flete', p.flete); val('pl-seguro', p.seguro);
+    val('pl-t-advalorem', p.adValorem); val('pl-t-fodinfa', p.fodinfa);
+    val('pl-t-iva', p.iva); val('pl-t-seguridad', p.seguridad);
+  }
+
+  const r = calcPreliq(p);
+  const money = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = '$' + v.toFixed(2); };
+  money('pl-cfr', r.cfr); money('pl-cif', r.cif);
+  money('pl-v-advalorem', r.adValorem); money('pl-v-fodinfa', r.fodinfa);
+  money('pl-v-iva', r.iva); money('pl-v-seguridad', r.seguridad); money('pl-total', r.total);
+}
+
+function leerPreliqForm() {
+  const v = id => document.getElementById(id)?.value;
+  return {
+    fob: v('pl-fob'), flete: v('pl-flete'), seguro: v('pl-seguro'),
+    adValorem: v('pl-t-advalorem'), fodinfa: v('pl-t-fodinfa'),
+    iva: v('pl-t-iva'), seguridad: v('pl-t-seguridad'),
+  };
+}
+
+function onPreliqChange() {
+  preliqData = leerPreliqForm();
+  renderPreliquidacion();
+  // Autosave, como en gastos y anticipos
+  clearTimeout(preliqTimer);
+  preliqTimer = setTimeout(() => { if (currentTramiteId) guardarPreliquidacion(); }, 800);
+}
+
+async function guardarPreliquidacion() {
+  const form = readTramiteForm();
+  await apiFetch('/tramites/' + currentTramiteId, {
+    method: 'PUT',
+    body: JSON.stringify({
+      numero: form.numero, tipo: form.operacion, cliente: form.cliente,
+      fecha_arribo: form.fechaApertura || null, bl: form.bl, naviera: form.naviera,
+      da: form.dai, factura_comercial: form.factCom,
+      factura_intraservice: form.factIntra, observaciones: form.obs,
+      custom_props: customProps, etiquetas: etiquetasData,
+      ...camposExtra(form), preliquidacion: preliqData,
+    })
+  });
+}
+
+async function exportPreliqExcel() {
+  if (!currentTramiteId) return;
+  showNotif('Generando Excel...');
+  const res = await fetch(API_URL + '/tramites/' + currentTramiteId + '/preliquidacion.xlsx', {
+    headers: { Authorization: 'Bearer ' + getToken() }
+  });
+  if (res.status === 401) { logout(); return; }
+  if (!res.ok) { showNotif('No se pudo generar el Excel'); return; }
+  const blob = await res.blob();
+  const nombre = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/)?.[1] || 'preliquidacion.xlsx';
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showNotif('Excel descargado');
+}
+
+function exportPreliqPDF() {
+  const form = readTramiteForm();
+  const r = calcPreliq({ ...TARIFAS_DEFECTO, ...preliqData });
+  const t = { ...TARIFAS_DEFECTO, ...preliqData };
+  const $ = n => '$' + Number(n || 0).toFixed(2);
+  const totalG = totalGastos(), totalA = totalAnticipos();
+  const filas = (arr, cols) => arr.map(x => `<tr>${cols(x)}</tr>`).join('') || '<tr><td colspan="5" class="vacio">Sin registros</td></tr>';
+
+  const w = window.open('', '_blank');
+  if (!w) { showNotif('El navegador bloqueó la ventana de impresión'); return; }
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+  <title>Preliquidación ${form.numero || ''}</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;color:#141414;margin:32px;font-size:12px}
+    h1{font-size:17px;margin:0 0 2px} .sub{color:#666;margin-bottom:18px;font-size:12px}
+    h2{font-size:13px;margin:20px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}
+    table{width:100%;border-collapse:collapse} td,th{padding:5px 6px;border-bottom:1px solid #eee;text-align:left}
+    th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#666}
+    .num{text-align:right;font-variant-numeric:tabular-nums} .tot{font-weight:600;border-top:1px solid #999}
+    .vacio{color:#999;text-align:center} .meta td:first-child{color:#666;width:150px}
+    @media print{body{margin:0}}
+  </style></head><body>
+  <h1>Preliquidación · ${form.numero || ''}</h1>
+  <div class="sub">${form.cliente || ''} · ${form.operacion || ''}${form.regimen ? ' · ' + form.regimen : ''}</div>
+  <table class="meta">
+    <tr><td>Sub partida</td><td>${form.subPartida || '—'}</td></tr>
+    <tr><td>BL / AWB</td><td>${form.bl || '—'}</td></tr>
+    <tr><td>DAI / DAE</td><td>${form.dai || '—'}</td></tr>
+  </table>
+  <h2>Valores de la mercadería</h2>
+  <table>
+    <tr><td>FOB</td><td class="num">${$(r.fob)}</td></tr>
+    <tr><td>Flete</td><td class="num">${$(r.flete)}</td></tr>
+    <tr><td>CFR</td><td class="num">${$(r.cfr)}</td></tr>
+    <tr><td>Seguro</td><td class="num">${$(r.seguro)}</td></tr>
+    <tr class="tot"><td>CIF</td><td class="num">${$(r.cif)}</td></tr>
+  </table>
+  <h2>Impuestos</h2>
+  <table>
+    <tr><th>Impuesto</th><th>Tarifa</th><th class="num">Valor</th></tr>
+    <tr><td>Ad Valorem</td><td>${t.adValorem}%</td><td class="num">${$(r.adValorem)}</td></tr>
+    <tr><td>Fodinfa</td><td>${t.fodinfa}%</td><td class="num">${$(r.fodinfa)}</td></tr>
+    <tr><td>IVA</td><td>${t.iva}%</td><td class="num">${$(r.iva)}</td></tr>
+    <tr><td>Seguridad</td><td>${t.seguridad}%</td><td class="num">${$(r.seguridad)}</td></tr>
+    <tr class="tot"><td colspan="2">Total impuestos</td><td class="num">${$(r.total)}</td></tr>
+  </table>
+  <h2>Gastos pagados</h2>
+  <table>
+    <tr><th>Concepto</th><th>Proveedor</th><th>N° factura</th><th>Categoría</th><th class="num">Monto</th></tr>
+    ${filas(gastoData, g => `<td>${escHtml(g.concepto||'')}</td><td>${escHtml(g.proveedor||'')}</td><td>${escHtml(g.n_factura||'')}</td><td>${escHtml(g.categoria||'')}</td><td class="num">${$(g.monto)}</td>`)}
+    <tr class="tot"><td colspan="4">Total gastos</td><td class="num">${$(totalG)}</td></tr>
+  </table>
+  <h2>Anticipos del cliente</h2>
+  <table>
+    <tr><th>Fecha</th><th>Referencia</th><th>N° comprobante</th><th>Forma de pago</th><th class="num">Monto</th></tr>
+    ${filas(anticipoData, a => `<td>${(a.fecha||'').split('T')[0]}</td><td>${escHtml(a.descripcion||'')}</td><td>${escHtml(a.n_comprobante||'')}</td><td>${escHtml(a.forma_pago||'')}</td><td class="num">${$(a.monto)}</td>`)}
+    <tr class="tot"><td colspan="4">Total anticipos</td><td class="num">${$(totalA)}</td></tr>
+  </table>
+  <h2>Saldo</h2>
+  <table><tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr></table>
+  </body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
 }
 
 // ── CLIENTES (registro en el servidor) ────────────────────────────

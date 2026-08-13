@@ -47,6 +47,8 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS proveedor    TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS contenedores TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cda          TEXT;
+  -- Preliquidación: valores de la mercadería y tarifas, editables por trámite
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS preliquidacion JSONB DEFAULT '{}';
   -- Fecha de llegada de la mercadería, distinta de la apertura del trámite
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_llegada DATE;
   -- Operación "Otro" y régimen aduanero
