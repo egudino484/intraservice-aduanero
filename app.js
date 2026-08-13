@@ -215,6 +215,8 @@ function newTramiteUI() {
   topbarBadges.tramite = '';
   const fechaEl = document.querySelector('[data-field="fechaApertura"]');
   if (fechaEl) fechaEl.value = todayISO();
+  onOperacionChange();
+  actualizarSugerenciasOperacion();
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
@@ -247,7 +249,49 @@ const CAMPOS_EXTRA = {
   liqSenae: 'liq_senae', subPartida: 'sub_partida', entrega: 'n_entrega',
   transporte: 'transporte', proveedor: 'proveedor',
   contenedores: 'contenedores', cda: 'cda',
+  operacionOtro: 'operacion_otro', regimen: 'regimen', regimenOtro: 'regimen_otro',
 };
+
+// Regímenes según la operación. OTRO_REGIMEN habilita el campo libre.
+const OTRO_REGIMEN = 'Otro (especificar)';
+const REGIMENES = {
+  'Importación': ['Régimen 21 – Importación Temporal', 'Régimen 10 – Importación para el Consumo', OTRO_REGIMEN],
+  'Exportación': ['Régimen 49 – Exportación Temporal', 'Exportación Definitiva', OTRO_REGIMEN],
+  'Otro': [OTRO_REGIMEN],
+};
+
+// Sugerencias para los campos "especificar", tomadas de lo ya cargado en otros
+// trámites: así un valor escrito una vez queda disponible para el resto.
+function actualizarSugerenciasOperacion() {
+  const llenar = (idLista, valores) => {
+    const dl = document.getElementById(idLista);
+    if (dl) dl.innerHTML = [...new Set(valores.filter(Boolean))].sort()
+      .map(v => `<option value="${escHtml(v)}">`).join('');
+  };
+  llenar('operacion-otro-list', bitacoraData.map(t => t.operacion_otro));
+  llenar('regimen-otro-list', bitacoraData.map(t => t.regimen_otro));
+}
+
+function onOperacionChange() {
+  const op = document.querySelector('[data-field="operacion"]')?.value || 'Importación';
+  const sel = document.querySelector('[data-field="regimen"]');
+  const previo = sel?.value;
+  if (sel) {
+    const opciones = REGIMENES[op] || [OTRO_REGIMEN];
+    sel.innerHTML = ['', ...opciones].map(r => `<option value="${escHtml(r)}">${r || '— Sin régimen —'}</option>`).join('');
+    // Si el régimen que había sigue siendo válido para esta operación, se respeta
+    if (previo && opciones.includes(previo)) sel.value = previo;
+  }
+  const campoOtro = document.getElementById('campo-operacion-otro');
+  if (campoOtro) campoOtro.style.display = op === 'Otro' ? '' : 'none';
+  onRegimenChange();
+}
+
+function onRegimenChange() {
+  const esOtro = document.querySelector('[data-field="regimen"]')?.value === OTRO_REGIMEN;
+  const campo = document.getElementById('campo-regimen-otro');
+  if (campo) campo.style.display = esOtro ? '' : 'none';
+}
 
 function camposExtra(form) {
   const o = {};
@@ -1375,7 +1419,12 @@ function applyTramiteForm(data) {
   set('factCom', data.factura_comercial);
   set('factIntra', data.factura_intraservice);
   set('obs', data.observaciones);
+  // Las opciones de régimen dependen de la operación: hay que armarlas antes
+  // de asignar el valor guardado, o el select lo descarta.
+  onOperacionChange();
   for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) set(campo, data[col] ?? '');
+  onRegimenChange();
+  actualizarSugerenciasOperacion();
 }
 
 function discardChanges() {

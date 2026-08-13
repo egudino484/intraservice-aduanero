@@ -166,8 +166,13 @@
             <div class="panel-title">Información general</div>
             <div class="field-row-3">
               <div class="field"><label>N° trámite</label><input type="text" data-field="numero" value="T26-281" readonly></div>
-              <div class="field"><label>Operación</label><select data-field="operacion"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
+              <div class="field"><label>Operación</label><select data-field="operacion" onchange="onOperacionChange()"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
               <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24"></div>
+            </div>
+            <div class="field-row-3" id="fila-regimen">
+              <div class="field" id="campo-operacion-otro" style="display:none"><label>Especificar operación</label><input list="operacion-otro-list" type="text" data-field="operacionOtro" placeholder="¿Qué tipo de operación?"><datalist id="operacion-otro-list"></datalist></div>
+              <div class="field" id="campo-regimen"><label>Régimen</label><select data-field="regimen" onchange="onRegimenChange()"></select></div>
+              <div class="field" id="campo-regimen-otro" style="display:none"><label>Especificar régimen</label><input list="regimen-otro-list" type="text" data-field="regimenOtro" placeholder="¿Qué régimen?"><datalist id="regimen-otro-list"></datalist></div>
             </div>
             <div class="field-row">
               <div class="field"><label>Cliente</label>

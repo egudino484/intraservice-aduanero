@@ -73,7 +73,7 @@ router.get('/:id', auth, async (req, res) => {
 })
 
 // Campos de texto sueltos del form; se guardan tal cual llegan
-const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda']
+const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro']
 const extraValores = body => EXTRA.map(c => body[c] ?? null)
 
 // POST /tramites

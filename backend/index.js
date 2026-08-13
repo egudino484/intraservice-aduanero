@@ -47,6 +47,10 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS proveedor    TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS contenedores TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cda          TEXT;
+  -- Operación "Otro" y régimen aduanero
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS operacion_otro TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen        TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen_otro   TEXT;
   CREATE TABLE IF NOT EXISTS gasto_archivos (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     gasto_id    UUID NOT NULL REFERENCES gastos(id) ON DELETE CASCADE,
