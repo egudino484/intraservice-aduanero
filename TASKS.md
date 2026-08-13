@@ -26,7 +26,8 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
   - ⚠️ **`archiver` debe quedar en el `package.json` de la RAÍZ.** Railway construye desde la raíz y usa su `start`; `backend/package.json` no se instala en el deploy. Declararlo solo ahí dejó el servicio caído con `MODULE_NOT_FOUND`.
   - ⚠️ **Pinneado a `archiver@^7`**: la v8 dejó de exportar la función `archiver('zip')` y pasó a exportar clases.
 
-- [ ] **T8 · Fecha de llegada en Información general** — S — Agregar el campo al form de datos del trámite. ⚠️ Confirmar si es campo nuevo o si es la "fecha de arribo" ya existente.
+- [x] **T8 · Fecha de llegada en Información general** — S — Campo nuevo, confirmado con Edison que es distinta de la fecha de apertura. *Columna `fecha_llegada`. Verificado en producción: las dos fechas conviven y se releen bien tras recargar.*
+  - Nota: la columna que hoy alimenta "Fecha de apertura de trámite" se llama `fecha_arribo` en la base. El nombre quedó del prototipo y ya no describe lo que guarda; renombrarla es cosmético pero evita confusiones con `fecha_llegada`.
 
 - [x] **T9 · Fecha de trámite default = fecha actual** — S — "Nuevo trámite" pobla la fecha de apertura con la fecha de hoy, editable. *`todayISO()` en `app.js` usa fecha local a propósito: `toISOString()` daría el día siguiente después de las 19:00 en UTC-5. Verificado en producción.*
 
@@ -48,17 +49,25 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 ## P3 — Reportería
 
-- [ ] **T10 · Preliquidaciones exportables (Excel / PDF)** — L — Para trámites de importación, apartado "Preliquidaciones" que genere el archivo descargable. El panel de cálculo CIF + impuestos ya existe; falta la generación y descarga. PDF: reutilizar el patrón `window.print()` + `@media print` de `exportReportePDF()`. Excel: server-side con `exceljs`.
+- [x] **T10 · Preliquidaciones exportables (Excel y PDF)** — L — Panel de preliquidación en la pestaña Liquidación, visible solo en importaciones, con exportación a **PDF y Excel** (ambos, confirmado con Edison). El archivo lleva preliquidación + gastos + anticipos + saldo.
+  - **El cálculo no existía**: el panel anterior era markup estático del prototipo, con los números de MEGASTOCKEC fijos, dentro de una pantalla desactivada y con un botón de exportar que solo mostraba un aviso.
+  - FOB, flete y seguro se cargan por trámite; CFR y CIF se calculan. Las tarifas (Ad Valorem, Fodinfa, IVA, Seguridad) traen valor por defecto y **se editan en cada trámite** — decisión de Edison, para no fijar reglas fiscales en el código.
+  - Cada impuesto se apoya en los anteriores: Ad Valorem y Fodinfa sobre CIF, IVA sobre CIF+AdValorem+Fodinfa, Seguridad sobre la suma de los tres. La fórmula se dedujo de los números del prototipo y los reproduce al centavo.
+  - ⚠️ **El cálculo está duplicado**: `backend/lib/preliquidacion.js` y `calcPreliq()` en `app.js`. El backend lo necesita para el Excel y el frontend para mostrarlo en vivo. Si se toca uno hay que tocar el otro.
+  - *Se guarda en la columna `preliquidacion` (JSONB) con autosave. Verificado en producción: cálculo contrastado contra los valores del prototipo, guardado en la base, y el .xlsx descargado y abierto para comprobar que trae las cinco secciones.*
 
 ## Descartadas
 
 - **Eliminar pestaña "Estado y auditoría"** (feedback del 04-ago-2026) — **no se hace**. Decisión de Edison: la pestaña queda tal cual está. Ahí vive el cambio de estado con motivo y quitarla rompería el flujo.
 
-## Preguntas abiertas para Nicole
+## Preguntas abiertas
 
-1. T8 — ¿"fecha de llegada" es lo mismo que la "fecha de arribo" existente?
-2. T10 — ¿Excel, PDF o ambos? ¿Qué columnas lleva el Excel?
-3. T2 — ¿quién puede ver la clave de ECUAPASS? *Se implementó solo admin, con registro en auditoría. Confirmar si los operadores también deberían poder.*
+1. **T10 — ¿son correctas las tarifas por defecto?** Hoy: Ad Valorem 0%, Fodinfa 0.5%, IVA 15%, Seguridad 0%. Y confirmar con Nicole que el orden de cálculo (cada impuesto sobre los anteriores) es el que usan.
+2. **T2 — ¿quién puede ver la clave de ECUAPASS?** Se implementó solo admin, con registro en auditoría. Confirmar si los operadores también deberían poder.
+3. **T2 — configurar `ECUAPASS_KEY` en Railway** antes de cargar claves reales.
+4. **T15 — ¿qué molesta del componente de etiquetas?** La lista de problemas de la tarea salió de leer el código, no del uso.
+
+*Respondidas: T8 (es otra fecha, distinta de la apertura) · T10 (los dos formatos, con gastos y saldo incluidos).*
 
 ---
 
