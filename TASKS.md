@@ -7,7 +7,9 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T1 · N° trámite consecutivo (T26-001)** — S — En "Nuevo trámite", el campo N° TRÁMITE sugiere automáticamente el siguiente consecutivo del año (T26-522 hoy en prod) basado en el último creado. Se puebla por default al abrir el form y sigue editable — sugerencia, no forzado. *Backend: `GET /tramites/next-numero` (`backend/routes/tramites.js`). Frontend: `suggestNextNumero()` en `app.js`. Verificado en producción.*
 
-- [ ] **T2 · Registro de clientes (RUC, razón social, ECUAPASS, correos)** — L — Apartado/CRUD de clientes: RUC, nombre o razón social, clave de ECUAPASS, correo(s) de contacto (múltiples). Incluye popup "nuevo cliente" desde el campo Cliente del form de trámite (agrega también teléfono y descripción, del pedido previo). Migración: tabla `clientes` + FK `tramites.cliente_id`, manteniendo el texto libre actual como fallback. ⚠️ La clave ECUAPASS es una credencial: cifrada, fuera de listados y del log de auditoría.
+- [x] **T2 · Registro de clientes (RUC, razón social, ECUAPASS, correos)** — L — Pantalla "Clientes" con alta, edición y baja: RUC, nombre o razón social, teléfono, descripción, correos múltiples y clave de ECUAPASS. El desplegable de Cliente del form de trámite se alimenta del servidor (antes era localStorage por navegador) y tiene un botón "+" para registrar uno nuevo sin perder lo cargado. *Tabla `clientes` sembrada con los clientes que ya aparecían en los trámites. La clave va cifrada con AES-256-GCM (`backend/lib/cripto.js`), nunca sale en los listados, solo un admin puede verla y cada consulta queda en auditoría como `ecuapass_consultada`. No se puede borrar un cliente con trámites asociados. Verificado en producción, incluido que la clave está cifrada en la base.*
+  - ⚠️ **Falta configurar `ECUAPASS_KEY` en Railway.** Hoy la llave de cifrado se deriva de `JWT_SECRET` como fallback. Si algún día se rota el `JWT_SECRET`, las claves guardadas quedan indescifrables. Conviene definir la variable propia antes de cargar claves reales.
+  - Pendiente decidir: los trámites siguen guardando el cliente como texto libre, sin FK a `clientes`. Renombrar un cliente no actualiza sus trámites.
 
 - [ ] **T3 · Operación "Otro" + régimen aduanero** — M — Al elegir "Otro" en Operación, habilitar campo para especificar (y persistir el valor como opción futura, similar a etiquetas custom). Al elegir Importación: régimen `21 – Importación Temporal`, `10 – Importación para el Consumo`, `Otro (especificar)`. Al elegir Exportación: `49 – Exportación Temporal`, `Exportación Definitiva`, `Otro (especificar)`. Migración: columnas `operacion_otro`, `regimen`, `regimen_otro`.
 
@@ -56,7 +58,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 1. T8 — ¿"fecha de llegada" es lo mismo que la "fecha de arribo" existente?
 2. T10 — ¿Excel, PDF o ambos? ¿Qué columnas lleva el Excel?
-3. T2 — ¿quién puede ver la clave de ECUAPASS, solo admin?
+3. T2 — ¿quién puede ver la clave de ECUAPASS? *Se implementó solo admin, con registro en auditoría. Confirmar si los operadores también deberían poder.*
 
 ---
 
