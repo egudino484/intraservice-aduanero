@@ -5,7 +5,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 ## P1 — Alta prioridad
 
-- [x] **T1 · N° trámite consecutivo (T26-001)** — S — En "Nuevo trámite", el campo N° TRÁMITE sugiere automáticamente el siguiente consecutivo del año (T26-522 hoy en prod) basado en el último creado. Se puebla por default al abrir el form y sigue editable — sugerencia, no forzado. *Backend: `GET /tramites/next-numero` (`backend/routes/tramites.js`). Frontend: `suggestNextNumero()` en `app.js`. Pendiente de deploy.*
+- [x] **T1 · N° trámite consecutivo (T26-001)** — S — En "Nuevo trámite", el campo N° TRÁMITE sugiere automáticamente el siguiente consecutivo del año (T26-522 hoy en prod) basado en el último creado. Se puebla por default al abrir el form y sigue editable — sugerencia, no forzado. *Backend: `GET /tramites/next-numero` (`backend/routes/tramites.js`). Frontend: `suggestNextNumero()` en `app.js`. Verificado en producción.*
 
 - [ ] **T2 · Registro de clientes (RUC, razón social, ECUAPASS, correos)** — L — Apartado/CRUD de clientes: RUC, nombre o razón social, clave de ECUAPASS, correo(s) de contacto (múltiples). Incluye popup "nuevo cliente" desde el campo Cliente del form de trámite (agrega también teléfono y descripción, del pedido previo). Migración: tabla `clientes` + FK `tramites.cliente_id`, manteniendo el texto libre actual como fallback. ⚠️ La clave ECUAPASS es una credencial: cifrada, fuera de listados y del log de auditoría.
 
@@ -32,7 +32,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T12 · `saveState()` no existe** — S — Se quitaron las 19 llamadas de los `onchange` de `index.html`. No se definió la función: el guardado real ya pasa por el botón "Guardar cambios", y un autosave del form sería un cambio de comportamiento a decidir aparte (ver T14).
 
-- [ ] **T14 · 10 campos del trámite no se guardan** — M — `readTramiteForm()` lee los 20 campos del form, pero `saveTramiteForm()` solo manda 10 al backend. Se pierden en silencio: **mercadería, almacenera, MRN, liquidación SENAE, sub partida, N° entrega, transporte, proveedor, contenedores y CDA/garantía/póliza**. El usuario los edita, ve "Guardado" y al recargar vuelven vacíos, porque `applyTramiteForm()` tampoco los repuebla. Requiere columnas nuevas en `tramites` (o meterlos en `custom_props`) + mapearlos en el POST/PUT y en `applyTramiteForm`.
+- [x] **T14 · 10 campos del trámite no se guardaban** — M — Mercadería, almacenera, MRN, liquidación SENAE, sub partida, N° entrega, transporte, proveedor, contenedores y CDA ahora se persisten y se repueblan al recargar. *Columnas nuevas en `tramites` (migración idempotente en `backend/index.js`) + `EXTRA` en `routes/tramites.js`. En el frontend un único mapeo `CAMPOS_EXTRA` sirve para enviar y para repoblar, así las dos listas no se vuelven a desincronizar. El PUT ahora avisa si falla en vez de decir "Trámite guardado" igual. Verificado en producción: los 10 campos escritos, guardados, releídos tras recargar y restaurados.*
 
 ## P3 — Reportería
 
