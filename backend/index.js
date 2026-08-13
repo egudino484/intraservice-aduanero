@@ -20,6 +20,22 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  CREATE TABLE IF NOT EXISTS clientes (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ruc              TEXT UNIQUE,
+    nombre           TEXT NOT NULL UNIQUE,
+    descripcion      TEXT,
+    telefono         TEXT,
+    emails           JSONB NOT NULL DEFAULT '[]',
+    ecuapass_cifrado TEXT,
+    created_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  -- Siembra con los clientes que ya aparecen en los trámites
+  INSERT INTO clientes (nombre)
+  SELECT DISTINCT TRIM(cliente) FROM tramites
+  WHERE cliente IS NOT NULL AND TRIM(cliente) <> ''
+  ON CONFLICT (nombre) DO NOTHING;
   -- Campos del form de trámite que se leían en pantalla pero no se guardaban
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS mercaderia   TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS almacenera   TEXT;
@@ -61,6 +77,7 @@ app.use('/tramites/:tramiteId/gastos',    require('./routes/gastos'))
 app.use('/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
 app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
 app.use('/proveedores',                   require('./routes/proveedores'))
+app.use('/clientes',                      require('./routes/clientes'))
 app.use('/auditoria',                     require('./routes/auditoria'))
 app.use('/users',                         require('./routes/users'))
 app.use('/feedback',                      require('./routes/feedback'))

@@ -69,6 +69,11 @@
       Reporte financiero
     </div>
 
+    <div class="nav-item" id="nav-clientes" onclick="nav('clientes',this)">
+      <svg viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="7" r="1.6" stroke="currentColor" stroke-width="1.1"/><path d="M3.6 11c.4-1.1 1.3-1.7 2.4-1.7s2 .6 2.4 1.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="10" y1="6.5" x2="11.8" y2="6.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><line x1="10" y1="9" x2="11.8" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+      Clientes
+    </div>
+
     <div class="nav-section">Auditoría</div>
     <div class="nav-item" id="nav-usuarios" onclick="nav('usuarios',this)" style="display:none">
       <svg viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -165,7 +170,13 @@
               <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Cliente</label><input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value)" placeholder="Ingresa o selecciona cliente..."><datalist id="clientes-list"></datalist></div>
+              <div class="field"><label>Cliente</label>
+                <div style="display:flex;gap:6px">
+                  <input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value)" placeholder="Ingresa o selecciona cliente..." style="flex:1">
+                  <button class="btn btn-sm" onclick="nuevoClienteDesdeTramite()" title="Registrar cliente nuevo">+</button>
+                </div>
+                <datalist id="clientes-list"></datalist>
+              </div>
               <div class="field">
                 <label>Mercadería importada</label>
                 <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value)" placeholder="Ingresa o selecciona mercadería...">
@@ -702,6 +713,41 @@
           <table>
             <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th>Desde</th><th></th></tr></thead>
             <tbody id="usuarios-body">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ CLIENTES ══ -->
+      <div class="screen" id="screen-clientes">
+        <div class="panel">
+          <div class="panel-title">
+            <span>Clientes registrados</span>
+            <button class="btn btn-sm btn-primary" onclick="showClienteForm()">+ Nuevo cliente</button>
+          </div>
+
+          <div id="cliente-form" style="display:none;background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+            <div class="field-row-3" style="margin-bottom:12px">
+              <div class="field"><label>RUC</label><input id="cl-ruc" type="text" placeholder="1791234567001"></div>
+              <div class="field"><label>Nombre o razón social</label><input id="cl-nombre" type="text" placeholder="Ej: MEGASTOCKEC"></div>
+              <div class="field"><label>Teléfono</label><input id="cl-telefono" type="text" placeholder="099 123 4567"></div>
+            </div>
+            <div class="field-row" style="margin-bottom:12px">
+              <div class="field"><label>Correo(s) de contacto</label><input id="cl-emails" type="text" placeholder="uno@cliente.com, dos@cliente.com"></div>
+              <div class="field"><label>Clave de ECUAPASS</label><input id="cl-ecuapass" type="password" autocomplete="new-password" placeholder="Se guarda cifrada"></div>
+            </div>
+            <div class="field" style="margin-bottom:12px"><label>Descripción</label><input id="cl-descripcion" type="text" placeholder="Notas del cliente"></div>
+            <div id="cl-error" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:14px"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="guardarCliente()">Guardar cliente</button>
+              <button class="btn btn-ghost btn-sm" onclick="hideClienteForm()">Cancelar</button>
+            </div>
+          </div>
+
+          <table>
+            <thead><tr><th>Nombre / razón social</th><th>RUC</th><th>Teléfono</th><th>Correos</th><th>ECUAPASS</th><th></th></tr></thead>
+            <tbody id="clientes-body">
               <tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Cargando...</td></tr>
             </tbody>
           </table>

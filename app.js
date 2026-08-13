@@ -77,6 +77,7 @@ async function initApp() {
   updateEtiquetasDatalist();
   renderEtiquetaColorPicker();
   loadProveedores();
+  loadClientes();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -454,7 +455,7 @@ async function createUser() {
 async function loadAuditoria() {
   const data = await apiFetch('/auditoria');
   if (!data) return;
-  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada' };
+  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada', ecuapass_consultada:'Clave ECUAPASS consultada' };
   const dotC = { estado_cambiado:'green', gasto_agregado:'', documento_cargado:'', tramite_creado:'blue' };
   const panel = document.querySelector('#screen-auditoria .panel');
   if (!panel) return;
@@ -903,6 +904,113 @@ async function loadProveedores() {
   updateProveedoresDatalist();
 }
 
+// ── CLIENTES (registro en el servidor) ────────────────────────────
+let clientesData = [];
+let clienteEditando = null;
+
+async function loadClientes() {
+  const data = await apiFetch('/clientes');
+  if (!Array.isArray(data)) return;
+  clientesData = data;
+  // El desplegable de Cliente del form de trámite se alimenta de acá
+  data.forEach(c => saveCliente(c.nombre));
+  updateClientesDatalist();
+  renderClientes();
+}
+
+function renderClientes() {
+  const tbody = document.getElementById('clientes-body');
+  if (!tbody) return;
+  const esAdmin = currentUser?.role === 'admin';
+  tbody.innerHTML = clientesData.map(c => `
+    <tr>
+      <td style="font-weight:500">${escHtml(c.nombre)}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px">${escHtml(c.ruc || '—')}</td>
+      <td style="font-size:12px">${escHtml(c.telefono || '—')}</td>
+      <td style="font-size:12px;color:var(--text-2)">${(c.emails || []).map(escHtml).join('<br>') || '—'}</td>
+      <td>${c.tiene_ecuapass
+        ? (esAdmin
+            ? `<button class="btn btn-sm btn-ghost" onclick="verEcuapass('${c.id}')">Ver clave</button>`
+            : '<span class="badge badge-gray">Guardada</span>')
+        : '<span style="color:var(--text-3);font-size:12px">—</span>'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-ghost" onclick="showClienteForm('${c.id}')">Editar</button>
+        ${esAdmin ? `<button class="btn btn-sm btn-danger" onclick="deleteCliente('${c.id}')">✕</button>` : ''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin clientes registrados</td></tr>';
+}
+
+function showClienteForm(id) {
+  clienteEditando = id ? clientesData.find(c => c.id === id) : null;
+  const c = clienteEditando;
+  document.getElementById('cl-ruc').value = c?.ruc || '';
+  document.getElementById('cl-nombre').value = c?.nombre || '';
+  document.getElementById('cl-telefono').value = c?.telefono || '';
+  document.getElementById('cl-emails').value = (c?.emails || []).join(', ');
+  document.getElementById('cl-descripcion').value = c?.descripcion || '';
+  // La clave nunca se precarga: vacío = dejarla como está
+  const ecu = document.getElementById('cl-ecuapass');
+  ecu.value = '';
+  ecu.placeholder = c?.tiene_ecuapass ? 'Ya guardada — escribe para reemplazarla' : 'Se guarda cifrada';
+  document.getElementById('cl-error').textContent = '';
+  document.getElementById('cliente-form').style.display = 'block';
+}
+
+function hideClienteForm() {
+  clienteEditando = null;
+  document.getElementById('cliente-form').style.display = 'none';
+}
+
+async function guardarCliente() {
+  const err = document.getElementById('cl-error');
+  const nombre = document.getElementById('cl-nombre').value.trim();
+  if (!nombre) { err.textContent = 'El nombre o razón social es requerido'; return; }
+  const body = {
+    ruc: document.getElementById('cl-ruc').value.trim(),
+    nombre,
+    telefono: document.getElementById('cl-telefono').value.trim(),
+    emails: document.getElementById('cl-emails').value,
+    descripcion: document.getElementById('cl-descripcion').value.trim(),
+  };
+  const ecuapass = document.getElementById('cl-ecuapass').value;
+  if (ecuapass) body.ecuapass = ecuapass;
+
+  const res = clienteEditando
+    ? await apiFetch('/clientes/' + clienteEditando.id, { method: 'PATCH', body: JSON.stringify(body) })
+    : await apiFetch('/clientes', { method: 'POST', body: JSON.stringify(body) });
+  if (!res || res.error) { err.textContent = res?.error || 'Error al guardar'; return; }
+
+  hideClienteForm();
+  showNotif(clienteEditando ? 'Cliente actualizado' : 'Cliente creado');
+  loadClientes();
+}
+
+// Atajo desde el form de trámite: lleva a Clientes con el form abierto y el
+// nombre ya escrito. El trámite queda como estaba al volver.
+function nuevoClienteDesdeTramite() {
+  const escrito = document.getElementById('campo-cliente')?.value.trim() || '';
+  nav('clientes', document.getElementById('nav-clientes'));
+  showClienteForm();
+  if (escrito) document.getElementById('cl-nombre').value = escrito;
+}
+
+async function verEcuapass(id) {
+  const res = await apiFetch('/clientes/' + id + '/ecuapass');
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo obtener'); return; }
+  const cliente = clientesData.find(c => c.id === id);
+  // Queda registrado en auditoría quién la consultó
+  alert('Clave de ECUAPASS de ' + (cliente?.nombre || '') + ':\n\n' + (res.ecuapass || '(sin clave guardada)'));
+}
+
+async function deleteCliente(id) {
+  const c = clientesData.find(c => c.id === id);
+  if (!confirm('¿Eliminar el cliente ' + (c?.nombre || '') + '?')) return;
+  const res = await apiFetch('/clientes/' + id, { method: 'DELETE' });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo eliminar'); return; }
+  showNotif('Cliente eliminado');
+  loadClientes();
+}
+
 // ── ETIQUETAS ─────────────────────────────────────────────────────
 const ETIQUETA_COLORS = [
   {name:'Azul',   hex:'#1E4FBF'}, {name:'Verde',   hex:'#1A6B3C'},
@@ -1290,6 +1398,7 @@ const pageTitles = {
   reportes: 'Reporte financiero',
   auditoria: 'Historial de auditoría',
   usuarios: 'Gestión de usuarios',
+  clientes: 'Clientes',
   feedback: 'Feedback de usuarios'
 };
 const topbarBadges = {
@@ -1314,6 +1423,7 @@ function nav(id, el) {
   if (id === 'dashboard') loadDashboard();
   if (id === 'bitacora') loadBitacora();
   if (id === 'usuarios') loadUsuarios();
+  if (id === 'clientes') loadClientes();
   if (id === 'feedback') loadFeedback();
 }
 
