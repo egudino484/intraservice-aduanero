@@ -239,6 +239,21 @@ async function suggestNextNumero() {
   if (creatingMode && !numEl.value) numEl.value = res.numero;
 }
 
+// data-field del form → columna del backend. Un solo mapeo para enviar y para
+// repoblar: antes estas dos listas estaban sueltas y 10 campos se perdían.
+const CAMPOS_EXTRA = {
+  mercaderia: 'mercaderia', almacenera: 'almacenera', mrn: 'mrn',
+  liqSenae: 'liq_senae', subPartida: 'sub_partida', entrega: 'n_entrega',
+  transporte: 'transporte', proveedor: 'proveedor',
+  contenedores: 'contenedores', cda: 'cda',
+};
+
+function camposExtra(form) {
+  const o = {};
+  for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) o[col] = form[campo] || null;
+  return o;
+}
+
 async function saveTramiteForm() {
   const form = readTramiteForm();
   const navieraVal = document.querySelector('[data-field="naviera"]')?.value || '';
@@ -258,6 +273,7 @@ async function saveTramiteForm() {
         factura_comercial: form.factCom, factura_intraservice: form.factIntra,
         observaciones: form.obs,
         custom_props: customProps, etiquetas: etiquetasData,
+        ...camposExtra(form),
       })
     });
     if (!res || res.error) { showNotif(res?.error || 'Error al crear'); return; }
@@ -275,9 +291,11 @@ async function saveTramiteForm() {
       da: form.dai, factura_comercial: form.factCom,
       factura_intraservice: form.factIntra, observaciones: form.obs,
       custom_props: customProps, etiquetas: etiquetasData,
+      ...camposExtra(form),
     })
   });
-  if (res) { showNotif('Trámite guardado'); loadBitacora(); loadDashboard(); }
+  if (!res || res.error) { showNotif(res?.error || 'Error al guardar'); return; }
+  showNotif('Trámite guardado'); loadBitacora(); loadDashboard();
 }
 
 async function registrarCambioEstado() {
@@ -1249,6 +1267,7 @@ function applyTramiteForm(data) {
   set('factCom', data.factura_comercial);
   set('factIntra', data.factura_intraservice);
   set('obs', data.observaciones);
+  for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) set(campo, data[col] ?? '');
 }
 
 function discardChanges() {

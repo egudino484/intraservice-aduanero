@@ -20,6 +20,17 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  -- Campos del form de trámite que se leían en pantalla pero no se guardaban
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS mercaderia   TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS almacenera   TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS mrn          TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS liq_senae    TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS sub_partida  TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS n_entrega    TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS transporte   TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS proveedor    TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS contenedores TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cda          TEXT;
   CREATE TABLE IF NOT EXISTS gasto_archivos (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     gasto_id    UUID NOT NULL REFERENCES gastos(id) ON DELETE CASCADE,

@@ -72,6 +72,10 @@ router.get('/:id', auth, async (req, res) => {
   } catch { res.status(500).json({ error: 'Error interno' }) }
 })
 
+// Campos de texto sueltos del form; se guardan tal cual llegan
+const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda']
+const extraValores = body => EXTRA.map(c => body[c] ?? null)
+
 // POST /tramites
 router.post('/', auth, async (req, res) => {
   const { numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas } = req.body
@@ -79,9 +83,9 @@ router.post('/', auth, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO tramites (numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.user.id]
+      `INSERT INTO tramites (numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas, created_by, ${EXTRA.join(', ')})
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,${EXTRA.map((_, i) => '$' + (15 + i)).join(',')}) RETURNING *`,
+      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.user.id, ...extraValores(req.body)]
     )
     await db.query(
       `INSERT INTO auditoria (tramite_id, user_id, accion, detalle) VALUES ($1,$2,'tramite_creado',$3)`,
@@ -101,9 +105,9 @@ router.put('/:id', auth, async (req, res) => {
     const { rows } = await db.query(
       `UPDATE tramites SET numero=$1, tipo=$2, cliente=$3, fecha_arribo=$4, bl=$5, naviera=$6, da=$7,
        factura_comercial=$8, factura_intraservice=$9, factura_agente=$10, observaciones=$11,
-       custom_props=$12, etiquetas=$13
+       custom_props=$12, etiquetas=$13, ${EXTRA.map((c, i) => `${c}=$${15 + i}`).join(', ')}
        WHERE id=$14 RETURNING *`,
-      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.params.id]
+      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.params.id, ...extraValores(req.body)]
     )
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
     res.json(rows[0])
