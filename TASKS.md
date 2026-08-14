@@ -62,14 +62,22 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - **Eliminar pestaña "Estado y auditoría"** (feedback del 04-ago-2026) — **no se hace**. Decisión de Edison: la pestaña queda tal cual está. Ahí vive el cambio de estado con motivo y quitarla rompería el flujo.
 
-## Preguntas abiertas
+## Decisiones tomadas
 
-1. **T10 — ¿son correctas las tarifas por defecto?** Hoy: Ad Valorem 0%, Fodinfa 0.5%, IVA 15%, Seguridad 0%. Y confirmar con Nicole que el orden de cálculo (cada impuesto sobre los anteriores) es el que usan.
-2. **T2 — ¿quién puede ver la clave de ECUAPASS?** Se implementó solo admin, con registro en auditoría. Confirmar si los operadores también deberían poder.
-3. **T2 — configurar `ECUAPASS_KEY` en Railway** antes de cargar claves reales.
-4. **T15 — ¿qué molesta del componente de etiquetas?** La lista de problemas de la tarea salió de leer el código, no del uso.
+- **T8** — "fecha de llegada" es otra fecha, distinta de la apertura del trámite.
+- **T10** — los dos formatos, PDF y Excel, con gastos y saldo incluidos.
+- **T10** — las tarifas por defecto quedan como estaban (Ad Valorem 0%, Fodinfa 0.5%, IVA 15%, Seguridad 0%) pero **configurables desde la app**: tabla `configuracion`, editable desde el panel de preliquidación por admins y operadores. El Excel también las usa como base.
+- **T2** — la clave de ECUAPASS la ven **admins y operadores**; los visores no. Toda consulta sigue quedando en auditoría.
+- **T2** — no se crea `ECUAPASS_KEY`: se usa `JWT_SECRET` como llave, que no se va a rotar. ⚠️ Si algún día se cambia, hay que descifrar con el valor viejo y volver a cifrar.
+- **T15** — lo que molestaba era agregar una etiqueta nueva y reutilizar las existentes.
 
-*Respondidas: T8 (es otra fecha, distinta de la apertura) · T10 (los dos formatos, con gastos y saldo incluidos).*
+## Pendiente de confirmar con Nicole
+
+- **T10 — el orden de cálculo de los impuestos.** Ad Valorem y Fodinfa sobre CIF, IVA sobre CIF+AdValorem+Fodinfa, y Seguridad sobre la suma de los tres. Se dedujo de los números del prototipo, no de una fuente oficial.
+
+## Novedades (changelog en la app)
+
+Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día.
 
 ---
 
