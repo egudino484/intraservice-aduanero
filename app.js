@@ -176,7 +176,7 @@ async function openTramite(id) {
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
-  setTab(document.querySelectorAll('#screen-tramite .tab')[1], 't-docs');
+  setTab(document.getElementById('tab-docs'), 't-docs');
 }
 
 function badgeEstado(e) {
@@ -187,7 +187,7 @@ function exitCreatingMode() {
   creatingMode = false;
   const numEl = document.querySelector('[data-field="numero"]');
   if (numEl) numEl.setAttribute('readonly', '');
-  ['tab-docs', 'tab-estado', 'tab-liquidacion'].forEach(id => {
+  ['tab-docs', 'tab-documentos', 'tab-estado', 'tab-liquidacion'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = '';
   });
@@ -205,7 +205,7 @@ function newTramiteUI() {
   });
   const numEl = document.querySelector('[data-field="numero"]');
   if (numEl) numEl.removeAttribute('readonly');
-  ['tab-docs', 'tab-estado', 'tab-liquidacion'].forEach(id => {
+  ['tab-docs', 'tab-documentos', 'tab-estado', 'tab-liquidacion'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -1647,7 +1647,7 @@ function nav(id, el) {
 function setTab(el, targetId) {
   document.querySelectorAll('#screen-tramite .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  ['t-datos', 't-docs', 't-estado', 't-liquidacion'].forEach(id => {
+  ['t-datos', 't-docs', 't-documentos', 't-estado', 't-liquidacion'].forEach(id => {
     document.getElementById(id).style.display = id === targetId ? 'block' : 'none';
   });
   if (targetId === 't-liquidacion') renderTabLiquidacion();
@@ -1694,6 +1694,10 @@ function renderDocsToolbar() {
 function renderDocumentos() {
   const el = document.getElementById('documentos-list');
   if (!el) return;
+  const cont = document.getElementById('docs-contador');
+  if (cont) cont.textContent = documentoData.length
+    ? documentoData.length + (documentoData.length === 1 ? ' archivo' : ' archivos')
+    : '';
   // Descartar selecciones de documentos que ya no existen
   docsSeleccionados = new Set([...docsSeleccionados].filter(id => documentoData.some(d => d.id === id)));
   if (!documentoData.length) {

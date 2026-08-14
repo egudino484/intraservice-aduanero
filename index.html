@@ -155,7 +155,8 @@
       <div class="screen active" id="screen-tramite">
         <div class="tabs">
           <div class="tab" id="tab-datos" onclick="setTab(this,'t-datos')">Datos del trámite</div>
-          <div class="tab active" id="tab-docs" onclick="setTab(this,'t-docs')">Documentos y gastos</div>
+          <div class="tab active" id="tab-docs" onclick="setTab(this,'t-docs')">Gastos y anticipos</div>
+          <div class="tab" id="tab-documentos" onclick="setTab(this,'t-documentos')">Documentos</div>
           <div class="tab" id="tab-estado" onclick="setTab(this,'t-estado')">Estado y auditoría</div>
           <div class="tab" id="tab-liquidacion" onclick="setTab(this,'t-liquidacion')">Liquidación</div>
         </div>
@@ -217,7 +218,7 @@
             </div>
             <div class="field-row">
               <div class="field"><label>Observaciones</label><textarea data-field="obs">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
-              <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Documentos y gastos" readonly></div>
+              <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Gastos y anticipos" readonly></div>
             </div>
           </div>
 
@@ -327,8 +328,15 @@
             </table>
           </div>
 
+        </div>
+
+        <!-- TAB DOCUMENTOS -->
+        <div id="t-documentos" style="display:none">
           <div class="panel">
-            <div class="panel-title">Documentos generales del expediente</div>
+            <div class="panel-title">
+              <span>Documentos del expediente</span>
+              <span id="docs-contador" style="font-size:12px;color:var(--text-3)"></span>
+            </div>
             <div id="docs-toolbar" style="display:flex;align-items:center;gap:12px;margin-bottom:10px"></div>
             <div id="documentos-list"></div>
             <div class="upload-zone" id="upload-zone" onclick="triggerDocUpload()">
@@ -423,7 +431,7 @@
               <span>Detalle de gastos pagados</span>
               <span class="badge badge-amber" id="tl-estado-badge">Pendiente</span>
             </div>
-            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Importado desde la pestaña Documentos y gastos. IVA y retenciones por completar en cada línea.</p>
+            <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Importado desde la pestaña Gastos y anticipos. IVA y retenciones por completar en cada línea.</p>
             <table class="gasto-table">
               <thead>
                 <tr>
@@ -530,7 +538,7 @@
             <span>Liquidación final · <span style="font-family:'DM Mono',monospace">T26-281</span> · MEGASTOCKEC</span>
             <span class="badge badge-amber">Pendiente</span>
           </div>
-          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">Gastos aduaneros pagados por Intraservice. Los valores se importan desde la pestaña Documentos y gastos del trámite.</p>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">Gastos aduaneros pagados por Intraservice. Los valores se importan desde la pestaña Gastos y anticipos del trámite.</p>
           <table class="gasto-table">
             <thead>
               <tr>
