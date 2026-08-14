@@ -47,7 +47,7 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
   - Cada sugerencia se puede **sacar del registro** con su ×, para las mal escritas, sin tocar los trámites que ya la tengan.
   - Los círculos de color y las × pasan a ser `<button>`: se llega por teclado.
   - *Verificado en producción: agregar de un clic conservando el color, rechazo del duplicado, autosave confirmado contra el servidor y borrado desde la UI.*
-  - Pendiente: el registro sigue en localStorage (`sa_etiquetas`), sembrado desde los trámites al cargar la bitácora, así que los colores no se comparten entre navegadores. Moverlo al servidor como se hizo con proveedores en T5.
+  - **Registro movido al servidor** (pedido de Edison): tabla `etiquetas` con índice único sobre `lower(text)`, sembrada con las que ya tenían puestas los trámites. `GET/POST/DELETE /etiquetas`; el alta actualiza el color si el nombre ya existía. El frontend dejó de sembrar el registro desde la bitácora y de escribir en localStorage — la clave vieja `sa_etiquetas` se borra al cargar, así que los colores locales que cada uno tuviera no ensucian la lista compartida. *Verificado en producción: registro leído del servidor, clave vieja eliminada, alta y baja persistidas.*
 
 ## P3 — Reportería
 
