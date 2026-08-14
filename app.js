@@ -1241,54 +1241,138 @@ function saveEtiquetaToRegistry(text, color) {
   }
 }
 
-function updateEtiquetasDatalist() {
-  const dl = document.getElementById('etiquetas-list');
-  if (dl) dl.innerHTML = etiquetaRegistry.map(e => `<option value="${escHtml(e.text)}">`).join('');
+// Se mantiene por compatibilidad: ya no hay datalist, las etiquetas del
+// registro se muestran como chips para agregarlas de un clic.
+function updateEtiquetasDatalist() { renderEtiquetas(); }
+
+const igual = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
+const yaPuesta = texto => etiquetasData.some(e => igual(e.text, texto));
+
+function onEtiquetaInputChange() {
+  const texto = document.getElementById('etiqueta-input')?.value || '';
+  const existente = etiquetaRegistry.find(e => igual(e.text, texto));
+  // Si la etiqueta ya existe conserva su color; el selector solo aparece
+  // cuando de verdad se está creando una nueva.
+  if (existente) selectedEtiquetaColor = existente.color;
+  renderEtiquetaColorPicker();
+  renderSugerencias();
 }
 
-function onEtiquetaInputChange(val) {
-  const found = etiquetaRegistry.find(e => e.text.toLowerCase() === val.trim().toLowerCase());
-  if (found) { selectedEtiquetaColor = found.color; renderEtiquetaColorPicker(); }
+function onEtiquetaKey(ev) {
+  if (ev.key === 'Enter') { ev.preventDefault(); addEtiqueta(); }
+  if (ev.key === 'Escape') { ev.target.value = ''; onEtiquetaInputChange(); }
 }
 
 function renderEtiquetaColorPicker() {
   const el = document.getElementById('etiqueta-color-picker');
   if (!el) return;
+  const texto = document.getElementById('etiqueta-input')?.value || '';
+  const esNueva = texto.trim() && !etiquetaRegistry.some(e => igual(e.text, texto));
+  el.style.display = esNueva ? 'flex' : 'none';
+  if (!esNueva) return;
   el.innerHTML = ETIQUETA_COLORS.map(c => `
-    <span onclick="selectedEtiquetaColor='${c.hex}';renderEtiquetaColorPicker()" title="${c.name}"
-      style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${c.hex};cursor:pointer;
-             box-shadow:${selectedEtiquetaColor===c.hex?'0 0 0 2px #fff,0 0 0 4px '+c.hex:'none'};transition:box-shadow .15s"></span>
+    <button type="button" onclick="selectedEtiquetaColor='${c.hex}';renderEtiquetaColorPicker()" title="${c.name}"
+      aria-label="Color ${c.name}"
+      style="width:18px;height:18px;padding:0;border:none;border-radius:50%;background:${c.hex};cursor:pointer;
+             box-shadow:${selectedEtiquetaColor===c.hex?'0 0 0 2px #fff,0 0 0 4px '+c.hex:'none'};transition:box-shadow .15s"></button>
   `).join('');
+}
+
+// Chips del registro que todavía no están puestas: un clic las agrega.
+function renderSugerencias() {
+  const el = document.getElementById('etiquetas-sugeridas');
+  if (!el) return;
+  const filtro = (document.getElementById('etiqueta-input')?.value || '').trim().toLowerCase();
+  const disponibles = etiquetaRegistry
+    .filter(e => !yaPuesta(e.text))
+    .filter(e => !filtro || e.text.toLowerCase().includes(filtro));
+
+  if (!etiquetaRegistry.length) { el.innerHTML = ''; return; }
+  if (!disponibles.length) {
+    el.innerHTML = `<span style="font-size:12px;color:var(--text-3)">${
+      filtro ? 'Ninguna etiqueta coincide — Enter la crea' : 'Todas las etiquetas ya están puestas'}</span>`;
+    return;
+  }
+  el.innerHTML = '<span style="font-size:11px;color:var(--text-3);margin-right:2px">Usar existente:</span>'
+    + disponibles.map(e => `
+    <span style="display:inline-flex;align-items:center;border:1px solid ${e.color};border-radius:999px;overflow:hidden">
+      <button type="button" onclick="addEtiqueta('${escHtml(e.text).replace(/'/g, "\\'")}')"
+        style="border:none;background:transparent;color:${e.color};font-size:12px;padding:3px 4px 3px 10px;cursor:pointer;font-family:inherit"
+        title="Agregar ${escHtml(e.text)}">${escHtml(e.text)}</button>
+      <button type="button" onclick="olvidarEtiqueta('${escHtml(e.text).replace(/'/g, "\\'")}')"
+        style="border:none;background:transparent;color:var(--text-3);font-size:12px;padding:3px 8px 3px 4px;cursor:pointer"
+        title="Quitar de la lista de etiquetas">×</button>
+    </span>`).join('');
 }
 
 function renderEtiquetas() {
   const el = document.getElementById('etiquetas-chips');
   if (!el) return;
   renderEtiquetaColorPicker();
-  el.innerHTML = etiquetasData.map((e,i) => `
+  renderSugerencias();
+  el.innerHTML = etiquetasData.map((e, i) => `
     <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;
-                 background:${e.color};color:#fff;font-size:12px;font-weight:500;cursor:default">
+                 background:${e.color};color:#fff;font-size:12px;font-weight:500">
       ${escHtml(e.text)}
-      <span onclick="removeEtiqueta(${i})" style="cursor:pointer;opacity:.8;line-height:1;font-size:14px" title="Eliminar">×</span>
+      <button type="button" onclick="removeEtiqueta(${i})" title="Quitar del trámite" aria-label="Quitar ${escHtml(e.text)}"
+        style="border:none;background:transparent;color:#fff;opacity:.85;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>
     </span>
   `).join('') || '<span style="font-size:12px;color:var(--text-3)">Sin etiquetas</span>';
 }
 
-function addEtiqueta() {
+// texto opcional: viene de las sugerencias; si no, se toma del input
+function addEtiqueta(texto) {
   const input = document.getElementById('etiqueta-input');
-  const text = (input?.value || '').trim();
+  const text = (texto ?? input?.value ?? '').trim();
   if (!text) { input?.focus(); return; }
-  const found = etiquetaRegistry.find(e => e.text.toLowerCase() === text.toLowerCase());
-  const color = found ? found.color : selectedEtiquetaColor;
-  etiquetasData.push({ text: found ? found.text : text, color });
+  if (yaPuesta(text)) { showNotif('Esa etiqueta ya está puesta'); if (input) input.value = ''; renderEtiquetas(); return; }
+
+  const existente = etiquetaRegistry.find(e => igual(e.text, text));
+  const color = existente ? existente.color : selectedEtiquetaColor;
+  etiquetasData.push({ text: existente ? existente.text : text, color });
   saveEtiquetaToRegistry(text, color);
   if (input) input.value = '';
   renderEtiquetas();
+  guardarEtiquetas();
 }
 
 function removeEtiqueta(i) {
   etiquetasData.splice(i, 1);
   renderEtiquetas();
+  guardarEtiquetas();
+}
+
+// Saca la etiqueta del registro (la lista de sugerencias), sin tocar los
+// trámites que ya la tengan puesta.
+function olvidarEtiqueta(texto) {
+  const i = etiquetaRegistry.findIndex(e => igual(e.text, texto));
+  if (i < 0) return;
+  etiquetaRegistry.splice(i, 1);
+  localStorage.setItem('sa_etiquetas', JSON.stringify(etiquetaRegistry));
+  renderEtiquetas();
+}
+
+// Las etiquetas se guardan solas, como los gastos y anticipos: antes había que
+// acordarse de apretar "Guardar cambios" o se perdían.
+let etiquetasTimer = null;
+function guardarEtiquetas() {
+  if (!currentTramiteId || creatingMode) return;
+  clearTimeout(etiquetasTimer);
+  etiquetasTimer = setTimeout(async () => {
+    const form = readTramiteForm();
+    const res = await apiFetch('/tramites/' + currentTramiteId, {
+      method: 'PUT',
+      body: JSON.stringify({
+        numero: form.numero, tipo: form.operacion, cliente: form.cliente,
+        fecha_arribo: form.fechaApertura || null, bl: form.bl, naviera: form.naviera,
+        da: form.dai, factura_comercial: form.factCom,
+        factura_intraservice: form.factIntra, observaciones: form.obs,
+        custom_props: customProps, etiquetas: etiquetasData,
+        ...camposExtra(form), preliquidacion: preliqData,
+      })
+    });
+    if (res && !res.error) loadBitacora();
+  }, 800);
 }
 
 function etiquetasHtml(etiquetas) {

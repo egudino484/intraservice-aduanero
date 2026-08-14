@@ -226,12 +226,13 @@
           <div class="panel">
             <div class="panel-title"><span>Etiquetas</span></div>
             <div id="etiquetas-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:20px"></div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input id="etiqueta-input" list="etiquetas-list" type="text" placeholder="Nueva etiqueta..." style="max-width:200px" oninput="onEtiquetaInputChange(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();addEtiqueta()}">
-              <datalist id="etiquetas-list"></datalist>
-              <div id="etiqueta-color-picker" style="display:flex;gap:5px;align-items:center"></div>
-              <button class="btn btn-sm" onclick="addEtiqueta()">+ Agregar</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+              <input id="etiqueta-input" type="text" placeholder="Escribe para buscar o crear..." style="max-width:220px"
+                     oninput="onEtiquetaInputChange()" onkeydown="onEtiquetaKey(event)">
+              <div id="etiqueta-color-picker" style="display:none;gap:5px;align-items:center"></div>
+              <button class="btn btn-sm" id="etiqueta-add-btn" onclick="addEtiqueta()">+ Agregar</button>
             </div>
+            <div id="etiquetas-sugeridas" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
           </div>
 
           <!-- PROPIEDADES PERSONALIZADAS -->
