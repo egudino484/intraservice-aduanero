@@ -524,7 +524,10 @@ async function loadAuditoria() {
 // ── HELPERS ───────────────────────────────────────────────────────
 function fmtDate(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' });
+  // 'YYYY-MM-DD' pelado se interpreta como UTC y en UTC-5 se ve un día antes:
+  // se fuerza a hora local agregando la hora.
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(iso + 'T00:00:00') : new Date(iso);
+  return d.toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' });
 }
 
 const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" stroke="#1E4FBF" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" stroke="#1E4FBF" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" stroke="#1E4FBF" stroke-width=".7"/></svg>`;
