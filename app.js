@@ -74,10 +74,10 @@ async function initApp() {
   updateClientesDatalist();
   updateMercaderiaDatalist();
   updateProveedoresDatalist();
-  updateEtiquetasDatalist();
   renderEtiquetaColorPicker();
   loadProveedores();
   loadClientes();
+  loadEtiquetas();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -115,11 +115,9 @@ async function loadBitacora() {
   const data = await apiFetch('/tramites');
   if (!data) return;
   bitacoraData = data;
-  // Agregar clientes del sistema al datalist
-  data.forEach(t => {
-    if (t.cliente) saveCliente(t.cliente);
-    (t.etiquetas || []).forEach(e => saveEtiquetaToRegistry(e.text, e.color));
-  });
+  // Agregar clientes del sistema al datalist. Las etiquetas ya no se siembran
+  // desde acá: el registro vive en el servidor (GET /etiquetas).
+  data.forEach(t => { if (t.cliente) saveCliente(t.cliente); });
   updateClientesDatalist();
   renderBitacora();
 }
@@ -1228,22 +1226,34 @@ const ETIQUETA_COLORS = [
 ];
 let selectedEtiquetaColor = ETIQUETA_COLORS[0].hex;
 
-// Registry: [{text, color}] — persisted in localStorage
-const etiquetaRegistry = JSON.parse(localStorage.getItem('sa_etiquetas') || '[]');
+// Registro compartido: vive en el servidor, así todos ven las mismas etiquetas
+// con el mismo color. Antes era localStorage y cada navegador tenía el suyo.
+let etiquetaRegistry = [];
 
-function saveEtiquetaToRegistry(text, color) {
-  if (!text) return;
-  const existing = etiquetaRegistry.find(e => e.text.toLowerCase() === text.toLowerCase());
-  if (!existing) {
-    etiquetaRegistry.push({ text, color });
-    localStorage.setItem('sa_etiquetas', JSON.stringify(etiquetaRegistry));
-    updateEtiquetasDatalist();
-  }
+async function loadEtiquetas() {
+  const data = await apiFetch('/etiquetas');
+  if (!Array.isArray(data)) return;
+  etiquetaRegistry = data;
+  localStorage.removeItem('sa_etiquetas');   // ya no se usa
+  renderEtiquetas();
 }
 
-// Se mantiene por compatibilidad: ya no hay datalist, las etiquetas del
-// registro se muestran como chips para agregarlas de un clic.
-function updateEtiquetasDatalist() { renderEtiquetas(); }
+async function saveEtiquetaToRegistry(text, color) {
+  if (!text) return;
+  const existing = etiquetaRegistry.find(e => igual(e.text, text));
+  if (existing) return;
+  etiquetaRegistry.push({ id: null, text, color });   // optimista, para no esperar la red
+  renderEtiquetas();
+  const res = await apiFetch('/etiquetas', { method: 'POST', body: JSON.stringify({ text, color }) });
+  if (!res || res.error) {
+    etiquetaRegistry = etiquetaRegistry.filter(e => !igual(e.text, text));
+    showNotif(res?.error || 'No se pudo registrar la etiqueta');
+  } else {
+    const i = etiquetaRegistry.findIndex(e => igual(e.text, text));
+    if (i >= 0) etiquetaRegistry[i] = res;
+  }
+  renderEtiquetas();
+}
 
 const igual = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
 const yaPuesta = texto => etiquetasData.some(e => igual(e.text, texto));
@@ -1344,12 +1354,14 @@ function removeEtiqueta(i) {
 
 // Saca la etiqueta del registro (la lista de sugerencias), sin tocar los
 // trámites que ya la tengan puesta.
-function olvidarEtiqueta(texto) {
-  const i = etiquetaRegistry.findIndex(e => igual(e.text, texto));
-  if (i < 0) return;
-  etiquetaRegistry.splice(i, 1);
-  localStorage.setItem('sa_etiquetas', JSON.stringify(etiquetaRegistry));
+async function olvidarEtiqueta(texto) {
+  const et = etiquetaRegistry.find(e => igual(e.text, texto));
+  if (!et) return;
+  etiquetaRegistry = etiquetaRegistry.filter(e => !igual(e.text, texto));
   renderEtiquetas();
+  if (!et.id) return;
+  const res = await apiFetch('/etiquetas/' + et.id, { method: 'DELETE' });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo quitar'); loadEtiquetas(); }
 }
 
 // Las etiquetas se guardan solas, como los gastos y anticipos: antes había que

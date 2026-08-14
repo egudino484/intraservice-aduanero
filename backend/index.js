@@ -20,6 +20,19 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  CREATE TABLE IF NOT EXISTS etiquetas (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    text       TEXT NOT NULL,
+    color      TEXT NOT NULL DEFAULT '#1E4FBF',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_etiquetas_text ON etiquetas (lower(text));
+  -- Siembra con las etiquetas que ya tienen puestas los trámites
+  INSERT INTO etiquetas (text, color)
+  SELECT DISTINCT ON (lower(e->>'text')) e->>'text', COALESCE(NULLIF(e->>'color',''), '#1E4FBF')
+  FROM tramites t, jsonb_array_elements(COALESCE(t.etiquetas, '[]'::jsonb)) e
+  WHERE COALESCE(e->>'text', '') <> ''
+  ON CONFLICT (lower(text)) DO NOTHING;
   CREATE TABLE IF NOT EXISTS clientes (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ruc              TEXT UNIQUE,
@@ -86,6 +99,7 @@ app.use('/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
 app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
 app.use('/proveedores',                   require('./routes/proveedores'))
 app.use('/clientes',                      require('./routes/clientes'))
+app.use('/etiquetas',                     require('./routes/etiquetas'))
 app.use('/auditoria',                     require('./routes/auditoria'))
 app.use('/users',                         require('./routes/users'))
 app.use('/feedback',                      require('./routes/feedback'))
