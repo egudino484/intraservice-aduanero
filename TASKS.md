@@ -38,15 +38,16 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T14 · 10 campos del trámite no se guardaban** — M — Mercadería, almacenera, MRN, liquidación SENAE, sub partida, N° entrega, transporte, proveedor, contenedores y CDA ahora se persisten y se repueblan al recargar. *Columnas nuevas en `tramites` (migración idempotente en `backend/index.js`) + `EXTRA` en `routes/tramites.js`. En el frontend un único mapeo `CAMPOS_EXTRA` sirve para enviar y para repoblar, así las dos listas no se vuelven a desincronizar. El PUT ahora avisa si falla en vez de decir "Trámite guardado" igual. Verificado en producción: los 10 campos escritos, guardados, releídos tras recargar y restaurados.*
 
-- [ ] **T15 · Mejorar el componente de etiquetas** — M — Pedido de Edison (13-ago-2026). Rehacer el bloque "Etiquetas" del detalle de trámite (`index.html` + `renderEtiquetas`/`addEtiqueta` en `app.js`). Problemas concretos detectados en el código actual:
-  - **Permite duplicados**: `addEtiqueta()` no revisa si la etiqueta ya está en el trámite, así que se puede agregar "pruebas" dos veces.
-  - **No se guarda solo**: agregar o quitar una etiqueta solo toca `etiquetasData` en memoria; si el usuario no aprieta "Guardar cambios", se pierde. El resto de la pantalla (gastos, anticipos) sí tiene autosave, así que la inconsistencia sorprende.
-  - **La paleta de 8 colores siempre visible** ocupa toda la fila. Además es engañosa: si la etiqueta ya existe en el registro, `addEtiqueta()` fuerza el color guardado e ignora el que se eligió.
-  - **No se puede editar**: ni renombrar, ni cambiar el color de una etiqueta ya puesta, ni borrar una del registro global — una etiqueta mal escrita queda para siempre en el desplegable.
-  - **El registro es solo localStorage** (`sa_etiquetas`), sembrado desde los trámites al cargar la bitácora: cada navegador arma su propia lista de colores. Conviene moverlo al servidor, como se hizo con proveedores en T5.
-  - **Sin validación**: no hay largo máximo ni recorte de espacios.
-  - **Accesibilidad**: los círculos de color y la "×" son `<span>` con `onclick`, sin foco por teclado ni rol.
-  - ⚠️ Definir con Edison qué molesta más antes de rediseñar: la lista de arriba es lo que se ve en el código, no necesariamente su prioridad.
+- [x] **T15 · Mejorar el componente de etiquetas** — M — Pedido de Edison: que sea más intuitivo agregar una etiqueta nueva o usar las ya creadas.
+  - **Las etiquetas ya creadas se muestran como chips** bajo el buscador: un clic las agrega con su color. Antes había que acordarse del nombre y escribirlo en un datalist invisible.
+  - El buscador **filtra las sugerencias mientras se escribe**; Enter crea la que no existe, Escape limpia.
+  - **El selector de color aparece solo al crear una etiqueta nueva.** Antes estaba siempre visible y era engañoso: una etiqueta existente conserva su color e ignoraba el elegido.
+  - **No deja agregar dos veces la misma**, y las que ya están puestas desaparecen de las sugerencias.
+  - **Se guardan solas** al agregar o quitar, como gastos y anticipos. Antes se perdían si no se apretaba "Guardar cambios".
+  - Cada sugerencia se puede **sacar del registro** con su ×, para las mal escritas, sin tocar los trámites que ya la tengan.
+  - Los círculos de color y las × pasan a ser `<button>`: se llega por teclado.
+  - *Verificado en producción: agregar de un clic conservando el color, rechazo del duplicado, autosave confirmado contra el servidor y borrado desde la UI.*
+  - Pendiente: el registro sigue en localStorage (`sa_etiquetas`), sembrado desde los trámites al cargar la bitácora, así que los colores no se comparten entre navegadores. Moverlo al servidor como se hizo con proveedores en T5.
 
 ## P3 — Reportería
 
