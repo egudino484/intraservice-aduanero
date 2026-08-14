@@ -82,8 +82,9 @@ router.patch('/:id', auth, noVisor, async (req, res) => {
   }
 })
 
-// GET /clientes/:id/ecuapass — solo admin, y queda registrado quién la vio
-router.get('/:id/ecuapass', auth, adminOnly, async (req, res) => {
+// GET /clientes/:id/ecuapass — admins y operadores (decisión de Edison: la
+// necesitan para trabajar). Los visores no. Queda registrado quién la vio.
+router.get('/:id/ecuapass', auth, noVisor, async (req, res) => {
   try {
     const { rows } = await db.query('SELECT nombre, ecuapass_cifrado FROM clientes WHERE id=$1', [req.params.id])
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })

@@ -78,6 +78,8 @@ async function initApp() {
   loadProveedores();
   loadClientes();
   loadEtiquetas();
+  loadConfiguracion();
+  actualizarBadgeNovedades();
   nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
@@ -950,10 +952,99 @@ async function loadProveedores() {
   updateProveedoresDatalist();
 }
 
+// ── NOVEDADES ─────────────────────────────────────────────────────
+// Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
+// entrada arriba con la fecha del día.
+const NOVEDADES = [
+  { fecha: '2026-08-14', titulo: 'Preliquidaciones, clientes y etiquetas', cambios: [
+    { tipo: 'nuevo', texto: 'Preliquidación de importaciones: cargás FOB, flete y seguro y el sistema calcula CFR, CIF e impuestos. Se descarga en PDF y en Excel, con los gastos, los anticipos y el saldo.' },
+    { tipo: 'nuevo', texto: 'Las tarifas (Ad Valorem, Fodinfa, IVA, Seguridad) se ajustan en cada trámite, y sus valores por defecto se configuran desde el mismo panel.' },
+    { tipo: 'nuevo', texto: 'Registro de clientes con RUC, razón social, teléfono, varios correos y clave de ECUAPASS. La clave se guarda cifrada y cada consulta queda registrada en el historial.' },
+    { tipo: 'nuevo', texto: 'Pestaña "Documentos" propia en cada trámite, con contador de archivos. La anterior pasó a llamarse "Gastos y anticipos".' },
+    { tipo: 'mejora', texto: 'Etiquetas: las ya creadas aparecen como chips y se agregan de un clic; el buscador las filtra y Enter crea una nueva. Ahora se guardan solas y la lista es la misma para todos.' },
+  ]},
+  { fecha: '2026-08-13', titulo: 'Trámites: régimen, fechas y campos que se perdían', cambios: [
+    { tipo: 'arreglo', texto: 'Diez campos del trámite (mercadería, almacenera, MRN, liquidación SENAE, sub partida, N° entrega, transporte, proveedor, contenedores y CDA) se completaban pero no se guardaban. Ahora se guardan y se recuperan al reabrir.' },
+    { tipo: 'nuevo', texto: 'Régimen aduanero según la operación: 21 y 10 en importación, 49 y Definitiva en exportación, y "Otro" con campo libre en ambas.' },
+    { tipo: 'nuevo', texto: 'Al elegir "Otro" en Operación se habilita un campo para especificar cuál.' },
+    { tipo: 'nuevo', texto: 'Campo "Fecha de llegada", separado de la fecha de apertura del trámite.' },
+  ]},
+  { fecha: '2026-08-12', titulo: 'Documentos, comprobantes y proveedores', cambios: [
+    { tipo: 'nuevo', texto: 'Descarga de varios documentos del expediente en un solo archivo .ZIP: se tildan los que hagan falta y listo.' },
+    { tipo: 'nuevo', texto: 'Cada gasto acepta varios comprobantes, no uno solo. Se pueden ver, descargar y quitar de a uno.' },
+    { tipo: 'nuevo', texto: 'El campo Proveedor es un desplegable con los ya usados, y admite escribir uno nuevo.' },
+    { tipo: 'nuevo', texto: 'Al crear un trámite, el N° se sugiere solo siguiendo el consecutivo del año, y la fecha viene con el día de hoy. Los dos se pueden cambiar.' },
+  ]},
+];
+
+const ICONO_NOVEDAD = { nuevo: '＋', mejora: '↑', arreglo: '✓' };
+const COLOR_NOVEDAD = { nuevo: 'var(--blue)', mejora: 'var(--green)', arreglo: 'var(--amber)' };
+const ETIQUETA_NOVEDAD = { nuevo: 'Nuevo', mejora: 'Mejora', arreglo: 'Arreglo' };
+
+function renderNovedades() {
+  const el = document.getElementById('novedades-lista');
+  if (!el) return;
+  el.innerHTML = NOVEDADES.map(v => `
+    <div style="margin-bottom:22px">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+        <strong style="font-size:13px">${escHtml(v.titulo)}</strong>
+        <span style="font-size:11px;color:var(--text-3);font-family:'DM Mono',monospace">${fmtDate(v.fecha)}</span>
+      </div>
+      ${v.cambios.map(c => `
+        <div style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span title="${ETIQUETA_NOVEDAD[c.tipo]}" style="flex-shrink:0;width:18px;height:18px;border-radius:4px;background:${COLOR_NOVEDAD[c.tipo]};color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center">${ICONO_NOVEDAD[c.tipo]}</span>
+          <span style="font-size:12px;line-height:1.5">${escHtml(c.texto)}</span>
+        </div>`).join('')}
+    </div>`).join('');
+  localStorage.setItem('sa_novedades_vistas', NOVEDADES[0]?.fecha || '');
+  actualizarBadgeNovedades();
+}
+
+// Punto azul en el menú mientras haya novedades sin leer
+function actualizarBadgeNovedades() {
+  const badge = document.getElementById('novedades-badge');
+  if (!badge) return;
+  const vistas = localStorage.getItem('sa_novedades_vistas') || '';
+  const sinLeer = NOVEDADES.filter(v => v.fecha > vistas).length;
+  badge.style.display = sinLeer ? 'inline-block' : 'none';
+  badge.textContent = sinLeer || '';
+}
+
 // ── PRELIQUIDACIÓN ────────────────────────────────────────────────
 // Mismo cálculo que backend/lib/preliquidacion.js: cada impuesto se apoya en
 // los anteriores. Si se toca uno, hay que tocar el otro.
-const TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguridad: 0 };
+// Valores base si nunca se configuraron; los reales vienen de /configuracion
+let TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguridad: 0 };
+
+async function loadConfiguracion() {
+  const cfg = await apiFetch('/configuracion');
+  if (cfg?.tarifas) TARIFAS_DEFECTO = { ...TARIFAS_DEFECTO, ...cfg.tarifas };
+  renderTarifasDefecto();
+}
+
+function renderTarifasDefecto() {
+  const el = document.getElementById('tarifas-defecto');
+  if (!el) return;
+  if (currentUser?.role === 'visor') { el.innerHTML = ''; return; }
+  const campo = (k, label) => `<label style="font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:4px">${label}
+    <input type="number" step="0.01" id="td-${k}" value="${TARIFAS_DEFECTO[k]}" style="width:64px;font-family:'DM Mono',monospace"></label>`;
+  el.innerHTML = `
+    <span style="font-size:11px;color:var(--text-3)">Tarifas por defecto para nuevos trámites:</span>
+    ${campo('adValorem','Ad Valorem')} ${campo('fodinfa','Fodinfa')} ${campo('iva','IVA')} ${campo('seguridad','Seguridad')}
+    <button class="btn btn-sm" onclick="guardarTarifasDefecto()">Guardar</button>`;
+}
+
+async function guardarTarifasDefecto() {
+  const v = k => document.getElementById('td-' + k)?.value;
+  const res = await apiFetch('/configuracion/tarifas', {
+    method: 'PUT',
+    body: JSON.stringify({ adValorem: v('adValorem'), fodinfa: v('fodinfa'), iva: v('iva'), seguridad: v('seguridad') })
+  });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudieron guardar'); return; }
+  TARIFAS_DEFECTO = { ...TARIFAS_DEFECTO, ...res.tarifas };
+  showNotif('Tarifas por defecto guardadas');
+  renderTarifasDefecto();
+}
 let preliqData = {};
 let preliqTimer = null;
 
@@ -1128,6 +1219,7 @@ function renderClientes() {
   const tbody = document.getElementById('clientes-body');
   if (!tbody) return;
   const esAdmin = currentUser?.role === 'admin';
+  const puedeVerClave = currentUser?.role !== 'visor';
   tbody.innerHTML = clientesData.map(c => `
     <tr>
       <td style="font-weight:500">${escHtml(c.nombre)}</td>
@@ -1135,7 +1227,7 @@ function renderClientes() {
       <td style="font-size:12px">${escHtml(c.telefono || '—')}</td>
       <td style="font-size:12px;color:var(--text-2)">${(c.emails || []).map(escHtml).join('<br>') || '—'}</td>
       <td>${c.tiene_ecuapass
-        ? (esAdmin
+        ? (puedeVerClave
             ? `<button class="btn btn-sm btn-ghost" onclick="verEcuapass('${c.id}')">Ver clave</button>`
             : '<span class="badge badge-gray">Guardada</span>')
         : '<span style="color:var(--text-3);font-size:12px">—</span>'}</td>
@@ -1712,6 +1804,7 @@ const pageTitles = {
   auditoria: 'Historial de auditoría',
   usuarios: 'Gestión de usuarios',
   clientes: 'Clientes',
+  novedades: 'Novedades del sistema',
   feedback: 'Feedback de usuarios'
 };
 const topbarBadges = {
@@ -1737,6 +1830,7 @@ function nav(id, el) {
   if (id === 'bitacora') loadBitacora();
   if (id === 'usuarios') loadUsuarios();
   if (id === 'clientes') loadClientes();
+  if (id === 'novedades') renderNovedades();
   if (id === 'feedback') loadFeedback();
 }
 

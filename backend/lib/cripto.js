@@ -4,8 +4,10 @@ const crypto = require('crypto')
 // (la clave de ECUAPASS), a diferencia de las contraseñas de usuario, que van
 // hasheadas con bcrypt y nunca se recuperan.
 //
-// La llave sale de ECUAPASS_KEY; si no está definida cae a JWT_SECRET para no
-// romper el arranque, pero conviene configurar una propia en Railway.
+// Decisión de Edison: se usa JWT_SECRET como llave, sin variable aparte.
+// ECUAPASS_KEY sigue teniendo prioridad por si algún día se separa.
+// ⚠️ Rotar JWT_SECRET dejaría las claves guardadas indescifrables: para
+// cambiarlo hay que descifrar con el valor viejo y volver a cifrar con el nuevo.
 const SECRETO = process.env.ECUAPASS_KEY || process.env.JWT_SECRET || ''
 const SAL = 'intraservice-ecuapass-v1'
 const llave = SECRETO ? crypto.scryptSync(SECRETO, SAL, 32) : null

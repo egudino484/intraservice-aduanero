@@ -20,6 +20,12 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  CREATE TABLE IF NOT EXISTS configuracion (
+    clave      TEXT PRIMARY KEY,
+    valor      JSONB NOT NULL,
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
   CREATE TABLE IF NOT EXISTS etiquetas (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     text       TEXT NOT NULL,
@@ -100,6 +106,7 @@ app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
 app.use('/proveedores',                   require('./routes/proveedores'))
 app.use('/clientes',                      require('./routes/clientes'))
 app.use('/etiquetas',                     require('./routes/etiquetas'))
+app.use('/configuracion',                 require('./routes/configuracion'))
 app.use('/auditoria',                     require('./routes/auditoria'))
 app.use('/users',                         require('./routes/users'))
 app.use('/feedback',                      require('./routes/feedback'))

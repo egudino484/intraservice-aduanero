@@ -91,7 +91,9 @@ router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
       db.query('SELECT concepto, proveedor, n_factura, monto, categoria FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
       db.query('SELECT fecha, descripcion, n_comprobante, monto, forma_pago FROM anticipos WHERE tramite_id=$1 ORDER BY fecha', [req.params.id]),
     ])
-    const p = calcular(tramite.preliquidacion)
+    // Las tarifas configuradas hacen de base si el trámite no tiene las suyas
+    const cfg = await db.query(`SELECT valor FROM configuracion WHERE clave='tarifas'`)
+    const p = calcular({ ...(cfg.rows[0]?.valor || {}), ...(tramite.preliquidacion || {}) })
     const totalGastos = gastos.rows.reduce((s, g) => s + Number(g.monto || 0), 0)
     const totalAnticipos = anticipos.rows.reduce((s, a) => s + Number(a.monto || 0), 0)
 
