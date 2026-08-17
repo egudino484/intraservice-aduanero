@@ -636,10 +636,8 @@
 
         <!-- row 2: manual filters -->
         <div id="r-filters-row" class="filters" style="margin-bottom:14px">
-          <select class="filter-select" id="r-year" onchange="clearPreset();renderReportes()">
-            <option value="2026" selected>2026</option>
-            <option value="2025">2025</option>
-          </select>
+          <!-- Las opciones de año y de cliente se llenan desde los datos reales (app.js) -->
+          <select class="filter-select" id="r-year" onchange="clearPreset();renderReportes()"></select>
           <select class="filter-select" id="r-desde" onchange="clearPreset();renderReportes()" style="width:72px">
             <option value="1" selected>Ene</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dic</option>
           </select>
@@ -649,12 +647,12 @@
           </select>
           <select class="filter-select" id="r-cliente" onchange="renderReportes()">
             <option value="">Todos los clientes</option>
-            <option>MEGASTOCKEC</option><option>AHCORP</option><option>NOVA</option><option>ECUALIMFOOD</option><option>PRODUCOMERCIO</option>
           </select>
           <select class="filter-select" id="r-op" onchange="renderReportes()">
             <option value="">Todas las operaciones</option>
-            <option value="IMP">Importación</option>
-            <option value="EXP">Exportación</option>
+            <option value="Importación">Importación</option>
+            <option value="Exportación">Exportación</option>
+            <option value="Otro">Otro</option>
           </select>
           <button class="btn btn-sm btn-ghost" onclick="resetReporteFilters()">Limpiar</button>
         </div>

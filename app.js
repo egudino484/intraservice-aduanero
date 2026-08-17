@@ -1661,53 +1661,76 @@ function removeCustomProp(i) {
 }
 
 // ── REPORTE FINANCIERO ────────────────────────────────────────────
-const reportTramites = [
-  {num:'T26-001',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:3790.20,anticipos:4100.00},
-  {num:'T26-003',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:1850.00,anticipos:2000.00},
-  {num:'T26-027',cliente:'ECUALIMFOOD',op:'EXP',mes:'2026-01',gastos:760.00,anticipos:800.00},
-  {num:'T26-038',cliente:'AHCORP',op:'IMP',mes:'2026-01',gastos:1420.30,anticipos:1200.00},
-  {num:'T26-039',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:980.50,anticipos:1000.00},
-  {num:'T26-040',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-01',gastos:1850.00,anticipos:2000.00},
-  {num:'T26-006',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-02',gastos:2500.50,anticipos:2000.00},
-  {num:'T26-010',cliente:'AHCORP',op:'IMP',mes:'2026-02',gastos:680.00,anticipos:800.00},
-  {num:'T26-037',cliente:'AHCORP',op:'IMP',mes:'2026-02',gastos:950.50,anticipos:900.00},
-  {num:'T26-050',cliente:'PRODUCOMERCIO',op:'IMP',mes:'2026-02',gastos:1420.00,anticipos:1500.00},
-  {num:'T26-023',cliente:'NOVA',op:'EXP',mes:'2026-03',gastos:1100.00,anticipos:1000.00},
-  {num:'T26-061',cliente:'NOVA',op:'EXP',mes:'2026-03',gastos:890.00,anticipos:1000.00},
-  {num:'T26-072',cliente:'AHCORP',op:'IMP',mes:'2026-03',gastos:3200.20,anticipos:3000.00},
-  {num:'T26-085',cliente:'ECUALIMFOOD',op:'EXP',mes:'2026-03',gastos:450.00,anticipos:500.00},
-  {num:'T26-091',cliente:'PRODUCOMERCIO',op:'IMP',mes:'2026-04',gastos:741.16,anticipos:800.00},
-  {num:'T26-281',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-04',gastos:2088.34,anticipos:2000.00},
-  {num:'T26-102',cliente:'MEGASTOCKEC',op:'IMP',mes:'2026-05',gastos:620.00,anticipos:700.00},
-  {num:'T26-103',cliente:'AHCORP',op:'IMP',mes:'2026-05',gastos:580.00,anticipos:500.00},
-];
-const reportCats = [
-  {cat:'Almacenaje',total:4200.50},
-  {cat:'V/B Consolidadora',total:3360.00},
-  {cat:'Agente aduanas',total:2880.00},
-  {cat:'Transporte',total:1540.00},
-  {cat:'Reembolso',total:920.50},
-  {cat:'Otros',total:401.80},
-];
+// Los datos salen de GET /reportes: el backend agrega gastos y anticipos por
+// trámite y por categoría según el período y los filtros de la pantalla.
 const mesLabels = {'01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic'};
+let reportTramites = [];
+let reportCats = [];
 
 function getRFiltros() {
   return {
-    year: parseInt(document.getElementById('r-year')?.value||'2026'),
+    year: parseInt(document.getElementById('r-year')?.value||REPORT_CUR_YEAR),
     desde: parseInt(document.getElementById('r-desde')?.value||'1'),
     hasta: parseInt(document.getElementById('r-hasta')?.value||'12'),
     cliente: document.getElementById('r-cliente')?.value||'',
-    op: document.getElementById('r-op')?.value||'',
+    tipo: document.getElementById('r-op')?.value||'',
   };
 }
 
-function renderReportes() {
+// El <select> de años arranca con el año en curso y los dos anteriores; una vez
+// que el backend responde se reemplaza por los años que sí tienen trámites.
+function fillReporteYears(years) {
+  const el = document.getElementById('r-year');
+  if (!el) return;
+  const lista = (years && years.length ? years.slice() : [REPORT_CUR_YEAR, REPORT_CUR_YEAR-1, REPORT_CUR_YEAR-2]);
+  if (!lista.includes(REPORT_CUR_YEAR)) lista.unshift(REPORT_CUR_YEAR);
+  const actual = el.value || String(REPORT_CUR_YEAR);
+  const firma = lista.join(',');
+  if (el.dataset.years === firma) return;
+  el.dataset.years = firma;
+  el.innerHTML = lista.map(y=>`<option value="${y}">${y}</option>`).join('');
+  el.value = lista.map(String).includes(actual) ? actual : String(lista[0]);
+}
+
+function fillReporteClientes() {
+  const el = document.getElementById('r-cliente');
+  if (!el) return;
+  const nombres = [...new Set(clientesData.map(c=>c.nombre).filter(Boolean))].sort();
+  const firma = nombres.join('|');
+  if (el.dataset.clientes === firma) return;
+  el.dataset.clientes = firma;
+  const actual = el.value;
+  el.innerHTML = '<option value="">Todos los clientes</option>' +
+    nombres.map(n=>`<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+  if (nombres.includes(actual)) el.value = actual;
+}
+
+let reportesInicializado = false;
+
+async function renderReportes() {
+  fillReporteYears(null);
+  // La primera vez el período arranca en "lo que va del año" con el mes real de
+  // hoy; setReportePeriodo vuelve a entrar acá con los filtros ya puestos.
+  if (!reportesInicializado) {
+    reportesInicializado = true;
+    setReportePeriodo('ytd');
+    return;
+  }
+  if (!clientesData.length) await loadClientes();
+  fillReporteClientes();
   const f = getRFiltros();
-  const filtered = reportTramites.filter(t => {
-    const [y,mo] = t.mes.split('-').map(Number);
-    return y===f.year && mo>=f.desde && mo<=f.hasta &&
-      (!f.cliente||t.cliente===f.cliente) && (!f.op||t.op===f.op);
-  });
+  const qs = new URLSearchParams({ year:f.year, desde:f.desde, hasta:f.hasta });
+  if (f.cliente) qs.set('cliente', f.cliente);
+  if (f.tipo)    qs.set('tipo', f.tipo);
+  const data = await apiFetch('/reportes?' + qs.toString());
+  if (!data || data.error) return;
+  fillReporteYears(data.years);
+  reportTramites = data.tramites || [];
+  reportCats = data.categorias || [];
+  paintReportes(f, reportTramites);
+}
+
+function paintReportes(f, filtered) {
   const tg = filtered.reduce((s,t)=>s+t.gastos,0);
   const ta = filtered.reduce((s,t)=>s+t.anticipos,0);
   const saldo = tg - ta;
@@ -1722,10 +1745,7 @@ function renderReportes() {
   const meses = [];
   for (let mo=f.desde; mo<=f.hasta; mo++) {
     const mm = String(mo).padStart(2,'0');
-    const tramMes = reportTramites.filter(t => {
-      const [y,m2]=t.mes.split('-').map(Number);
-      return y===f.year && m2===mo && (!f.cliente||t.cliente===f.cliente) && (!f.op||t.op===f.op);
-    });
+    const tramMes = filtered.filter(t => t.mes === f.year+'-'+mm);
     meses.push({label:mesLabels[mm]+' '+String(f.year).slice(2), gastos:tramMes.reduce((s,t)=>s+t.gastos,0), anticipos:tramMes.reduce((s,t)=>s+t.anticipos,0)});
   }
   renderReporteChart(meses);
@@ -1769,16 +1789,19 @@ function renderReporteCats() {
   const el = document.getElementById('r-cats');
   if (!el) return;
   const total = reportCats.reduce((s,c)=>s+c.total,0);
+  if (!total) {
+    el.innerHTML='<p style="text-align:center;color:var(--text-3);padding:40px 0;font-size:12px">Sin gastos en el período</p>'; return;
+  }
   const colors = ['var(--blue)','var(--purple)','var(--green)','var(--amber)','var(--red)','var(--text-3)'];
   el.innerHTML = reportCats.map((c,i)=>{
     const pct = Math.round((c.total/total)*100);
     return `<div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:12px">${c.cat}</span>
+        <span style="font-size:12px">${escHtml(c.cat)}</span>
         <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2)">$${c.total.toFixed(0)} <span style="color:var(--text-3)">${pct}%</span></span>
       </div>
       <div style="height:4px;background:var(--surface2);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${pct}%;background:${colors[i]};border-radius:3px;opacity:0.75"></div>
+        <div style="height:100%;width:${pct}%;background:${colors[i % colors.length]};border-radius:3px;opacity:0.75"></div>
       </div>
     </div>`;
   }).join('');
@@ -1800,10 +1823,11 @@ function renderReporteTramites(filtered) {
     const [,mo]=t.mes.split('-');
     const saldoColor=saldo>0?'var(--red)':saldo<0?'var(--green)':'var(--text-2)';
     const badge=saldo>0?'<span class="badge badge-red">A cobrar</span>':saldo<0?'<span class="badge badge-green">A favor</span>':'<span class="badge badge-gray">Equilibrado</span>';
+    const op = t.tipo==='Importación'?'IMP':t.tipo==='Exportación'?'EXP':'OTR';
     return `<tr>
-      <td><span class="row-link" onclick="nav('tramite',null)">${t.num}</span></td>
-      <td style="font-size:12px">${t.cliente}</td>
-      <td><span class="badge ${t.op==='IMP'?'badge-blue':'badge-purple'}" style="font-size:9px">${t.op}</span></td>
+      <td><span class="row-link" onclick="openTramite('${t.id}')">${escHtml(t.numero)}</span></td>
+      <td style="font-size:12px">${escHtml(t.cliente)}</td>
+      <td><span class="badge ${op==='IMP'?'badge-blue':op==='EXP'?'badge-purple':'badge-gray'}" style="font-size:9px">${op}</span></td>
       <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-3)">${mesLabels[mo]} ${t.mes.split('-')[0]}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">$${t.gastos.toFixed(2)}</td>
       <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--green)">$${t.anticipos.toFixed(2)}</td>
@@ -1821,12 +1845,13 @@ function renderReporteTramites(filtered) {
   se.style.color=sn>0?'var(--red)':sn<0?'var(--green)':'var(--text)';
 }
 
-const REPORT_CUR_YEAR = 2026;
-const REPORT_CUR_MO   = 5;
+const REPORT_CUR_YEAR = new Date().getFullYear();
+const REPORT_CUR_MO   = new Date().getMonth() + 1;
 let activePeriodPreset = 'ytd';
 
 function setReportePeriodo(preset) {
   activePeriodPreset = preset;
+  fillReporteYears(null);
   document.getElementById('r-year').value = REPORT_CUR_YEAR;
   const desde = { mes: REPORT_CUR_MO, '3m': Math.max(1, REPORT_CUR_MO-2), '6m': Math.max(1, REPORT_CUR_MO-5), ytd: 1 }[preset];
   document.getElementById('r-desde').value = desde;
@@ -1853,7 +1878,7 @@ function exportReportePDF() {
   const d = lb[String(f.desde).padStart(2,'0')];
   const h = lb[String(f.hasta).padStart(2,'0')];
   const period = d === h ? `${d} ${f.year}` : `${d} — ${h} ${f.year}`;
-  const extras = [f.cliente, f.op==='IMP'?'Importación':f.op==='EXP'?'Exportación':''].filter(Boolean).join(' · ');
+  const extras = [f.cliente, f.tipo].filter(Boolean).join(' · ');
   const el = document.getElementById('r-print-period');
   if (el) el.textContent = `Período: ${period}` + (extras ? ` · ${extras}` : '') + `   |   Generado: ${new Date().toLocaleDateString('es-EC')}`;
   window.print();
