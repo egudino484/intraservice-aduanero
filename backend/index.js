@@ -20,6 +20,17 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  CREATE TABLE IF NOT EXISTS plantillas (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre     TEXT NOT NULL UNIQUE,
+    cuerpo     TEXT NOT NULL,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  -- Plantilla de arranque, calcada de la que usan hoy para facturación
+  INSERT INTO plantillas (nombre, cuerpo)
+  VALUES ('Facturación', E'IMPORTADOR: {{cliente}}\\nRUC: {{ruc}}\\nREFRENDO: {{refrendo}}\\nLIQUIDACION: {{liquidacion}}\\nVALOR A FACTURAR: {{valor}}\\nNOTIFICACION: {{notificacion}}\\nCORREO ELECTRONICO: {{correo}}\\nREFERENCIA: {{referencia}}')
+  ON CONFLICT (nombre) DO NOTHING;
   CREATE TABLE IF NOT EXISTS configuracion (
     clave      TEXT PRIMARY KEY,
     valor      JSONB NOT NULL,
@@ -107,6 +118,7 @@ app.use('/proveedores',                   require('./routes/proveedores'))
 app.use('/clientes',                      require('./routes/clientes'))
 app.use('/etiquetas',                     require('./routes/etiquetas'))
 app.use('/configuracion',                 require('./routes/configuracion'))
+app.use('/plantillas',                    require('./routes/plantillas'))
 app.use('/auditoria',                     require('./routes/auditoria'))
 app.use('/users',                         require('./routes/users'))
 app.use('/feedback',                      require('./routes/feedback'))

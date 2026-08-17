@@ -1235,6 +1235,7 @@ function renderClientes() {
             : '<span class="badge badge-gray">Guardada</span>')
         : '<span style="color:var(--text-3);font-size:12px">—</span>'}</td>
       <td style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-ghost" onclick="generarPlantilla('${c.id}')" title="Generar plantilla con los datos de este cliente">Generar</button>
         <button class="btn btn-sm btn-ghost" onclick="showClienteForm('${c.id}')">Editar</button>
         ${esAdmin ? `<button class="btn btn-sm btn-danger" onclick="deleteCliente('${c.id}')">✕</button>` : ''}
       </td>
@@ -1310,6 +1311,120 @@ async function deleteCliente(id) {
   if (!res || res.error) { showNotif(res?.error || 'No se pudo eliminar'); return; }
   showNotif('Cliente eliminado');
   loadClientes();
+}
+
+// ── PLANTILLAS ────────────────────────────────────────────────────
+// Textos con {{variables}} que se llenan con los datos del cliente. Las que no
+// corresponden a ningún dato guardado quedan tal cual, para completarlas a mano.
+let plantillasData = [];
+let plantillaEditando = null;
+
+async function loadPlantillas() {
+  const data = await apiFetch('/plantillas');
+  if (!Array.isArray(data)) return;
+  plantillasData = data;
+  renderPlantillas();
+}
+
+function renderPlantillas() {
+  const el = document.getElementById('plantillas-lista');
+  if (!el) return;
+  const puedeEditar = currentUser?.role !== 'visor';
+  el.innerHTML = plantillasData.map(p => `
+    <div class="doc-item">
+      <div class="doc-name">${escHtml(p.nombre)}</div>
+      <div class="doc-meta" style="flex:2;color:var(--text-3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(p.cuerpo.split('\n')[0])}</div>
+      ${puedeEditar ? `<button class="btn btn-sm btn-ghost" onclick="showPlantillaForm('${p.id}')">Editar</button>
+      <button class="btn btn-sm btn-danger" onclick="borrarPlantilla('${p.id}')">✕</button>` : ''}
+    </div>`).join('')
+    || '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:14px 0">Sin plantillas todavía</p>';
+}
+
+function showPlantillaForm(id) {
+  plantillaEditando = id ? plantillasData.find(p => p.id === id) : null;
+  document.getElementById('pl-nombre').value = plantillaEditando?.nombre || '';
+  document.getElementById('pl-cuerpo').value = plantillaEditando?.cuerpo || '';
+  document.getElementById('pl-error').textContent = '';
+  document.getElementById('plantilla-form').style.display = 'block';
+}
+
+function hidePlantillaForm() {
+  plantillaEditando = null;
+  document.getElementById('plantilla-form').style.display = 'none';
+}
+
+async function guardarPlantilla() {
+  const err = document.getElementById('pl-error');
+  const nombre = document.getElementById('pl-nombre').value.trim();
+  const cuerpo = document.getElementById('pl-cuerpo').value;
+  if (!nombre) { err.textContent = 'Poné un nombre'; return; }
+  if (!cuerpo.trim()) { err.textContent = 'La plantilla está vacía'; return; }
+
+  const res = plantillaEditando
+    ? await apiFetch('/plantillas/' + plantillaEditando.id, { method: 'PATCH', body: JSON.stringify({ nombre, cuerpo }) })
+    : await apiFetch('/plantillas', { method: 'POST', body: JSON.stringify({ nombre, cuerpo }) });
+  if (!res || res.error) { err.textContent = res?.error || 'Error al guardar'; return; }
+
+  hidePlantillaForm();
+  showNotif(plantillaEditando ? 'Plantilla actualizada' : 'Plantilla creada');
+  loadPlantillas();
+}
+
+async function borrarPlantilla(id) {
+  const p = plantillasData.find(p => p.id === id);
+  if (!confirm('¿Eliminar la plantilla "' + (p?.nombre || '') + '"?')) return;
+  const res = await apiFetch('/plantillas/' + id, { method: 'DELETE' });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo eliminar'); return; }
+  showNotif('Plantilla eliminada');
+  loadPlantillas();
+}
+
+function rellenarPlantilla(cuerpo, cliente) {
+  const datos = {
+    cliente: cliente.nombre || '',
+    ruc: cliente.ruc || '',
+    telefono: cliente.telefono || '',
+    correo: (cliente.emails || []).join(', '),
+    descripcion: cliente.descripcion || '',
+    fecha: fmtDate(todayISO()),
+  };
+  // Solo se reemplazan las variables conocidas; el resto queda visible para
+  // que se note qué falta completar.
+  return cuerpo.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in datos ? datos[k] : m));
+}
+
+function generarPlantilla(clienteId) {
+  const cliente = clientesData.find(c => c.id === clienteId);
+  if (!cliente) return;
+  if (!plantillasData.length) { showNotif('Primero creá una plantilla'); return; }
+
+  // Con una sola plantilla se usa esa; con varias, se elige
+  let plantilla = plantillasData[0];
+  if (plantillasData.length > 1) {
+    const opciones = plantillasData.map((p, i) => `${i + 1}. ${p.nombre}`).join('\n');
+    const elegida = prompt('¿Qué plantilla?\n\n' + opciones, '1');
+    if (elegida === null) return;
+    plantilla = plantillasData[parseInt(elegida, 10) - 1];
+    if (!plantilla) { showNotif('Opción inválida'); return; }
+  }
+
+  document.getElementById('generado-titulo').textContent = plantilla.nombre + ' · ' + cliente.nombre;
+  document.getElementById('generado-texto').value = rellenarPlantilla(plantilla.cuerpo, cliente);
+  const panel = document.getElementById('panel-generado');
+  panel.style.display = '';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function copiarGenerado() {
+  const texto = document.getElementById('generado-texto');
+  try {
+    await navigator.clipboard.writeText(texto.value);
+    showNotif('Copiado al portapapeles');
+  } catch {
+    // Si el navegador bloquea el portapapeles, al menos queda seleccionado
+    texto.select();
+    showNotif('Copialo con Ctrl+C / Cmd+C');
+  }
 }
 
 // ── ETIQUETAS ─────────────────────────────────────────────────────
@@ -1832,7 +1947,7 @@ function nav(id, el) {
   if (id === 'dashboard') loadDashboard();
   if (id === 'bitacora') loadBitacora();
   if (id === 'usuarios') loadUsuarios();
-  if (id === 'clientes') loadClientes();
+  if (id === 'clientes') { loadClientes(); loadPlantillas(); }
   if (id === 'novedades') renderNovedades();
   if (id === 'feedback') loadFeedback();
 }

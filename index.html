@@ -826,6 +826,47 @@
             </tbody>
           </table>
         </div>
+
+        <!-- PLANTILLAS -->
+        <div class="panel">
+          <div class="panel-title">
+            <span>Plantillas</span>
+            <button class="btn btn-sm btn-primary" onclick="showPlantillaForm()">+ Nueva plantilla</button>
+          </div>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Textos que se llenan con los datos del cliente para enviárselos. Usá <strong>Generar</strong> en la fila de un cliente para completarla y copiarla.</p>
+
+          <div id="plantilla-form" style="display:none;background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+            <div class="field" style="margin-bottom:10px"><label>Nombre</label><input id="pl-nombre" type="text" placeholder="Ej: Facturación"></div>
+            <div class="field" style="margin-bottom:8px">
+              <label>Contenido</label>
+              <textarea id="pl-cuerpo" rows="9" style="font-family:'DM Mono',monospace;font-size:12px"></textarea>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">
+              Se reemplazan solos: <code>{{cliente}}</code> <code>{{ruc}}</code> <code>{{telefono}}</code> <code>{{correo}}</code> <code>{{descripcion}}</code> <code>{{fecha}}</code>.
+              Cualquier otro, como <code>{{valor}}</code>, queda tal cual para completarlo a mano.
+            </div>
+            <div id="pl-error" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:14px"></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="guardarPlantilla()">Guardar plantilla</button>
+              <button class="btn btn-ghost btn-sm" onclick="hidePlantillaForm()">Cancelar</button>
+            </div>
+          </div>
+
+          <div id="plantillas-lista"></div>
+        </div>
+
+        <!-- RESULTADO GENERADO -->
+        <div class="panel" id="panel-generado" style="display:none">
+          <div class="panel-title">
+            <span id="generado-titulo">Plantilla</span>
+            <span style="display:flex;gap:8px">
+              <button class="btn btn-sm btn-primary" onclick="copiarGenerado()">Copiar</button>
+              <button class="btn btn-sm btn-ghost" onclick="document.getElementById('panel-generado').style.display='none'">Cerrar</button>
+            </span>
+          </div>
+          <textarea id="generado-texto" rows="10" style="font-family:'DM Mono',monospace;font-size:12px;width:100%"></textarea>
+          <p style="font-size:11px;color:var(--text-3);margin-top:8px">Podés editarlo acá antes de copiar — los huecos que quedaron entre llaves se completan a mano.</p>
+        </div>
       </div>
 
       <!-- ══ AUDITORÍA ══ -->
