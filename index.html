@@ -17,16 +17,20 @@
       <div class="logo-icon"><svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="6" height="8" rx="1" fill="white" opacity="0.9"/><rect x="10" y="2" width="6" height="5" rx="1" fill="white" opacity="0.6"/><rect x="10" y="9" width="6" height="7" rx="1" fill="white" opacity="0.6"/><rect x="2" y="12" width="6" height="4" rx="1" fill="white" opacity="0.5"/></svg></div>
       <div><div class="logo-name">Intraservice</div><div class="logo-sub">Sistema Aduanero v1.0</div></div>
     </div>
-    <div class="field" style="margin-bottom:12px">
-      <label>Email</label>
-      <input id="login-email" type="email" placeholder="usuario@intraservice.com" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="field" style="margin-bottom:8px">
-      <label>Contraseña</label>
-      <input id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px"></div>
-    <button id="login-btn" class="btn btn-primary" style="width:100%;padding:9px" onclick="doLogin()">Ingresar</button>
+    <!-- Va dentro de un <form> con name y autocomplete para que el gestor de
+         contraseñas del navegador ofrezca guardar y autocompletar -->
+    <form id="login-form" onsubmit="event.preventDefault();doLogin()" action="#" method="post">
+      <div class="field" style="margin-bottom:12px">
+        <label for="login-email">Email</label>
+        <input id="login-email" name="username" type="email" autocomplete="username" placeholder="usuario@intraservice.com">
+      </div>
+      <div class="field" style="margin-bottom:8px">
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div id="login-error" style="color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px"></div>
+      <button id="login-btn" type="submit" class="btn btn-primary" style="width:100%;padding:9px">Ingresar</button>
+    </form>
   </div>
 </div>
 
