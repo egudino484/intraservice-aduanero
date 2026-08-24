@@ -84,16 +84,22 @@ npx serve . -p 8080
 
 | Servicio | Tipo | Notas |
 |---|---|---|
-| `sistema-importacion-intraservice` | Node.js (backend) | Raíz `/backend` |
-| `postgres` | PostgreSQL | Creado con `railway add postgres` |
+| `sistema-importacion-intraservice` | Node.js (backend) | Raíz `/backend`; también sirve el frontend |
+| `Postgres` | PostgreSQL | Creado con `railway add postgres` |
 | Volume | Disco persistente | Montado en `/uploads` del servicio backend |
 
-**Proyecto:** `sistema-importacion-intraservice`  
-**Workspace ID:** `91ade6ab-aa1c-41df-9a20-390673296b58`  
+**Proyecto:** `sistema-importacion-niky` (el *servicio* dentro del proyecto sí se llama `sistema-importacion-intraservice`)  
+**Project ID:** `10955fcc-d096-4cbb-8055-8412f280e739`  
+**Workspace:** Edison Gudiño's Projects — `91ade6ab-aa1c-41df-9a20-390673296b58`  
 **API URL producción:** `https://sistema-importacion-intraservice-production-0b8a.up.railway.app`  
 **GitHub repo:** `https://github.com/egudino484/intraservice-aduanero.git`
 
 ### Deploy del backend
+
+El servicio está conectado al repo de GitHub: **un push a `main` dispara el deploy solo**.
+Ver el estado con `railway status --json` (campo `latestDeployment.status`).
+
+Deploy manual, solo si hace falta:
 
 ```bash
 # Desde la raíz del proyecto
