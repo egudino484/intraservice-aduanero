@@ -124,16 +124,21 @@ async function loadBitacora() {
   renderBitacora();
 }
 
-function renderBitacora() {
+// Filtros de la bitácora, aparte para que la exportación baje lo mismo que se ve
+function filtrarBitacora() {
   const search = (document.getElementById('b-search')?.value || '').toLowerCase();
   const tipo = document.getElementById('b-tipo')?.value || '';
   const estado = document.getElementById('b-estado')?.value || '';
-  const bc = { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' };
-  const filtered = bitacoraData.filter(t =>
+  return bitacoraData.filter(t =>
     (!search || t.numero.toLowerCase().includes(search) || t.cliente.toLowerCase().includes(search) || (t.bl||'').toLowerCase().includes(search) || (t.da||'').toLowerCase().includes(search)) &&
     (!tipo || t.tipo === tipo) &&
     (!estado || t.estado === estado)
   );
+}
+
+function renderBitacora() {
+  const bc = { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' };
+  const filtered = filtrarBitacora();
   const tbody = document.getElementById('bitacora-body');
   if (!tbody) return;
   tbody.innerHTML = filtered.length
@@ -1311,6 +1316,106 @@ async function deleteCliente(id) {
   if (!res || res.error) { showNotif(res?.error || 'No se pudo eliminar'); return; }
   showNotif('Cliente eliminado');
   loadClientes();
+}
+
+// ── EXPORTAR TABLAS ───────────────────────────────────────────────
+// Un solo exportador para todas las tablas. Cada pantalla arma sus columnas y
+// sus filas ya filtradas, así se baja exactamente lo que se está viendo.
+
+function descargarBlob(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportarCSV(nombre, columnas, filas) {
+  if (!filas.length) { showNotif('No hay filas para exportar'); return; }
+  const celda = v => {
+    const s = v === null || v === undefined ? '' : String(v);
+    // Comillas, punto y coma o saltos de línea obligan a entrecomillar
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lineas = [columnas.map(c => celda(c.label || c.key)).join(';')];
+  for (const f of filas) lineas.push(columnas.map(c => celda(f[c.key])).join(';'));
+  // El BOM hace que Excel abra bien los acentos
+  const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  descargarBlob(blob, nombre + '.csv');
+  showNotif(filas.length + ' filas exportadas');
+}
+
+async function exportarXLSX(nombre, columnas, filas) {
+  if (!filas.length) { showNotif('No hay filas para exportar'); return; }
+  showNotif('Generando Excel...');
+  const res = await fetch(API_URL + '/export/xlsx', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, columnas, filas })
+  });
+  if (res.status === 401) { logout(); return; }
+  if (!res.ok) { showNotif('No se pudo generar el Excel'); return; }
+  descargarBlob(await res.blob(), nombre + '.xlsx');
+  showNotif(filas.length + ' filas exportadas');
+}
+
+function exportarBitacora(formato) {
+  const columnas = [
+    { key:'numero', label:'N° trámite' }, { key:'cliente', label:'Cliente' },
+    { key:'tipo', label:'Operación' }, { key:'regimen', label:'Régimen' },
+    { key:'bl', label:'BL / AWB' }, { key:'da', label:'DAI / DAE' },
+    { key:'naviera', label:'Naviera' }, { key:'estado', label:'Estado' },
+    { key:'apertura', label:'Apertura' }, { key:'llegada', label:'Llegada' },
+    { key:'etiquetas', label:'Etiquetas' },
+    { key:'gastos', label:'Total gastos' }, { key:'anticipos', label:'Total anticipos' },
+    { key:'saldo', label:'Saldo' },
+  ];
+  const filas = filtrarBitacora().map(t => ({
+    numero: t.numero, cliente: t.cliente, tipo: t.tipo,
+    regimen: t.regimen === 'Otro (especificar)' ? (t.regimen_otro || 'Otro') : (t.regimen || ''),
+    bl: t.bl || '', da: t.da || '', naviera: t.naviera || '', estado: t.estado,
+    apertura: (t.fecha_arribo || t.created_at || '').split('T')[0],
+    llegada: (t.fecha_llegada || '').split('T')[0],
+    etiquetas: (t.etiquetas || []).map(e => e.text).join(', '),
+    gastos: Number(t.total_gastos || 0),
+    anticipos: Number(t.total_anticipos || 0),
+    saldo: Number(t.total_gastos || 0) - Number(t.total_anticipos || 0),
+  }));
+  const nombre = 'bitacora-' + todayISO();
+  formato === 'csv' ? exportarCSV(nombre, columnas, filas) : exportarXLSX(nombre, columnas, filas);
+}
+
+function exportarClientes(formato) {
+  const columnas = [
+    { key:'nombre', label:'Nombre / razón social' }, { key:'ruc', label:'RUC' },
+    { key:'telefono', label:'Teléfono' }, { key:'correos', label:'Correos' },
+    { key:'descripcion', label:'Descripción' }, { key:'ecuapass', label:'Clave ECUAPASS' },
+  ];
+  const filas = clientesData.map(c => ({
+    nombre: c.nombre, ruc: c.ruc || '', telefono: c.telefono || '',
+    correos: (c.emails || []).join(', '), descripcion: c.descripcion || '',
+    // La clave nunca se exporta: solo si está cargada
+    ecuapass: c.tiene_ecuapass ? 'Guardada' : '',
+  }));
+  const nombre = 'clientes-' + todayISO();
+  formato === 'csv' ? exportarCSV(nombre, columnas, filas) : exportarXLSX(nombre, columnas, filas);
+}
+
+function exportarReporte(formato) {
+  const columnas = [
+    { key:'numero', label:'N° trámite' }, { key:'cliente', label:'Cliente' },
+    { key:'tipo', label:'Operación' }, { key:'estado', label:'Estado' },
+    { key:'mes', label:'Período' }, { key:'gastos', label:'Gastos' },
+    { key:'anticipos', label:'Anticipos' }, { key:'saldo', label:'Saldo' },
+  ];
+  const filas = (reportTramites || []).map(t => ({
+    numero: t.numero, cliente: t.cliente, tipo: t.tipo, estado: t.estado, mes: t.mes,
+    gastos: Number(t.gastos || 0), anticipos: Number(t.anticipos || 0),
+    saldo: Number(t.gastos || 0) - Number(t.anticipos || 0),
+  }));
+  const f = getRFiltros();
+  const nombre = `reporte-${f.year}-${String(f.desde).padStart(2,'0')}a${String(f.hasta).padStart(2,'0')}`;
+  formato === 'csv' ? exportarCSV(nombre, columnas, filas) : exportarXLSX(nombre, columnas, filas);
 }
 
 // ── PLANTILLAS ────────────────────────────────────────────────────

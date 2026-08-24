@@ -149,6 +149,8 @@
           <input id="b-search" class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL..." oninput="renderBitacora()">
           <select id="b-tipo" class="filter-select" onchange="renderBitacora()"><option value="">Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
           <select id="b-estado" class="filter-select" onchange="renderBitacora()"><option value="">Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente documentación</option><option>Cancelado</option></select>
+          <button class="btn btn-sm" onclick="exportarBitacora('csv')" title="Descargar lo que estás viendo, con los filtros aplicados">↓ CSV</button>
+          <button class="btn btn-sm" onclick="exportarBitacora('xlsx')" title="Descargar lo que estás viendo, con los filtros aplicados">↓ Excel</button>
           <button class="btn btn-primary btn-sm" onclick="newTramiteUI()">+ Nuevo trámite</button>
         </div>
         <div class="panel" style="padding:0;overflow:hidden">
@@ -697,6 +699,8 @@
             <div style="display:flex;gap:6px;align-items:center">
               <span class="badge badge-red" id="r-badge-cobrar">A cobrar: $0.00</span>
               <span class="badge badge-green" id="r-badge-favor">A favor: $0.00</span>
+              <button class="btn btn-sm" onclick="exportarReporte('csv')">↓ CSV</button>
+              <button class="btn btn-sm" onclick="exportarReporte('xlsx')">↓ Excel</button>
             </div>
           </div>
           <table>
@@ -796,7 +800,11 @@
         <div class="panel">
           <div class="panel-title">
             <span>Clientes registrados</span>
-            <button class="btn btn-sm btn-primary" onclick="showClienteForm()">+ Nuevo cliente</button>
+            <span style="display:flex;gap:8px">
+              <button class="btn btn-sm" onclick="exportarClientes('csv')">↓ CSV</button>
+              <button class="btn btn-sm" onclick="exportarClientes('xlsx')">↓ Excel</button>
+              <button class="btn btn-sm btn-primary" onclick="showClienteForm()">+ Nuevo cliente</button>
+            </span>
           </div>
 
           <div id="cliente-form" style="display:none;background:var(--bg);border-radius:var(--radius);padding:16px;margin-bottom:16px">
