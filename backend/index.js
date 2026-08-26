@@ -20,6 +20,10 @@ db.query(`
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
+  -- Respuesta al usuario que reportó: qué se hizo con su pedido
+  ALTER TABLE feedback ADD COLUMN IF NOT EXISTS estado      TEXT NOT NULL DEFAULT 'pendiente';
+  ALTER TABLE feedback ADD COLUMN IF NOT EXISTS respuesta   TEXT;
+  ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resuelto_at TIMESTAMPTZ;
   CREATE TABLE IF NOT EXISTS plantillas (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre     TEXT NOT NULL UNIQUE,

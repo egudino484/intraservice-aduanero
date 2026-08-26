@@ -2280,16 +2280,47 @@ async function loadFeedback() {
   const rows = await apiFetch('/feedback' + (params.toString() ? '?' + params.toString() : ''));
   if (!rows) return;
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin feedback registrado</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin feedback registrado</td></tr>';
     return;
   }
-  body.innerHTML = rows.map(f => `
+  feedbackData = rows;
+  const badge = { resuelto: 'green', descartado: 'gray', pendiente: 'amber' };
+  const rotulo = { resuelto: 'Resuelto', descartado: 'No se hará', pendiente: 'Pendiente' };
+  const puedeResponder = currentUser?.role !== 'visor';
+
+  body.innerHTML = rows.map(f => {
+    const estado = f.estado || 'pendiente';
+    return `
     <tr>
       <td style="font-size:12px;color:var(--text-3)">${fmtDate(f.created_at)}</td>
       <td><span class="badge badge-blue">${escHtml(pageTitles[f.pantalla] || f.pantalla)}</span></td>
       <td style="font-size:12px">${escHtml(f.user_name || '—')}</td>
-      <td style="font-size:13px">${escHtml(f.mensaje)}</td>
-    </tr>`).join('');
+      <td><span class="badge badge-${badge[estado]}">${rotulo[estado]}</span></td>
+      <td style="font-size:13px">
+        <div style="white-space:pre-wrap">${escHtml(f.mensaje)}</div>
+        ${f.respuesta ? `
+          <div style="margin-top:8px;padding:8px 10px;border-left:3px solid var(--${estado === 'descartado' ? 'text-3' : 'green'});background:var(--bg);border-radius:0 4px 4px 0">
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:3px">Respuesta del equipo${f.resuelto_at ? ' · ' + fmtDate(f.resuelto_at) : ''}</div>
+            <div style="font-size:12px;white-space:pre-wrap">${escHtml(f.respuesta)}</div>
+          </div>` : ''}
+        ${puedeResponder ? `<button class="btn btn-sm btn-ghost" style="margin-top:6px" onclick="responderFeedback('${f.id}')">${f.respuesta ? 'Editar respuesta' : 'Responder'}</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+let feedbackData = [];
+
+async function responderFeedback(id) {
+  const f = feedbackData.find(x => x.id === id);
+  if (!f) return;
+  const respuesta = prompt('¿Qué se hizo con este pedido? Se lo va a ver quien lo reportó:', f.respuesta || '');
+  if (respuesta === null) return;
+  const estado = confirm('¿Quedó resuelto?\n\nAceptar = Resuelto\nCancelar = No se hará') ? 'resuelto' : 'descartado';
+  const res = await apiFetch('/feedback/' + id, { method: 'PATCH', body: JSON.stringify({ estado, respuesta }) });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo guardar'); return; }
+  showNotif('Respuesta guardada');
+  loadFeedback();
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────

@@ -45,4 +45,24 @@ router.get('/', auth, adminOnly, async (req, res) => {
   } catch { res.status(500).json({ error: 'Error interno' }) }
 })
 
+// PATCH /feedback/:id — responder: qué se hizo con el pedido y cómo
+router.patch('/:id', auth, async (req, res) => {
+  if (req.user.role === 'visor') return res.status(403).json({ error: 'Sin permiso' })
+  const { estado, respuesta } = req.body || {}
+  const validos = ['pendiente', 'resuelto', 'descartado']
+  if (estado && !validos.includes(estado)) return res.status(400).json({ error: 'Estado inválido' })
+  try {
+    const { rows } = await db.query(
+      `UPDATE feedback
+       SET estado = COALESCE($1, estado),
+           respuesta = COALESCE($2, respuesta),
+           resuelto_at = CASE WHEN $1 IN ('resuelto','descartado') THEN now() ELSE NULL END
+       WHERE id = $3 RETURNING *`,
+      [estado || null, respuesta ?? null, req.params.id]
+    )
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
+    res.json(rows[0])
+  } catch { res.status(500).json({ error: 'Error interno' }) }
+})
+
 module.exports = router
