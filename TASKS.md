@@ -5,11 +5,11 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 ## Feedback del 21-ago-2026 (Nicole Arias)
 
-- [ ] **T16 · Estado de pago en los gastos** — S — Desplegable en cada gasto para indicar si está **cancelado** o **pendiente de pago**.
-- [ ] **T17 · A favor de quién queda el saldo** — S — En la liquidación, decir explícitamente si el saldo es a favor de **Fernando Arias** o del **cliente**, en vez de mostrar solo el número en rojo o verde.
-- [ ] **T18 · Autoformato de DAE y DAI** — S — Formatear mientras se escribe con el patrón `XXX-2026-XX-XXXXXXXX`.
-- [ ] **T19 · Campos de facturación de Fernando Arias** — S — Agregar Factura EXIMSA, Factura Reembolso – Fernando Arias y Honorarios – Fernando Arias.
-- [ ] **T20 · Puerto de salida y referencia del cliente** — S — Dos campos más en Información general.
+- [x] **T16 · Estado de pago en los gastos** — S — Columna "Pago" con `Cancelado` / `Pendiente de pago`, en verde o ámbar, y el resumen de cuántos quedan sin pagar y por cuánto en el pie de la tabla. *Columna `estado_pago` en `gastos`, con los existentes en "Pendiente de pago". Verificado en producción.*
+- [x] **T17 · A favor de quién queda el saldo** — S — Bajo el saldo neto se lee "A favor de Fernando Arias · a cobrar a MEGASTOCKEC", "A favor de \<cliente\>" o "Liquidado, sin saldo". *Regla: gastos por encima de los anticipos quedan a favor de Fernando Arias; al revés, a favor del cliente. Deducida del saldo, confirmar con Nicole si hay algún caso donde no aplique.*
+- [x] **T18 · Autoformato de DAE y DAI** — S — Los guiones se ponen solos al escribir. *No valida el largo a propósito: si un documento viene distinto, lo deja pasar con un guion extra en vez de bloquear la carga. Verificado escribiendo carácter por carácter en producción.*
+- [x] **T19 · Campos de facturación de Fernando Arias** — S — Factura EXIMSA, Factura Reembolso – Fernando Arias y Honorarios – Fernando Arias. *Columnas nuevas, sumadas al mapeo `CAMPOS_EXTRA`. Verificado guardando y releyendo.*
+- [x] **T20 · Puerto de salida y referencia del cliente** — S — Puerto de salida (con sugerencias de los ya usados en otros trámites) y N° de referencia del cliente. *De paso se sacaron los valores de ejemplo del prototipo que quedaban fijos en Contenedores, CDA y DAI.*
 
 ## P1 — Alta prioridad
 
