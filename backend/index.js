@@ -85,6 +85,14 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS preliquidacion JSONB DEFAULT '{}';
   -- Fecha de llegada de la mercadería, distinta de la apertura del trámite
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_llegada DATE;
+  -- Facturación de Fernando Arias, puerto de salida y referencia del cliente
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS factura_eximsa    TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS factura_reembolso TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS honorarios        TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS puerto_salida     TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS ref_cliente       TEXT;
+  -- Si el gasto ya se pagó o sigue pendiente
+  ALTER TABLE gastos ADD COLUMN IF NOT EXISTS estado_pago TEXT NOT NULL DEFAULT 'Pendiente de pago';
   -- Operación "Otro" y régimen aduanero
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS operacion_otro TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen        TEXT;

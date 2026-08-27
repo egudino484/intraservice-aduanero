@@ -230,6 +230,28 @@ function newTramiteUI() {
   suggestNextNumero();
 }
 
+// Formatea el DAI/DAE como XXX-2026-XX-XXXXXXXX mientras se escribe.
+// Solo agrega los guiones: no valida ni bloquea, para no estorbar si algún
+// documento viene con otro largo.
+function formatearDAI(el) {
+  const limpio = el.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const tramos = [3, 4, 2, 8];   // régimen, año, distrito, secuencial
+  const partes = [];
+  let i = 0;
+  for (const largo of tramos) {
+    if (i >= limpio.length) break;
+    partes.push(limpio.slice(i, i + largo));
+    i += largo;
+  }
+  if (i < limpio.length) partes.push(limpio.slice(i));   // lo que sobre, al final
+  const formateado = partes.join('-');
+  if (formateado !== el.value) {
+    const alFinal = el.selectionStart === el.value.length;
+    el.value = formateado;
+    if (alFinal) el.setSelectionRange(formateado.length, formateado.length);
+  }
+}
+
 // Fecha de hoy en zona local (toISOString daría el día siguiente por la tarde en UTC-5)
 function todayISO() {
   const d = new Date();
@@ -258,6 +280,8 @@ const CAMPOS_EXTRA = {
   contenedores: 'contenedores', cda: 'cda',
   operacionOtro: 'operacion_otro', regimen: 'regimen', regimenOtro: 'regimen_otro',
   fechaLlegada: 'fecha_llegada',
+  factEximsa: 'factura_eximsa', factReembolso: 'factura_reembolso',
+  honorarios: 'honorarios', puertoSalida: 'puerto_salida', refCliente: 'ref_cliente',
 };
 
 // Regímenes según la operación. OTRO_REGIMEN habilita el campo libre.
@@ -278,6 +302,7 @@ function actualizarSugerenciasOperacion() {
   };
   llenar('operacion-otro-list', bitacoraData.map(t => t.operacion_otro));
   llenar('regimen-otro-list', bitacoraData.map(t => t.regimen_otro));
+  llenar('puertos-list', bitacoraData.map(t => t.puerto_salida));
 }
 
 function onOperacionChange() {
@@ -593,6 +618,8 @@ function saveAnticipoField(id, field, value) {
   }, 800);
 }
 
+const ESTADOS_PAGO = ['Pendiente de pago', 'Cancelado'];
+
 function renderGastos() {
   const tbody = document.getElementById('gastos-body');
   tbody.innerHTML = '';
@@ -608,6 +635,8 @@ function renderGastos() {
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
       <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
+      <td><select onchange="saveGastoField('${g.id}','estado_pago',this.value)" style="font-size:11px;color:${(g.estado_pago||'Pendiente de pago')==='Cancelado'?'var(--green)':'var(--amber)'}">${
+        ESTADOS_PAGO.map(e=>`<option${(g.estado_pago||'Pendiente de pago')===e?' selected':''}>${e}</option>`).join('')}</select></td>
       <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${
         archivos.map(a => chipArchivo(g.id, a)).join('')
       }<button class="btn btn-sm" onclick="attachGastoDoc('${g.id}')">+ Adjuntar</button></td>
@@ -617,6 +646,13 @@ function renderGastos() {
   });
   const total = totalGastos();
   document.getElementById('total-footer').textContent = '$' + total.toFixed(2);
+  const pendientes = gastoData.filter(g => (g.estado_pago || 'Pendiente de pago') !== 'Cancelado');
+  const footPago = document.getElementById('pago-footer');
+  if (footPago) {
+    const montoPend = pendientes.reduce((s, g) => s + parseFloat(g.monto || 0), 0);
+    footPago.textContent = pendientes.length ? `${pendientes.length} sin pagar · $${montoPend.toFixed(2)}` : 'Todo cancelado';
+    footPago.style.color = pendientes.length ? 'var(--amber)' : 'var(--green)';
+  }
   document.getElementById('resumen-total').textContent = '$' + total.toFixed(2);
   document.getElementById('resumen-docs').textContent = conDoc + ' / ' + gastoData.length;
   const falt = gastoData.length - conDoc;
@@ -702,6 +738,16 @@ function renderTabLiquidacion() {
   set('tl-total-anticipos', '$' + ta.toFixed(2));
   set('tl-saldo-card', (saldo >= 0 ? '$' : '-$') + Math.abs(saldo).toFixed(2));
   setColor('tl-saldo-card', saldo > 0 ? 'var(--red)' : saldo < 0 ? 'var(--green)' : 'var(--text)');
+  // A quién le queda a favor: gastos por encima de los anticipos los puso
+  // Fernando Arias y hay que cobrarlos; al revés, el cliente adelantó de más.
+  const favorEl = document.getElementById('tl-saldo-favor');
+  if (favorEl) {
+    const cliente = document.querySelector('[data-field="cliente"]')?.value || 'el cliente';
+    favorEl.textContent = saldo > 0 ? 'A favor de Fernando Arias · a cobrar a ' + cliente
+                        : saldo < 0 ? 'A favor de ' + cliente
+                        : 'Liquidado, sin saldo';
+    favorEl.style.color = saldo > 0 ? 'var(--red)' : saldo < 0 ? 'var(--green)' : 'var(--text-3)';
+  }
   set('tl-estado-badge', saldo === 0 ? 'Liquidado' : 'Pendiente');
 
   const gb = document.getElementById('tl-gastos-body');

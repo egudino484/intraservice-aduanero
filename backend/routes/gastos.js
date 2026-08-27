@@ -83,7 +83,7 @@ router.delete('/:id/archivos/:archivoId', auth, async (req, res) => {
 
 // POST /tramites/:tramiteId/gastos
 router.post('/', auth, upload.single('comprobante'), async (req, res) => {
-  const { concepto, proveedor, n_factura, monto, categoria } = req.body
+  const { concepto, proveedor, n_factura, monto, categoria, estado_pago } = req.body
   if (!concepto || monto == null || monto === '' || !categoria) return res.status(400).json({ error: 'concepto, monto y categoria requeridos' })
 
   let comprobante_url = null, comprobante_key = null
@@ -94,9 +94,9 @@ router.post('/', auth, upload.single('comprobante'), async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `INSERT INTO gastos (tramite_id, concepto, proveedor, n_factura, monto, categoria, comprobante_url, comprobante_key)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [req.params.tramiteId, concepto, normProveedor(proveedor), n_factura, monto, categoria, comprobante_url, comprobante_key]
+      `INSERT INTO gastos (tramite_id, concepto, proveedor, n_factura, monto, categoria, comprobante_url, comprobante_key, estado_pago)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [req.params.tramiteId, concepto, normProveedor(proveedor), n_factura, monto, categoria, comprobante_url, comprobante_key, estado_pago || 'Pendiente de pago']
     )
     if (comprobante_url) {
       await db.query(
@@ -116,12 +116,13 @@ router.post('/', auth, upload.single('comprobante'), async (req, res) => {
 // PUT /tramites/:tramiteId/gastos/:id — solo campos de texto.
 // Los comprobantes se manejan por POST/DELETE de /archivos.
 router.put('/:id', auth, async (req, res) => {
-  const { concepto, proveedor, n_factura, monto, categoria } = req.body
+  const { concepto, proveedor, n_factura, monto, categoria, estado_pago } = req.body
   try {
     const { rows } = await db.query(
-      `UPDATE gastos SET concepto=$1, proveedor=$2, n_factura=$3, monto=$4, categoria=$5
+      `UPDATE gastos SET concepto=$1, proveedor=$2, n_factura=$3, monto=$4, categoria=$5,
+       estado_pago=COALESCE($8, estado_pago)
        WHERE id=$6 AND tramite_id=$7 RETURNING *`,
-      [concepto, normProveedor(proveedor), n_factura, monto, categoria, req.params.id, req.params.tramiteId]
+      [concepto, normProveedor(proveedor), n_factura, monto, categoria, req.params.id, req.params.tramiteId, estado_pago || null]
     )
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
     const arch = await db.query('SELECT id, url, nombre FROM gasto_archivos WHERE gasto_id = $1 ORDER BY created_at', [req.params.id])

@@ -3,6 +3,14 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — 02-jul-2026 y 04-ago-2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Feedback del 21-ago-2026 (Nicole Arias)
+
+- [ ] **T16 · Estado de pago en los gastos** — S — Desplegable en cada gasto para indicar si está **cancelado** o **pendiente de pago**.
+- [ ] **T17 · A favor de quién queda el saldo** — S — En la liquidación, decir explícitamente si el saldo es a favor de **Fernando Arias** o del **cliente**, en vez de mostrar solo el número en rojo o verde.
+- [ ] **T18 · Autoformato de DAE y DAI** — S — Formatear mientras se escribe con el patrón `XXX-2026-XX-XXXXXXXX`.
+- [ ] **T19 · Campos de facturación de Fernando Arias** — S — Agregar Factura EXIMSA, Factura Reembolso – Fernando Arias y Honorarios – Fernando Arias.
+- [ ] **T20 · Puerto de salida y referencia del cliente** — S — Dos campos más en Información general.
+
 ## P1 — Alta prioridad
 
 - [x] **T1 · N° trámite consecutivo (T26-001)** — S — En "Nuevo trámite", el campo N° TRÁMITE sugiere automáticamente el siguiente consecutivo del año (T26-522 hoy en prod) basado en el último creado. Se puebla por default al abrir el form y sigue editable — sugerencia, no forzado. *Backend: `GET /tramites/next-numero` (`backend/routes/tramites.js`). Frontend: `suggestNextNumero()` en `app.js`. Verificado en producción.*

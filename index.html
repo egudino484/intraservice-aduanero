@@ -210,7 +210,7 @@
               <div class="field"><label>Almacenera</label><input list="almaceneras-list" type="text" data-field="almacenera" id="campo-almacenera" onchange="saveAlmacenera(this.value)" placeholder="Ingresa o selecciona almacenera..."><datalist id="almaceneras-list"></datalist></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" value="028-2026-10-00722383"></div>
+              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" placeholder="XXX-2026-XX-XXXXXXXX" maxlength="20" oninput="formatearDAI(this)"></div>
               <div class="field"><label>MRN</label><input type="text" data-field="mrn" value="CEC2026CMAU0082-0023-0000"></div>
               <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae" value="51279053"></div>
             </div>
@@ -224,9 +224,18 @@
               <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152"></div>
               <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152"></div>
             </div>
+            <div class="field-row-3">
+              <div class="field"><label>Factura EXIMSA</label><input type="text" data-field="factEximsa"></div>
+              <div class="field"><label>Factura Reembolso – Fernando Arias</label><input type="text" data-field="factReembolso"></div>
+              <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
+              <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
+              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
+            </div>
             <div class="field-row">
-              <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores" value="TXGU7782553 / CAIU9233659 / FFAU5281140 / CAIU7344416"></div>
-              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda" value="N/A"></div>
+              <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores"></div>
             </div>
             <div class="field-row">
               <div class="field"><label>Observaciones</label><textarea data-field="obs">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
@@ -293,13 +302,14 @@
             <table class="gasto-table">
               <thead>
                 <tr>
-                  <th style="width:22%">Concepto</th>
-                  <th style="width:16%">Proveedor</th>
-                  <th style="width:13%">N° factura</th>
-                  <th style="width:10%">Monto ($)</th>
-                  <th style="width:12%">Categoría</th>
-                  <th style="width:20%">Comprobante adjunto</th>
-                  <th style="width:7%"></th>
+                  <th style="width:19%">Concepto</th>
+                  <th style="width:14%">Proveedor</th>
+                  <th style="width:12%">N° factura</th>
+                  <th style="width:9%">Monto ($)</th>
+                  <th style="width:11%">Categoría</th>
+                  <th style="width:12%">Pago</th>
+                  <th style="width:17%">Comprobante adjunto</th>
+                  <th style="width:6%"></th>
                 </tr>
               </thead>
               <tbody id="gastos-body"></tbody>
@@ -307,7 +317,9 @@
                 <tr class="total-row">
                   <td colspan="3" style="font-size:12px;font-family:'DM Mono',monospace">Total gastos</td>
                   <td id="total-footer" style="font-family:'DM Mono',monospace;font-size:13px">$830.50</td>
-                  <td colspan="3"></td>
+                  <td></td>
+                  <td id="pago-footer" style="font-size:11px;color:var(--text-3)"></td>
+                  <td colspan="2"></td>
                 </tr>
               </tfoot>
             </table>
@@ -437,6 +449,7 @@
             <div class="total-card">
               <div class="total-card-label">Saldo neto</div>
               <div class="total-card-val" id="tl-saldo-card">—</div>
+              <div id="tl-saldo-favor" style="font-size:11px;margin-top:3px"></div>
             </div>
           </div>
 
