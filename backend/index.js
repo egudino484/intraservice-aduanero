@@ -91,6 +91,11 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS honorarios        TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS puerto_salida     TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS ref_cliente       TEXT;
+  -- Datos que solo aplican a exportaciones
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_salida   DATE;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regularizacion TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS booking        TEXT;
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cut_off        TEXT;
   -- Si el gasto ya se pagó o sigue pendiente
   ALTER TABLE gastos ADD COLUMN IF NOT EXISTS estado_pago TEXT NOT NULL DEFAULT 'Pendiente de pago';
   -- Operación "Otro" y régimen aduanero

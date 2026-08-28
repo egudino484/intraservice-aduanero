@@ -230,9 +230,24 @@
               <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
-              <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
               <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
+            </div>
+
+            <!-- Solo exportaciones -->
+            <div id="bloque-exportacion" style="display:none">
+              <div style="font-size:12px;font-weight:500;color:var(--text-2);margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--border)">Datos de exportación</div>
+              <div class="field-row-3">
+                <div class="field"><label>Fecha de salida</label><input type="date" data-field="fechaSalida"></div>
+                <div class="field"><label>Estado de regularización</label>
+                  <select data-field="regularizacion"><option value="">— Sin definir —</option><option>Sí</option><option>No</option></select>
+                </div>
+                <div class="field"><label>Booking</label><input type="text" data-field="booking"></div>
+              </div>
+              <div class="field-row-3">
+                <div class="field"><label>Cut Off</label><input type="text" data-field="cutOff" placeholder="Ej: 12 sep 18:00"></div>
+                <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
+                <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
+              </div>
             </div>
             <div class="field-row">
               <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores"></div>

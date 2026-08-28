@@ -282,6 +282,8 @@ const CAMPOS_EXTRA = {
   fechaLlegada: 'fecha_llegada',
   factEximsa: 'factura_eximsa', factReembolso: 'factura_reembolso',
   honorarios: 'honorarios', puertoSalida: 'puerto_salida', refCliente: 'ref_cliente',
+  fechaSalida: 'fecha_salida', regularizacion: 'regularizacion',
+  booking: 'booking', cutOff: 'cut_off',
 };
 
 // Regímenes según la operación. OTRO_REGIMEN habilita el campo libre.
@@ -317,6 +319,10 @@ function onOperacionChange() {
   }
   const campoOtro = document.getElementById('campo-operacion-otro');
   if (campoOtro) campoOtro.style.display = op === 'Otro' ? '' : 'none';
+  // Fecha de salida, regularización, booking, cut off, puerto y referencia
+  // solo tienen sentido en exportaciones
+  const bloqueExp = document.getElementById('bloque-exportacion');
+  if (bloqueExp) bloqueExp.style.display = op === 'Exportación' ? '' : 'none';
   onRegimenChange();
   renderPreliquidacion();
 }

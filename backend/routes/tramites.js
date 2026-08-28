@@ -76,7 +76,8 @@ router.get('/:id', auth, async (req, res) => {
 
 // Campos de texto sueltos del form; se guardan tal cual llegan
 const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada','preliquidacion',
-  'factura_eximsa','factura_reembolso','honorarios','puerto_salida','ref_cliente']
+  'factura_eximsa','factura_reembolso','honorarios','puerto_salida','ref_cliente',
+  'fecha_salida','regularizacion','booking','cut_off']
 // preliquidacion es JSONB: va aparte porque hay que serializarla
 const extraValores = body => EXTRA.map(c =>
   c === 'preliquidacion' ? JSON.stringify(body.preliquidacion || {}) : (body[c] ?? null))
