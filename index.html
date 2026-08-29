@@ -178,9 +178,9 @@
           <div class="panel">
             <div class="panel-title">Información general</div>
             <div class="field-row-3">
-              <div class="field"><label>N° trámite</label><input type="text" data-field="numero" value="T26-281" readonly></div>
+              <div class="field"><label>N° trámite</label><input type="text" data-field="numero" readonly></div>
               <div class="field"><label>Operación</label><select data-field="operacion" onchange="onOperacionChange()"><option>Importación</option><option>Exportación</option><option>Otro</option></select></div>
-              <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura" value="2026-04-24"></div>
+              <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura"></div>
             </div>
             <div class="field-row-3">
               <div class="field"><label>Fecha de llegada</label><input type="date" data-field="fechaLlegada"></div>
@@ -200,39 +200,15 @@
               </div>
               <div class="field">
                 <label>Mercadería importada</label>
-                <input list="mercaderia-list" type="text" data-field="mercaderia" value="PAPEL MONDI PROVANTAGE SMARTKRAFT BROWN" id="campo-mercaderia" onchange="saveMercaderia(this.value)" placeholder="Ingresa o selecciona mercadería...">
+                <input list="mercaderia-list" type="text" data-field="mercaderia" id="campo-mercaderia" onchange="saveMercaderia(this.value)" placeholder="Ingresa o selecciona mercadería...">
                 <datalist id="mercaderia-list"></datalist>
               </div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl" value="GDY0406929"></div>
+              <div class="field"><label>Guía de embarque (BL/AWB)</label><input type="text" data-field="bl"></div>
               <div class="field"><label>Naviera</label><input list="navieras-list" type="text" data-field="naviera" id="campo-naviera" onchange="saveNaviera(this.value)" placeholder="Ingresa o selecciona naviera..."><datalist id="navieras-list"></datalist></div>
               <div class="field"><label>Almacenera</label><input list="almaceneras-list" type="text" data-field="almacenera" id="campo-almacenera" onchange="saveAlmacenera(this.value)" placeholder="Ingresa o selecciona almacenera..."><datalist id="almaceneras-list"></datalist></div>
             </div>
-            <div class="field-row-3">
-              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" placeholder="XXX-2026-XX-XXXXXXXX" maxlength="20" oninput="formatearDAI(this)"></div>
-              <div class="field"><label>MRN</label><input type="text" data-field="mrn" value="CEC2026CMAU0082-0023-0000"></div>
-              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae" value="51279053"></div>
-            </div>
-            <div class="field-row-3">
-              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida" value="4804.11.00.00"></div>
-              <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega" value="0802P"></div>
-              <div class="field"><label>Transporte</label><input type="text" data-field="transporte" value="SANTIAGO CALVOPIÑA"></div>
-            </div>
-            <div class="field-row-3">
-              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value)" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
-              <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom" value="2026-322152"></div>
-              <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra" value="2026-322152"></div>
-            </div>
-            <div class="field-row-3">
-              <div class="field"><label>Factura EXIMSA</label><input type="text" data-field="factEximsa"></div>
-              <div class="field"><label>Factura Reembolso – Fernando Arias</label><input type="text" data-field="factReembolso"></div>
-              <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
-            </div>
-            <div class="field-row-3">
-              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
-            </div>
-
             <!-- Solo exportaciones -->
             <div id="bloque-exportacion" style="display:none">
               <div style="font-size:12px;font-weight:500;color:var(--text-2);margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--border)">Datos de exportación</div>
@@ -248,6 +224,30 @@
                 <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
                 <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
               </div>
+            <div class="field-row-3">
+              <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" placeholder="XXX-2026-XX-XXXXXXXX" maxlength="20" oninput="formatearDAI(this)"></div>
+              <div class="field"><label>MRN</label><input type="text" data-field="mrn"></div>
+              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida"></div>
+              <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega"></div>
+              <div class="field"><label>Transporte</label><input type="text" data-field="transporte"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value)" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
+              <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom"></div>
+              <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Factura EXIMSA</label><input type="text" data-field="factEximsa"></div>
+              <div class="field"><label>Factura Reembolso – Fernando Arias</label><input type="text" data-field="factReembolso"></div>
+              <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
+            </div>
+
             </div>
             <div class="field-row">
               <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores"></div>
