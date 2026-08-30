@@ -9,12 +9,12 @@ function adminOnly(req, res, next) {
 
 // POST /feedback (cualquier usuario autenticado)
 router.post('/', auth, async (req, res) => {
-  const { pantalla, mensaje } = req.body
+  const { pantalla, mensaje, tramite_id } = req.body
   if (!pantalla || !mensaje) return res.status(400).json({ error: 'Campos requeridos faltantes' })
   try {
     const { rows } = await db.query(
-      'INSERT INTO feedback (pantalla, mensaje, user_id) VALUES ($1,$2,$3) RETURNING *',
-      [pantalla, mensaje, req.user.id]
+      'INSERT INTO feedback (pantalla, mensaje, user_id, tramite_id) VALUES ($1,$2,$3,$4) RETURNING *',
+      [pantalla, mensaje, req.user.id, tramite_id || null]
     )
     res.status(201).json(rows[0])
   } catch { res.status(500).json({ error: 'Error interno' }) }
@@ -33,9 +33,10 @@ router.get('/', auth, adminOnly, async (req, res) => {
 
   try {
     const { rows } = await db.query(
-      `SELECT f.*, u.name AS user_name
+      `SELECT f.*, u.name AS user_name, t.numero AS tramite_numero
        FROM feedback f
        LEFT JOIN users u ON u.id = f.user_id
+       LEFT JOIN tramites t ON t.id = f.tramite_id
        WHERE ${where.join(' AND ')}
        ORDER BY f.created_at DESC
        LIMIT 500`,

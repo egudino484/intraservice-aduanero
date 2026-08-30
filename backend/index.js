@@ -24,6 +24,8 @@ db.query(`
   ALTER TABLE feedback ADD COLUMN IF NOT EXISTS estado      TEXT NOT NULL DEFAULT 'pendiente';
   ALTER TABLE feedback ADD COLUMN IF NOT EXISTS respuesta   TEXT;
   ALTER TABLE feedback ADD COLUMN IF NOT EXISTS resuelto_at TIMESTAMPTZ;
+  -- Desde qué trámite se reportó, cuando aplica
+  ALTER TABLE feedback ADD COLUMN IF NOT EXISTS tramite_id UUID REFERENCES tramites(id) ON DELETE SET NULL;
   CREATE TABLE IF NOT EXISTS plantillas (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre     TEXT NOT NULL UNIQUE,

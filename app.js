@@ -2312,7 +2312,7 @@ async function submitFeedback() {
   if (!mensaje) { errEl.textContent = 'Escribe un mensaje antes de enviar'; return; }
   const data = await apiFetch('/feedback', {
     method: 'POST',
-    body: JSON.stringify({ pantalla: currentScreen, mensaje })
+    body: JSON.stringify({ pantalla: currentScreen, mensaje, tramite_id: currentScreen === 'tramite' ? currentTramiteId : null })
   });
   if (!data || data.error) { errEl.textContent = data?.error || 'Error al enviar feedback'; return; }
   closeFeedbackModal();
@@ -2345,7 +2345,8 @@ async function loadFeedback() {
     return `
     <tr>
       <td style="font-size:12px;color:var(--text-3)">${fmtDate(f.created_at)}</td>
-      <td><span class="badge badge-blue">${escHtml(pageTitles[f.pantalla] || f.pantalla)}</span></td>
+      <td><span class="badge badge-blue">${escHtml(NOMBRES_PANTALLA[f.pantalla] || f.pantalla)}</span>${
+        f.tramite_numero ? `<div style="font-size:11px;color:var(--text-3);font-family:'DM Mono',monospace;margin-top:3px">${escHtml(f.tramite_numero)}</div>` : ''}</td>
       <td style="font-size:12px">${escHtml(f.user_name || '—')}</td>
       <td><span class="badge badge-${badge[estado]}">${rotulo[estado]}</span></td>
       <td style="font-size:13px">
@@ -2362,6 +2363,16 @@ async function loadFeedback() {
 }
 
 let feedbackData = [];
+
+// Nombres fijos de las pantallas. No se usa pageTitles porque su entrada
+// "tramite" se reescribe con el trámite abierto en ese momento, y el listado
+// terminaba mostrando ese trámite en todas las filas, sin importar cuándo se
+// reportó cada una.
+const NOMBRES_PANTALLA = {
+  dashboard: 'Dashboard', bitacora: 'Bitácora', tramite: 'Detalle trámite',
+  reportes: 'Reporte financiero', clientes: 'Clientes', novedades: 'Novedades',
+  usuarios: 'Usuarios', auditoria: 'Historial', feedback: 'Feedback',
+};
 
 async function responderFeedback(id) {
   const f = feedbackData.find(x => x.id === id);
