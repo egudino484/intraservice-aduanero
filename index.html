@@ -221,9 +221,12 @@
               </div>
               <div class="field-row-3">
                 <div class="field"><label>Cut Off</label><input type="text" data-field="cutOff" placeholder="Ej: 12 sep 18:00"></div>
-                <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
-                <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
               </div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
+              <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
+            </div>
             <div class="field-row-3">
               <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" placeholder="XXX-2026-XX-XXXXXXXX" maxlength="20" oninput="formatearDAI(this)"></div>
               <div class="field"><label>MRN</label><input type="text" data-field="mrn"></div>
@@ -247,13 +250,11 @@
             <div class="field-row-3">
               <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
             </div>
-
-            </div>
             <div class="field-row">
               <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Observaciones</label><textarea data-field="obs">Saldo a favor de Fernando Arias por $88.34 (anticipo $2,000.00 vs gastos pagados $2,088.34).</textarea></div>
+              <div class="field"><label>Observaciones</label><textarea data-field="obs"></textarea></div>
               <div class="field"><label>Nota anticipos</label><input type="text" value="Los anticipos se gestionan en la pestaña Gastos y anticipos" readonly></div>
             </div>
           </div>
