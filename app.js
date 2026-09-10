@@ -804,9 +804,11 @@ function renderTabLiquidacion() {
   const favorEl = document.getElementById('tl-saldo-favor');
   if (favorEl) {
     const cliente = document.querySelector('[data-field="cliente"]')?.value || 'el cliente';
-    favorEl.textContent = saldo > 0 ? 'A favor de Fernando Arias · a cobrar a ' + cliente
-                        : saldo < 0 ? 'A favor de ' + cliente
-                        : 'Liquidado, sin saldo';
+    // "Fernando Arias" es Intraservice, la empresa: se aclara al lado porque el
+    // nombre solo ya se prestó a confusión sobre a quién le queda el saldo.
+    favorEl.textContent = saldo > 0 ? 'A favor de Fernando Arias (Intraservice) · a cobrar a ' + cliente
+                        : saldo < 0 ? 'A favor de ' + cliente + ' · anticipo sin usar'
+                        : 'Sin saldo pendiente';
     favorEl.style.color = saldo > 0 ? 'var(--red)' : saldo < 0 ? 'var(--green)' : 'var(--text-3)';
   }
   set('tl-estado-badge', saldo === 0 ? 'Liquidado' : 'Pendiente');
