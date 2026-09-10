@@ -1,12 +1,34 @@
 # Tareas pendientes
 
-Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — 02-jul-2026 y 04-ago-2026).
+Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
+
+## Feedback del 07/08-sep-2026 (Nicole Arias)
+
+Todos hechos, desplegados y verificados en producción. Cada uno respondido en la pantalla de Feedback.
+
+- [x] **T21 · Numeración de exportaciones E26-XXX-CLIENTE** — S — Serie propia para exportaciones, con el cliente pegado al final (`E26-001-NOVA`). Las importaciones siguen en `T26-XXX`. *`/tramites/next-numero?tipo=`. La sugerencia se recalcula al cambiar operación o cliente, pero no pisa el número si lo escribieron a mano — `ultimaSugerenciaNumero` en `app.js`. Verificado: T26-611 / E26-001 / E26-001-NOVA / respeta "MI-PROPIO-123".*
+
+- [x] **T22 · Eliminar trámite** — S — Botón en "Datos del trámite", solo admin, que pide escribir el número para confirmar. *`DELETE /tramites/:id`. El cascade se lleva gastos, anticipos y documentos; los archivos del volumen se borran a mano. Queda en auditoría como `tramite_eliminado`. Verificado creando y borrando un trámite descartable, sin tocar datos reales.*
+  - Decisión: borrado real, no archivado. El estado "Cancelado" ya cubre el otro caso.
+
+- [x] **T23 · Gastos fuera de liquidación (honorarios EXIMSA)** — M — Columna "Liquidar" con casilla, tildada por defecto. Destildada, el gasto se registra pero no suma al total ni al saldo. *Columna `excluir_liquidacion` en `gastos`. El monto excluido se muestra aparte en el pie, la fila queda marcada en la liquidación, y el PDF y el Excel la identifican sin sumarla. Verificado: total pasó de $1246.53 a $547.33 + $699.20 fuera de liquidación.*
+
+- [x] **T24 · Separar Preliquidación y Liquidación** — M — Dos documentos distintos, cada uno con sus botones de PDF y Excel. *`/tramites/:id/:doc(preliquidacion|liquidacion).xlsx`. Preliquidación: mercadería e impuestos. Liquidación: gastos, anticipos y saldo. Los dos llevan la cabecera del trámite. Verificado leyendo las secciones dentro de cada .xlsx: cero solapamiento.*
+
+- [x] **T25 · Vista previa del PDF generado** — S — El PDF de preliquidación y liquidación se muestra dentro del sistema, con botón "Imprimir / Guardar PDF". Antes abría una ventana nueva y saltaba directo al diálogo de impresión. *`mostrarPreviewDocumento()` reutiliza el modal de preview con un iframe `srcdoc`.*
+  - La vista previa de archivos adjuntos (documentos y comprobantes) ya funcionaba: se verificó que el servidor manda `application/pdf` y que el iframe los abre bien.
+
+- [x] **T26 · Saldo a favor de quién** — Ya estaba implementado y **el cálculo era correcto**; el pedido venía con los dos casos invertidos. Confirmado por Nicole: Fernando Arias es Intraservice. El cliente entrega el anticipo, la empresa pone los gastos. *Se aclaró la etiqueta a "A favor de Fernando Arias (Intraservice) · a cobrar a \<cliente\>" y se adoptó "Sin saldo pendiente" para el empate, que es el texto que ella pidió.*
+
+- [x] **T27 · Campos adicionales de exportación** — Ya estaba hecho (T21 del 21-ago) cuando llegó el pedido, el mismo día del deploy.
+
+- [x] **T28 · La columna Pantalla del feedback mostraba el trámite abierto** — S — El listado leía `pageTitles`, cuya entrada `tramite` se reescribe con el trámite activo, así que todas las filas mostraban lo mismo. Ahora usa `NOMBRES_PANTALLA`, fijo. *Además el feedback guarda `tramite_id`, así los nuevos muestran de qué trámite salieron. Los 11 viejos no lo tienen: esa información nunca se guardó.*
 
 ## Feedback del 21-ago-2026 (Nicole Arias)
 
 - [x] **T16 · Estado de pago en los gastos** — S — Columna "Pago" con `Cancelado` / `Pendiente de pago`, en verde o ámbar, y el resumen de cuántos quedan sin pagar y por cuánto en el pie de la tabla. *Columna `estado_pago` en `gastos`, con los existentes en "Pendiente de pago". Verificado en producción.*
-- [x] **T17 · A favor de quién queda el saldo** — S — Bajo el saldo neto se lee "A favor de Fernando Arias · a cobrar a MEGASTOCKEC", "A favor de \<cliente\>" o "Liquidado, sin saldo". *Regla: gastos por encima de los anticipos quedan a favor de Fernando Arias; al revés, a favor del cliente. Deducida del saldo, confirmar con Nicole si hay algún caso donde no aplique.*
+- [x] **T17 · A favor de quién queda el saldo** — S — Bajo el saldo neto se lee "A favor de Fernando Arias · a cobrar a MEGASTOCKEC", "A favor de \<cliente\>" o "Liquidado, sin saldo". *Regla: gastos por encima de los anticipos quedan a favor de Fernando Arias; al revés, a favor del cliente. **Confirmada por Nicole en sep-2026** (ver T26): Fernando Arias es Intraservice.*
 - [x] **T18 · Autoformato de DAE y DAI** — S — Los guiones se ponen solos al escribir. *No valida el largo a propósito: si un documento viene distinto, lo deja pasar con un guion extra en vez de bloquear la carga. Verificado escribiendo carácter por carácter en producción.*
 - [x] **T19 · Campos de facturación de Fernando Arias** — S — Factura EXIMSA, Factura Reembolso – Fernando Arias y Honorarios – Fernando Arias. *Columnas nuevas, sumadas al mapeo `CAMPOS_EXTRA`. Verificado guardando y releyendo.*
 - [x] **T20 · Puerto de salida y referencia del cliente** — S — Puerto de salida (con sugerencias de los ya usados en otros trámites) y N° de referencia del cliente. *De paso se sacaron los valores de ejemplo del prototipo que quedaban fijos en Contenedores, CDA y DAI.*
@@ -78,6 +100,8 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 - **T2** — la clave de ECUAPASS la ven **admins y operadores**; los visores no. Toda consulta sigue quedando en auditoría.
 - **T2** — no se crea `ECUAPASS_KEY`: se usa `JWT_SECRET` como llave, que no se va a rotar. ⚠️ Si algún día se cambia, hay que descifrar con el valor viejo y volver a cifrar.
 - **T15** — lo que molestaba era agregar una etiqueta nueva y reutilizar las existentes.
+- **T26** — Fernando Arias **es Intraservice**, la empresa. El anticipo lo entrega el cliente. Por eso gastos por encima del anticipo quedan a favor de Intraservice, y anticipo sin usar queda a favor del cliente. El pedido original decía lo contrario; se dejó como lo confirmó Nicole.
+- **T22** — eliminar un trámite lo borra de verdad, no lo archiva.
 
 ## Pendiente de confirmar con Nicole
 
@@ -85,7 +109,11 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 ## Novedades (changelog en la app)
 
-Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día.
+Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 4 entradas.
+
+## Feedback: responder en la app
+
+La pantalla Feedback permite marcar cada pedido como Resuelto o No se hará y dejarle al usuario un comentario de qué se hizo. **Al cerrar un pedido, responderlo ahí**: es lo que ve quien lo reportó. Estado al 10-sep-2026: 17 resueltos, 1 descartado, 0 pendientes.
 
 ---
 
