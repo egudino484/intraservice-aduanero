@@ -87,25 +87,28 @@ const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entr
 const extraValores = body => EXTRA.map(c =>
   c === 'preliquidacion' ? JSON.stringify(body.preliquidacion || {}) : (body[c] ?? null))
 
-// GET /tramites/:id/preliquidacion.xlsx — preliquidación + gastos + saldo
-router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
+// GET /tramites/:id/:doc.xlsx — doc = preliquidacion | liquidacion.
+// Son dos documentos distintos a propósito: la preliquidación es la estimación
+// de impuestos previa, la liquidación es el cierre con gastos y saldo.
+router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) => {
+  const esPreliq = req.params.doc === 'preliquidacion'
   try {
     const t = await db.query('SELECT * FROM tramites WHERE id=$1', [req.params.id])
     if (!t.rows[0]) return res.status(404).json({ error: 'No encontrado' })
     const tramite = t.rows[0]
 
     const [gastos, anticipos] = await Promise.all([
-      db.query('SELECT concepto, proveedor, n_factura, monto, categoria FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
+      db.query('SELECT concepto, proveedor, n_factura, monto, categoria, excluir_liquidacion FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
       db.query('SELECT fecha, descripcion, n_comprobante, monto, forma_pago FROM anticipos WHERE tramite_id=$1 ORDER BY fecha', [req.params.id]),
     ])
     // Las tarifas configuradas hacen de base si el trámite no tiene las suyas
     const cfg = await db.query(`SELECT valor FROM configuracion WHERE clave='tarifas'`)
     const p = calcular({ ...(cfg.rows[0]?.valor || {}), ...(tramite.preliquidacion || {}) })
-    const totalGastos = gastos.rows.reduce((s, g) => s + Number(g.monto || 0), 0)
+    const totalGastos = gastos.rows.filter(g => !g.excluir_liquidacion).reduce((s, g) => s + Number(g.monto || 0), 0)
     const totalAnticipos = anticipos.rows.reduce((s, a) => s + Number(a.monto || 0), 0)
 
     const wb = new ExcelJS.Workbook()
-    const ws = wb.addWorksheet('Preliquidación')
+    const ws = wb.addWorksheet(esPreliq ? 'Preliquidación' : 'Liquidación')
     ws.columns = [{ width: 34 }, { width: 20 }, { width: 16 }, { width: 16 }, { width: 14 }]
 
     const titulo = txt => {
@@ -121,7 +124,7 @@ router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
     }
     const dinero = fila => { fila.eachCell(c => { if (typeof c.value === 'number') c.numFmt = '#,##0.00' }) }
 
-    titulo(`Preliquidación · ${tramite.numero} · ${tramite.cliente}`)
+    titulo(`${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${tramite.numero} · ${tramite.cliente}`)
     ws.addRow(['Operación', tramite.tipo === 'Otro' ? (tramite.operacion_otro || 'Otro') : tramite.tipo])
     ws.addRow(['Régimen', tramite.regimen === 'Otro (especificar)' ? (tramite.regimen_otro || '') : (tramite.regimen || '')])
     ws.addRow(['Sub partida', tramite.sub_partida || ''])
@@ -129,6 +132,7 @@ router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
     ws.addRow(['DAI / DAE', tramite.da || ''])
     ws.addRow([])
 
+    if (esPreliq) {
     cab(['Valores de la mercadería', 'USD'])
     ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], ['Seguro', p.seguro], ['CIF', p.cif]]
       .forEach(([k, v]) => dinero(ws.addRow([k, v])))
@@ -142,9 +146,14 @@ router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
       .forEach(f => dinero(ws.addRow(f)))
     dinero(cab(['Total impuestos', '', p.totalImpuestos]))
     ws.addRow([])
+    }
 
+    // Gastos, anticipos y saldo: solo en la liquidación
+    if (!esPreliq) {
     cab(['Gastos pagados', 'Proveedor', 'N° factura', 'Categoría', 'Monto USD'])
-    gastos.rows.forEach(g => dinero(ws.addRow([g.concepto, g.proveedor || '', g.n_factura || '', g.categoria || '', Number(g.monto || 0)])))
+    gastos.rows.forEach(g => dinero(ws.addRow([
+      g.concepto + (g.excluir_liquidacion ? ' (fuera de liquidación)' : ''),
+      g.proveedor || '', g.n_factura || '', g.categoria || '', Number(g.monto || 0)])))
     dinero(cab(['Total gastos', '', '', '', totalGastos]))
     ws.addRow([])
 
@@ -156,8 +165,9 @@ router.get('/:id/preliquidacion.xlsx', auth, async (req, res) => {
     ws.addRow([])
 
     dinero(cab(['Saldo (gastos − anticipos)', '', '', '', totalGastos - totalAnticipos]))
+    }
 
-    res.attachment(`${(tramite.numero || 'tramite').replace(/[^\w.-]+/g, '_')}-preliquidacion.xlsx`)
+    res.attachment(`${(tramite.numero || 'tramite').replace(/[^\w.-]+/g, '_')}-${req.params.doc}.xlsx`)
     await wb.xlsx.write(res)
     res.end()
   } catch (err) {

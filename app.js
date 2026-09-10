@@ -610,7 +610,11 @@ function fmtDate(iso) {
 
 const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" stroke="#1E4FBF" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" stroke="#1E4FBF" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" stroke="#1E4FBF" stroke-width=".7"/></svg>`;
 
-function totalGastos() { return gastoData.reduce((s,g) => s + parseFloat(g.monto||0), 0); }
+// Los gastos marcados "no liquidar" (ej. honorarios EXIMSA) se registran pero
+// no entran en el total ni en el saldo que se le cobra al cliente.
+const esLiquidable = g => !g.excluir_liquidacion;
+function totalGastos() { return gastoData.filter(esLiquidable).reduce((s,g) => s + parseFloat(g.monto||0), 0); }
+function totalNoLiquidable() { return gastoData.filter(g => !esLiquidable(g)).reduce((s,g) => s + parseFloat(g.monto||0), 0); }
 function totalAnticipos() { return anticipoData.reduce((s,a) => s + parseFloat(a.monto||0), 0); }
 
 // Comprobantes de un gasto. Contempla los gastos viejos que aún traen el
@@ -683,6 +687,9 @@ function renderGastos() {
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
       <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
+      <td style="text-align:center"><input type="checkbox" ${g.excluir_liquidacion ? '' : 'checked'}
+        onchange="saveGastoField('${g.id}','excluir_liquidacion', !this.checked)"
+        title="Destildado: se registra en el trámite pero no se suma a la liquidación"></td>
       <td><select onchange="saveGastoField('${g.id}','estado_pago',this.value)" style="font-size:11px;color:${(g.estado_pago||'Pendiente de pago')==='Cancelado'?'var(--green)':'var(--amber)'}">${
         ESTADOS_PAGO.map(e=>`<option${(g.estado_pago||'Pendiente de pago')===e?' selected':''}>${e}</option>`).join('')}</select></td>
       <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${
@@ -694,6 +701,12 @@ function renderGastos() {
   });
   const total = totalGastos();
   document.getElementById('total-footer').textContent = '$' + total.toFixed(2);
+  const noLiquidable = totalNoLiquidable();
+  const footTotal = document.getElementById('total-footer');
+  if (footTotal && noLiquidable > 0) {
+    footTotal.innerHTML = '$' + total.toFixed(2)
+      + `<div style="font-size:10px;color:var(--text-3);font-weight:400">+ $${noLiquidable.toFixed(2)} fuera de liquidación</div>`;
+  }
   const pendientes = gastoData.filter(g => (g.estado_pago || 'Pendiente de pago') !== 'Cancelado');
   const footPago = document.getElementById('pago-footer');
   if (footPago) {
@@ -801,8 +814,8 @@ function renderTabLiquidacion() {
   const gb = document.getElementById('tl-gastos-body');
   if (gb) {
     gb.innerHTML = gastoData.map(g => `
-      <tr>
-        <td>${g.concepto||''}</td>
+      <tr${g.excluir_liquidacion ? ' style="opacity:.55"' : ''}>
+        <td>${g.concepto||''}${g.excluir_liquidacion ? ' <span class="badge badge-gray" style="font-size:9px">fuera de liquidación</span>' : ''}</td>
         <td style="font-size:12px;color:var(--text-2)">${g.proveedor||''}</td>
         <td style="font-family:'DM Mono',monospace;font-size:11px">${g.n_factura||''}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace">$${parseFloat(g.monto||0).toFixed(2)}</td>
@@ -1219,16 +1232,16 @@ async function guardarPreliquidacion() {
   });
 }
 
-async function exportPreliqExcel() {
+async function exportPreliqExcel(doc = 'preliquidacion') {
   if (!currentTramiteId) return;
   showNotif('Generando Excel...');
-  const res = await fetch(API_URL + '/tramites/' + currentTramiteId + '/preliquidacion.xlsx', {
+  const res = await fetch(API_URL + '/tramites/' + currentTramiteId + '/' + doc + '.xlsx', {
     headers: { Authorization: 'Bearer ' + getToken() }
   });
   if (res.status === 401) { logout(); return; }
   if (!res.ok) { showNotif('No se pudo generar el Excel'); return; }
   const blob = await res.blob();
-  const nombre = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/)?.[1] || 'preliquidacion.xlsx';
+  const nombre = (res.headers.get('Content-Disposition') || '').match(/filename="?([^"]+)"?/)?.[1] || doc + '.xlsx';
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nombre;
@@ -1237,7 +1250,8 @@ async function exportPreliqExcel() {
   showNotif('Excel descargado');
 }
 
-function exportPreliqPDF() {
+function exportPreliqPDF(doc = 'preliquidacion') {
+  const esPreliq = doc === 'preliquidacion';
   const form = readTramiteForm();
   const r = calcPreliq({ ...TARIFAS_DEFECTO, ...preliqData });
   const t = { ...TARIFAS_DEFECTO, ...preliqData };
@@ -1248,7 +1262,7 @@ function exportPreliqPDF() {
   const w = window.open('', '_blank');
   if (!w) { showNotif('El navegador bloqueó la ventana de impresión'); return; }
   w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
-  <title>Preliquidación ${form.numero || ''}</title>
+  <title>${esPreliq ? 'Preliquidación' : 'Liquidación'} ${form.numero || ''}</title>
   <style>
     body{font-family:system-ui,-apple-system,sans-serif;color:#141414;margin:32px;font-size:12px}
     h1{font-size:17px;margin:0 0 2px} .sub{color:#666;margin-bottom:18px;font-size:12px}
@@ -1259,13 +1273,14 @@ function exportPreliqPDF() {
     .vacio{color:#999;text-align:center} .meta td:first-child{color:#666;width:150px}
     @media print{body{margin:0}}
   </style></head><body>
-  <h1>Preliquidación · ${form.numero || ''}</h1>
+  <h1>${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}</h1>
   <div class="sub">${form.cliente || ''} · ${form.operacion || ''}${form.regimen ? ' · ' + form.regimen : ''}</div>
   <table class="meta">
     <tr><td>Sub partida</td><td>${form.subPartida || '—'}</td></tr>
     <tr><td>BL / AWB</td><td>${form.bl || '—'}</td></tr>
     <tr><td>DAI / DAE</td><td>${form.dai || '—'}</td></tr>
   </table>
+  ${esPreliq ? `
   <h2>Valores de la mercadería</h2>
   <table>
     <tr><td>FOB</td><td class="num">${$(r.fob)}</td></tr>
@@ -1282,11 +1297,12 @@ function exportPreliqPDF() {
     <tr><td>IVA</td><td>${t.iva}%</td><td class="num">${$(r.iva)}</td></tr>
     <tr><td>Seguridad</td><td>${t.seguridad}%</td><td class="num">${$(r.seguridad)}</td></tr>
     <tr class="tot"><td colspan="2">Total impuestos</td><td class="num">${$(r.total)}</td></tr>
-  </table>
+  </table>` : ''}
+  ${!esPreliq ? `
   <h2>Gastos pagados</h2>
   <table>
     <tr><th>Concepto</th><th>Proveedor</th><th>N° factura</th><th>Categoría</th><th class="num">Monto</th></tr>
-    ${filas(gastoData, g => `<td>${escHtml(g.concepto||'')}</td><td>${escHtml(g.proveedor||'')}</td><td>${escHtml(g.n_factura||'')}</td><td>${escHtml(g.categoria||'')}</td><td class="num">${$(g.monto)}</td>`)}
+    ${filas(gastoData, g => `<td>${escHtml(g.concepto||'')}${g.excluir_liquidacion ? ' (fuera de liquidación)' : ''}</td><td>${escHtml(g.proveedor||'')}</td><td>${escHtml(g.n_factura||'')}</td><td>${escHtml(g.categoria||'')}</td><td class="num">${$(g.monto)}</td>`)}
     <tr class="tot"><td colspan="4">Total gastos</td><td class="num">${$(totalG)}</td></tr>
   </table>
   <h2>Anticipos del cliente</h2>
@@ -1296,7 +1312,7 @@ function exportPreliqPDF() {
     <tr class="tot"><td colspan="4">Total anticipos</td><td class="num">${$(totalA)}</td></tr>
   </table>
   <h2>Saldo</h2>
-  <table><tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr></table>
+  <table><tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr></table>` : ''}
   </body></html>`);
   w.document.close();
   w.focus();

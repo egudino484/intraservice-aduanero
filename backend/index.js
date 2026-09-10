@@ -100,6 +100,9 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS cut_off        TEXT;
   -- Si el gasto ya se pagó o sigue pendiente
   ALTER TABLE gastos ADD COLUMN IF NOT EXISTS estado_pago TEXT NOT NULL DEFAULT 'Pendiente de pago';
+  -- Gastos que se registran pero no entran en la liquidación al cliente
+  -- (caso de uso: factura de honorarios de EXIMSA)
+  ALTER TABLE gastos ADD COLUMN IF NOT EXISTS excluir_liquidacion BOOLEAN NOT NULL DEFAULT false;
   -- Operación "Otro" y régimen aduanero
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS operacion_otro TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen        TEXT;

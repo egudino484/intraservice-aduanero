@@ -319,13 +319,14 @@
             <table class="gasto-table">
               <thead>
                 <tr>
-                  <th style="width:19%">Concepto</th>
-                  <th style="width:14%">Proveedor</th>
-                  <th style="width:12%">N° factura</th>
+                  <th style="width:18%">Concepto</th>
+                  <th style="width:13%">Proveedor</th>
+                  <th style="width:11%">N° factura</th>
                   <th style="width:9%">Monto ($)</th>
-                  <th style="width:11%">Categoría</th>
-                  <th style="width:12%">Pago</th>
-                  <th style="width:17%">Comprobante adjunto</th>
+                  <th style="width:10%">Categoría</th>
+                  <th style="width:7%;text-align:center" title="Destildar para registrar el gasto sin sumarlo a la liquidación">Liquidar</th>
+                  <th style="width:11%">Pago</th>
+                  <th style="width:15%">Comprobante adjunto</th>
                   <th style="width:6%"></th>
                 </tr>
               </thead>
@@ -334,7 +335,7 @@
                 <tr class="total-row">
                   <td colspan="3" style="font-size:12px;font-family:'DM Mono',monospace">Total gastos</td>
                   <td id="total-footer" style="font-family:'DM Mono',monospace;font-size:13px">$830.50</td>
-                  <td></td>
+                  <td colspan="2"></td>
                   <td id="pago-footer" style="font-size:11px;color:var(--text-3)"></td>
                   <td colspan="2"></td>
                 </tr>
@@ -424,8 +425,8 @@
             <div class="panel-title">
               <span>Preliquidación</span>
               <span style="display:flex;gap:8px">
-                <button class="btn btn-sm" onclick="exportPreliqPDF()">↓ PDF</button>
-                <button class="btn btn-sm" onclick="exportPreliqExcel()">↓ Excel</button>
+                <button class="btn btn-sm" onclick="exportPreliqPDF('preliquidacion')">↓ PDF</button>
+                <button class="btn btn-sm" onclick="exportPreliqExcel('preliquidacion')">↓ Excel</button>
               </span>
             </div>
             <p style="font-size:12px;color:var(--text-3);margin-bottom:8px">Cálculo estimado de impuestos. Las tarifas vienen con un valor por defecto y se pueden ajustar en cada trámite.</p>
@@ -472,8 +473,12 @@
 
           <div class="panel">
             <div class="panel-title">
-              <span>Detalle de gastos pagados</span>
-              <span class="badge badge-amber" id="tl-estado-badge">Pendiente</span>
+              <span>Liquidación · detalle de gastos pagados</span>
+              <span style="display:flex;gap:8px;align-items:center">
+                <span class="badge badge-amber" id="tl-estado-badge">Pendiente</span>
+                <button class="btn btn-sm" onclick="exportPreliqPDF('liquidacion')">↓ PDF</button>
+                <button class="btn btn-sm" onclick="exportPreliqExcel('liquidacion')">↓ Excel</button>
+              </span>
             </div>
             <p style="font-size:12px;color:var(--text-3);margin-bottom:12px">Importado desde la pestaña Gastos y anticipos. IVA y retenciones por completar en cada línea.</p>
             <table class="gasto-table">
