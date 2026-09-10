@@ -942,6 +942,12 @@
             <option value="usuarios">Usuarios</option>
             <option value="auditoria">Historial</option>
           </select>
+          <select id="fb-estado" class="filter-select" onchange="loadFeedback()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="resuelto">Resueltos</option>
+            <option value="descartado">No se hará</option>
+          </select>
           <input id="fb-desde" class="filter-select" type="date" onchange="loadFeedback()">
           <input id="fb-hasta" class="filter-select" type="date" onchange="loadFeedback()">
         </div>

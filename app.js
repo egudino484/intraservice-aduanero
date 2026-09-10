@@ -137,6 +137,7 @@ function filtrarBitacora() {
 }
 
 function renderBitacora() {
+  actualizarURL(true);   // los filtros no ensucian el historial
   const bc = { Concluido:'green','En proceso':'amber','Pendiente documentación':'red',Cancelado:'gray' };
   const filtered = filtrarBitacora();
   const tbody = document.getElementById('bitacora-body');
@@ -1973,6 +1974,7 @@ async function renderReportes() {
 }
 
 function paintReportes(f, filtered) {
+  actualizarURL(true);
   const tg = filtered.reduce((s,t)=>s+t.gastos,0);
   const ta = filtered.reduce((s,t)=>s+t.anticipos,0);
   const saldo = tg - ta;
@@ -2420,8 +2422,11 @@ async function loadFeedback() {
   if (pantalla) params.set('pantalla', pantalla);
   if (desde) params.set('desde', desde);
   if (hasta) params.set('hasta', hasta);
-  const rows = await apiFetch('/feedback' + (params.toString() ? '?' + params.toString() : ''));
+  let rows = await apiFetch('/feedback' + (params.toString() ? '?' + params.toString() : ''));
   if (!rows) return;
+  const estadoFiltro = document.getElementById('fb-estado')?.value || '';
+  if (estadoFiltro) rows = rows.filter(f => (f.estado || 'pendiente') === estadoFiltro);
+  actualizarURL(true);
   if (!rows.length) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin feedback registrado</td></tr>';
     return;
@@ -2496,7 +2501,49 @@ function rutaActual() {
   if (currentScreen === 'tramite' && currentTramiteId) {
     return '/tramite/' + currentTramiteId + '/' + urlDeTab(tabActual);
   }
-  return '/' + (currentScreen || 'dashboard');
+  return '/' + (currentScreen || 'dashboard') + filtrosEnURL();
+}
+
+// Los filtros de cada pantalla viajan en la URL, así se puede mandar
+// "mirá estos" y no solo "mirá la pantalla".
+const VALOR = id => document.getElementById(id)?.value || '';
+
+function filtrosEnURL() {
+  const q = new URLSearchParams();
+  if (currentScreen === 'bitacora') {
+    if (VALOR('b-search')) q.set('q', VALOR('b-search'));
+    if (VALOR('b-tipo'))   q.set('tipo', VALOR('b-tipo'));
+    if (VALOR('b-estado')) q.set('estado', VALOR('b-estado'));
+  } else if (currentScreen === 'reportes') {
+    const f = getRFiltros();
+    q.set('year', f.year); q.set('desde', f.desde); q.set('hasta', f.hasta);
+    if (f.cliente) q.set('cliente', f.cliente);
+    if (f.tipo)    q.set('tipo', f.tipo);
+  } else if (currentScreen === 'feedback') {
+    if (VALOR('fb-pantalla')) q.set('pantalla', VALOR('fb-pantalla'));
+    if (VALOR('fb-estado'))   q.set('estado', VALOR('fb-estado'));
+    if (VALOR('fb-desde'))    q.set('desde', VALOR('fb-desde'));
+    if (VALOR('fb-hasta'))    q.set('hasta', VALOR('fb-hasta'));
+  }
+  const str = q.toString();
+  return str ? '?' + str : '';
+}
+
+// Vuelca los parámetros de la URL en los controles antes de renderizar
+function aplicarFiltrosDeURL(pantalla) {
+  const q = new URLSearchParams(location.search);
+  if (!q.toString()) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val !== null) el.value = val; };
+  if (pantalla === 'bitacora') {
+    set('b-search', q.get('q')); set('b-tipo', q.get('tipo')); set('b-estado', q.get('estado'));
+  } else if (pantalla === 'reportes') {
+    set('r-year', q.get('year')); set('r-desde', q.get('desde')); set('r-hasta', q.get('hasta'));
+    set('r-cliente', q.get('cliente')); set('r-op', q.get('tipo'));
+    if (q.get('year')) reportesInicializado = true;   // respetar el período del link
+  } else if (pantalla === 'feedback') {
+    set('fb-pantalla', q.get('pantalla')); set('fb-estado', q.get('estado'));
+    set('fb-desde', q.get('desde')); set('fb-hasta', q.get('hasta'));
+  }
 }
 
 function actualizarURL(reemplazar = false) {
@@ -2535,6 +2582,7 @@ async function aplicarRuta() {
   const item = document.getElementById('nav-' + pantalla);
   if (item && document.getElementById('screen-' + pantalla)) {
     restaurandoRuta = true;
+    aplicarFiltrosDeURL(pantalla);
     nav(pantalla, item);
     restaurandoRuta = false;
   } else {
