@@ -80,9 +80,9 @@ async function initApp() {
   loadEtiquetas();
   loadConfiguracion();
   actualizarBadgeNovedades();
-  nav('dashboard', document.getElementById('nav-dashboard'));
   loadDashboard();
   loadBitacora();
+  aplicarRuta();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
@@ -2209,6 +2209,7 @@ function nav(id, el) {
   document.getElementById('page-title').textContent = pageTitles[id] || id;
   document.getElementById('topbar-badge').innerHTML = topbarBadges[id] || '';
   currentScreen = id;
+  actualizarURL();
   if (id === 'reportes') renderReportes();
   if (id === 'auditoria') loadAuditoria();
   if (id === 'dashboard') loadDashboard();
@@ -2225,6 +2226,8 @@ function setTab(el, targetId) {
   ['t-datos', 't-docs', 't-documentos', 't-estado', 't-liquidacion'].forEach(id => {
     document.getElementById(id).style.display = id === targetId ? 'block' : 'none';
   });
+  tabActual = targetId;
+  actualizarURL();
   if (targetId === 't-liquidacion') renderTabLiquidacion();
 }
 
@@ -2473,6 +2476,73 @@ async function responderFeedback(id) {
   showNotif('Respuesta guardada');
   loadFeedback();
 }
+
+
+// ── URLS COMPARTIBLES ─────────────────────────────────────────────
+// La app es una sola página, así que la URL no cambiaba nunca y no había forma
+// de mandarle a alguien "mirá este trámite". Ahora cada pantalla tiene su
+// dirección y el backend ya sirve index.html para cualquier ruta, así que
+// pegar el link en el navegador funciona.
+let tabActual = 't-docs';
+let restaurandoRuta = false;   // evita empujar historial mientras se restaura
+
+const TABS_URL = {              // segmento de URL ↔ id de la pestaña
+  datos: 't-datos', gastos: 't-docs', documentos: 't-documentos',
+  estado: 't-estado', liquidacion: 't-liquidacion',
+};
+const urlDeTab = id => Object.keys(TABS_URL).find(k => TABS_URL[k] === id) || 'gastos';
+
+function rutaActual() {
+  if (currentScreen === 'tramite' && currentTramiteId) {
+    return '/tramite/' + currentTramiteId + '/' + urlDeTab(tabActual);
+  }
+  return '/' + (currentScreen || 'dashboard');
+}
+
+function actualizarURL(reemplazar = false) {
+  if (restaurandoRuta) return;
+  const ruta = rutaActual();
+  if (location.pathname === ruta) return;
+  history[reemplazar ? 'replaceState' : 'pushState']({}, '', ruta);
+}
+
+// Copia al portapapeles el link de lo que se está viendo
+async function copiarLinkActual() {
+  const url = location.origin + rutaActual();
+  try {
+    await navigator.clipboard.writeText(url);
+    showNotif('Link copiado');
+  } catch {
+    prompt('Copiá el link:', url);
+  }
+}
+
+// Abre lo que pida la URL. Se usa al entrar y con las flechas del navegador.
+async function aplicarRuta() {
+  const partes = location.pathname.split('/').filter(Boolean);
+  if (!partes.length) return nav('dashboard', document.getElementById('nav-dashboard'));
+
+  if (partes[0] === 'tramite' && partes[1]) {
+    restaurandoRuta = true;
+    await openTramite(partes[1]);
+    restaurandoRuta = false;
+    const tab = TABS_URL[partes[2]] || 't-docs';
+    const btn = document.getElementById('tab-' + tab.slice(2));   // t-docs → tab-docs
+    if (btn) setTab(btn, tab);
+    return;
+  }
+  const pantalla = partes[0];
+  const item = document.getElementById('nav-' + pantalla);
+  if (item && document.getElementById('screen-' + pantalla)) {
+    restaurandoRuta = true;
+    nav(pantalla, item);
+    restaurandoRuta = false;
+  } else {
+    nav('dashboard', document.getElementById('nav-dashboard'));
+  }
+}
+
+window.addEventListener('popstate', aplicarRuta);
 
 // ── BOOT ──────────────────────────────────────────────────────────
 updatePresetButtons();
