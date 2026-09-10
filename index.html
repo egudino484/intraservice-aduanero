@@ -983,6 +983,7 @@
   <div onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
     <span id="preview-filename" style="font-weight:500;font-size:13px;font-family:'DM Mono',monospace;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)"></span>
     <div style="display:flex;gap:8px">
+      <button id="preview-print-btn" class="btn btn-sm btn-primary" style="display:none" onclick="imprimirPreview()">🖨 Imprimir / Guardar PDF</button>
       <a id="preview-download-btn" class="btn btn-sm btn-primary" download>↓ Descargar</a>
       <button class="btn btn-sm btn-ghost" onclick="closePreview()">✕ Cerrar</button>
     </div>

@@ -1073,6 +1073,15 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-09-10', titulo: 'Exportaciones, liquidaciones y borrado de trámites', cambios: [
+    { tipo: 'nuevo', texto: 'Los trámites de exportación se numeran solos como E26-XXX-CLIENTE (por ejemplo E26-001-NOVA), con el cliente que elijas. Las importaciones siguen con su serie T26-XXX.' },
+    { tipo: 'nuevo', texto: 'La Preliquidación y la Liquidación ahora son dos documentos separados, cada uno con sus botones de PDF y Excel. La preliquidación lleva mercadería e impuestos; la liquidación, gastos, anticipos y saldo.' },
+    { tipo: 'nuevo', texto: 'Al generar un PDF ahora lo ves dentro del sistema antes de imprimirlo o guardarlo. Antes saltaba directo al diálogo de impresión.' },
+    { tipo: 'nuevo', texto: 'Columna "Liquidar" en los gastos: destildala y el gasto queda registrado en el trámite pero no suma al total ni al saldo del cliente. Pensado para la factura de honorarios de EXIMSA.' },
+    { tipo: 'nuevo', texto: 'Los administradores pueden eliminar un trámite desde "Datos del trámite". Pide escribir el número para confirmar, se lleva sus gastos y documentos, y queda registrado en el Historial.' },
+    { tipo: 'mejora', texto: 'El saldo de la liquidación aclara que Fernando Arias es Intraservice, para que no se confunda a quién le queda a favor.' },
+    { tipo: 'arreglo', texto: 'En Feedback, la columna Pantalla mostraba el trámite que tuvieras abierto en vez del que se reportó. Ahora los pedidos además muestran de qué trámite salieron.' },
+  ]},
   { fecha: '2026-08-14', titulo: 'Preliquidaciones, clientes y etiquetas', cambios: [
     { tipo: 'nuevo', texto: 'Preliquidación de importaciones: cargás FOB, flete y seguro y el sistema calcula CFR, CIF e impuestos. Se descarga en PDF y en Excel, con los gastos, los anticipos y el saldo.' },
     { tipo: 'nuevo', texto: 'Las tarifas (Ad Valorem, Fodinfa, IVA, Seguridad) se ajustan en cada trámite, y sus valores por defecto se configuran desde el mismo panel.' },
@@ -1261,9 +1270,7 @@ function exportPreliqPDF(doc = 'preliquidacion') {
   const totalG = totalGastos(), totalA = totalAnticipos();
   const filas = (arr, cols) => arr.map(x => `<tr>${cols(x)}</tr>`).join('') || '<tr><td colspan="5" class="vacio">Sin registros</td></tr>';
 
-  const w = window.open('', '_blank');
-  if (!w) { showNotif('El navegador bloqueó la ventana de impresión'); return; }
-  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
   <title>${esPreliq ? 'Preliquidación' : 'Liquidación'} ${form.numero || ''}</title>
   <style>
     body{font-family:system-ui,-apple-system,sans-serif;color:#141414;margin:32px;font-size:12px}
@@ -1315,10 +1322,28 @@ function exportPreliqPDF(doc = 'preliquidacion') {
   </table>
   <h2>Saldo</h2>
   <table><tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr></table>` : ''}
-  </body></html>`);
-  w.document.close();
-  w.focus();
-  w.print();
+  </body></html>`;
+  mostrarPreviewDocumento(html, `${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}`);
+}
+
+// Vista previa del documento generado, dentro del sistema. Antes se abría una
+// ventana nueva y saltaba directo al diálogo de impresión, sin dejar verlo.
+function mostrarPreviewDocumento(html, titulo) {
+  const modal = document.getElementById('preview-modal');
+  const content = document.getElementById('preview-content');
+  document.getElementById('preview-filename').textContent = titulo;
+  document.getElementById('preview-download-btn').style.display = 'none';
+  document.getElementById('preview-print-btn').style.display = '';
+  content.innerHTML = `<iframe id="preview-doc-frame" style="width:min(900px,92vw);height:82vh;border:none;border-radius:6px;background:#fff"></iframe>`;
+  document.getElementById('preview-doc-frame').srcdoc = html;
+  modal.style.display = 'flex';
+}
+
+function imprimirPreview() {
+  const frame = document.getElementById('preview-doc-frame');
+  if (!frame) return;
+  frame.contentWindow.focus();
+  frame.contentWindow.print();
 }
 
 // ── CLIENTES (registro en el servidor) ────────────────────────────
@@ -2333,6 +2358,9 @@ function openPreview(url, name) {
   const displayName = name || url.split('/').pop();
   document.getElementById('preview-filename').textContent = displayName;
   const dl = document.getElementById('preview-download-btn');
+  dl.style.display = '';
+  const pr = document.getElementById('preview-print-btn');
+  if (pr) pr.style.display = 'none';
   dl.href = url;
   dl.download = displayName;
   const ext = url.split('.').pop().split('?')[0].toLowerCase();
