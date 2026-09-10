@@ -193,7 +193,7 @@
             <div class="field-row">
               <div class="field"><label>Cliente</label>
                 <div style="display:flex;gap:6px">
-                  <input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value)" placeholder="Ingresa o selecciona cliente..." style="flex:1">
+                  <input list="clientes-list" type="text" data-field="cliente" id="campo-cliente" onchange="saveCliente(this.value);suggestNextNumero()" placeholder="Ingresa o selecciona cliente..." style="flex:1">
                   <button class="btn btn-sm" onclick="nuevoClienteDesdeTramite()" title="Registrar cliente nuevo">+</button>
                 </div>
                 <datalist id="clientes-list"></datalist>
@@ -284,6 +284,7 @@
           </div>
 
           <div class="section-actions">
+            <button class="btn btn-danger" id="btn-eliminar-tramite" style="display:none;margin-right:auto" onclick="eliminarTramite()">Eliminar trámite</button>
             <button class="btn btn-ghost" onclick="discardChanges()">Cancelar</button>
             <button class="btn btn-primary" onclick="saveTramiteForm()">Guardar cambios</button>
           </div>

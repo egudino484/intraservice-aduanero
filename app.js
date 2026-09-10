@@ -168,6 +168,8 @@ async function openTramite(id) {
   (data.custom_props || []).forEach(p => customProps.push(p));
   etiquetasData = data.etiquetas || [];
   preliqData = data.preliquidacion || {};
+  const btnEliminar = document.getElementById('btn-eliminar-tramite');
+  if (btnEliminar) btnEliminar.style.display = currentUser?.role === 'admin' ? '' : 'none';
   applyTramiteForm(data);
   renderPreliquidacion(true);
   renderAll();
@@ -224,6 +226,8 @@ function newTramiteUI() {
   if (fechaEl) fechaEl.value = todayISO();
   onOperacionChange();
   actualizarSugerenciasOperacion();
+  const btnEliminar = document.getElementById('btn-eliminar-tramite');
+  if (btnEliminar) btnEliminar.style.display = 'none';   // en alta todavía no hay qué borrar
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
@@ -261,14 +265,31 @@ function todayISO() {
 
 // Sugiere el siguiente consecutivo del año. Solo sugerencia: el campo queda editable
 // y no se pisa si el usuario ya escribió algo mientras cargaba.
+// Última sugerencia que puso el sistema. Si el campo todavía la tiene tal cual,
+// se puede reemplazar al cambiar operación o cliente; si la tocaron, no.
+let ultimaSugerenciaNumero = '';
+
 async function suggestNextNumero() {
   const numEl = document.querySelector('[data-field="numero"]');
-  if (!numEl) return;
+  if (!numEl || !creatingMode) return;
+  if (numEl.value && numEl.value !== ultimaSugerenciaNumero) return;   // lo escribió el usuario
+
+  const tipo = document.querySelector('[data-field="operacion"]')?.value || 'Importación';
   numEl.placeholder = 'Cargando sugerencia...';
-  const res = await apiFetch('/tramites/next-numero');
+  const res = await apiFetch('/tramites/next-numero?tipo=' + encodeURIComponent(tipo));
   numEl.placeholder = '';
   if (!res || res.error || !res.numero) return;
-  if (creatingMode && !numEl.value) numEl.value = res.numero;
+
+  // Exportación: E26-XXX-CLIENTE, con el cliente elegido en el formulario
+  let numero = res.numero;
+  if (tipo === 'Exportación') {
+    const cliente = (document.querySelector('[data-field="cliente"]')?.value || '').trim().toUpperCase();
+    if (cliente) numero += '-' + cliente.replace(/\s+/g, '');
+  }
+  if (creatingMode && (!numEl.value || numEl.value === ultimaSugerenciaNumero)) {
+    numEl.value = numero;
+    ultimaSugerenciaNumero = numero;
+  }
 }
 
 // data-field del form → columna del backend. Un solo mapeo para enviar y para
@@ -325,6 +346,7 @@ function onOperacionChange() {
   if (bloqueExp) bloqueExp.style.display = op === 'Exportación' ? '' : 'none';
   onRegimenChange();
   renderPreliquidacion();
+  suggestNextNumero();
 }
 
 function onRegimenChange() {
@@ -337,6 +359,26 @@ function camposExtra(form) {
   const o = {};
   for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) o[col] = form[campo] || null;
   return o;
+}
+
+// Borrado definitivo: se lleva gastos, anticipos, documentos y sus archivos.
+// Solo admin, y pide escribir el número para que no se dispare de un clic.
+async function eliminarTramite() {
+  if (!currentTramiteId || creatingMode) return;
+  const numero = document.querySelector('[data-field="numero"]')?.value || '';
+  const aviso = `Se va a eliminar el trámite ${numero} con TODOS sus gastos, anticipos y documentos.\n\n`
+    + `Esto no se puede deshacer.\n\nEscribí el número del trámite para confirmar:`;
+  const escrito = prompt(aviso, '');
+  if (escrito === null) return;
+  if (escrito.trim() !== numero.trim()) { showNotif('El número no coincide, no se eliminó nada'); return; }
+
+  const res = await apiFetch('/tramites/' + currentTramiteId, { method: 'DELETE' });
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo eliminar'); return; }
+  showNotif('Trámite ' + (res.numero || numero) + ' eliminado');
+  currentTramiteId = null;
+  document.getElementById('nav-tramite').style.display = 'none';
+  loadBitacora(); loadDashboard();
+  nav('bitacora', document.getElementById('nav-bitacora'));
 }
 
 async function saveTramiteForm() {
@@ -539,7 +581,7 @@ async function createUser() {
 async function loadAuditoria() {
   const data = await apiFetch('/auditoria');
   if (!data) return;
-  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada', ecuapass_consultada:'Clave ECUAPASS consultada' };
+  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada', ecuapass_consultada:'Clave ECUAPASS consultada', tramite_eliminado:'Trámite eliminado' };
   const dotC = { estado_cambiado:'green', gasto_agregado:'', documento_cargado:'', tramite_creado:'blue' };
   const panel = document.querySelector('#screen-auditoria .panel');
   if (!panel) return;

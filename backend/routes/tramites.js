@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs')
 const db = require('../db')
 const auth = require('../middleware/auth')
 const { calcular } = require('../lib/preliquidacion')
+const { deleteFile } = require('../lib/storage')
 
 // GET /tramites
 router.get('/', auth, async (req, res) => {
@@ -34,12 +35,16 @@ router.get('/', auth, async (req, res) => {
 // GET /tramites/next-numero — sugerencia de consecutivo del año (debe ir antes de /:id)
 router.get('/next-numero', auth, async (req, res) => {
   const yy = String(new Date().getFullYear()).slice(-2)
-  const prefijo = `T${yy}-`
+  // Las exportaciones llevan su propia serie: E26-XXX-CLIENTE. El cliente lo
+  // agrega el frontend, que es quien sabe cuál está elegido en el formulario.
+  const esExportacion = req.query.tipo === 'Exportación'
+  const letra = esExportacion ? 'E' : 'T'
+  const prefijo = `${letra}${yy}-`
   try {
     const { rows } = await db.query(
-      `SELECT COALESCE(MAX(SUBSTRING(numero FROM '^T\\d{2}-(\\d+)$')::int), 0) AS ultimo
-       FROM tramites WHERE numero ~ $1`,
-      [`^T${yy}-\\d+$`]
+      `SELECT COALESCE(MAX(SUBSTRING(numero FROM $1)::int), 0) AS ultimo
+       FROM tramites WHERE numero ~ $2`,
+      [`^${letra}\\d{2}-(\\d+)`, `^${letra}${yy}-\\d+`]
     )
     const secuencia = Number(rows[0].ultimo) + 1
     res.json({ numero: prefijo + String(secuencia).padStart(3, '0'), prefijo, secuencia })
@@ -197,6 +202,38 @@ router.put('/:id', auth, async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
     res.json(rows[0])
   } catch { res.status(500).json({ error: 'Error interno' }) }
+})
+
+// DELETE /tramites/:id — solo admin. Se lleva gastos, anticipos y documentos
+// por cascade; los archivos del volumen hay que borrarlos a mano.
+router.delete('/:id', auth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Solo administradores' })
+  try {
+    const claves = await db.query(
+      `SELECT file_key AS key FROM documentos WHERE tramite_id = $1
+       UNION ALL
+       SELECT a.key FROM gasto_archivos a JOIN gastos g ON g.id = a.gasto_id WHERE g.tramite_id = $1
+       UNION ALL
+       SELECT comprobante_key FROM gastos WHERE tramite_id = $1 AND comprobante_key IS NOT NULL
+       UNION ALL
+       SELECT documento_key FROM anticipos WHERE tramite_id = $1 AND documento_key IS NOT NULL`,
+      [req.params.id]
+    )
+    const { rows } = await db.query('DELETE FROM tramites WHERE id = $1 RETURNING numero, cliente', [req.params.id])
+    if (!rows[0]) return res.status(404).json({ error: 'No encontrado' })
+
+    for (const k of new Set(claves.rows.map(r => r.key).filter(Boolean))) {
+      try { await deleteFile(k) } catch (e) { console.error('No se pudo borrar', k, e.message) }
+    }
+    await db.query(
+      `INSERT INTO auditoria (user_id, accion, detalle) VALUES ($1,'tramite_eliminado',$2)`,
+      [req.user.id, JSON.stringify({ numero: rows[0].numero, cliente: rows[0].cliente, archivos: claves.rows.length })]
+    )
+    res.json({ ok: true, numero: rows[0].numero })
+  } catch (err) {
+    console.error('Error borrando trámite:', err.message)
+    res.status(500).json({ error: 'Error interno' })
+  }
 })
 
 // PATCH /tramites/:id/estado
