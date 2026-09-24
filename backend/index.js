@@ -131,23 +131,23 @@ app.use(cors())
 app.use(express.json())
 app.use('/files', express.static(UPLOADS_DIR))
 
-app.use('/auth',                          require('./routes/auth'))
-app.use('/tramites',                      require('./routes/tramites'))
-app.use('/tramites/:tramiteId/gastos',    require('./routes/gastos'))
-app.use('/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
-app.use('/tramites/:tramiteId/documentos',require('./routes/documentos'))
-app.use('/proveedores',                   require('./routes/proveedores'))
-app.use('/clientes',                      require('./routes/clientes'))
-app.use('/etiquetas',                     require('./routes/etiquetas'))
-app.use('/configuracion',                 require('./routes/configuracion'))
-app.use('/plantillas',                    require('./routes/plantillas'))
-app.use('/reportes',                      require('./routes/reportes'))
-app.use('/export',                        require('./routes/export'))
-app.use('/auditoria',                     require('./routes/auditoria'))
-app.use('/users',                         require('./routes/users'))
-app.use('/feedback',                      require('./routes/feedback'))
+app.use('/api/auth',                          require('./routes/auth'))
+app.use('/api/tramites',                      require('./routes/tramites'))
+app.use('/api/tramites/:tramiteId/gastos',    require('./routes/gastos'))
+app.use('/api/tramites/:tramiteId/anticipos', require('./routes/anticipos'))
+app.use('/api/tramites/:tramiteId/documentos',require('./routes/documentos'))
+app.use('/api/proveedores',                   require('./routes/proveedores'))
+app.use('/api/clientes',                      require('./routes/clientes'))
+app.use('/api/etiquetas',                     require('./routes/etiquetas'))
+app.use('/api/configuracion',                 require('./routes/configuracion'))
+app.use('/api/plantillas',                    require('./routes/plantillas'))
+app.use('/api/reportes',                      require('./routes/reportes'))
+app.use('/api/export',                        require('./routes/export'))
+app.use('/api/auditoria',                     require('./routes/auditoria'))
+app.use('/api/users',                         require('./routes/users'))
+app.use('/api/feedback',                      require('./routes/feedback'))
 
-app.get('/health', (_, res) => res.json({ ok: true }))
+app.get('/api/health', (_, res) => res.json({ ok: true }))
 
 // Serve frontend for all non-API routes
 app.use(express.static(path.join(__dirname, '..')))
@@ -155,6 +155,8 @@ app.get('*', (req, res) => {
   // Un archivo inexistente debe dar 404, no el HTML de la app: si cae acá es
   // porque express.static no lo encontró en el volumen.
   if (req.path.startsWith('/files/')) return res.status(404).json({ error: 'Archivo no encontrado' })
+  // Un endpoint inexistente no debe devolver el HTML de la app
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Endpoint no encontrado' })
   res.sendFile(path.join(__dirname, '../index.html'))
 })
 

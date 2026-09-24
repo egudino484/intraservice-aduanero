@@ -1,5 +1,5 @@
 // ── CONFIG ────────────────────────────────────────────────────────
-const API_URL = '';
+const API_URL = '/api';   // la API vive bajo /api para no chocar con las rutas de pantalla
 
 // ── STATE ─────────────────────────────────────────────────────────
 let currentUser = null;
