@@ -3,6 +3,27 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Feedback del 11-sep-2026 (Nicole Arias)
+
+- [x] **T29 · Comprobantes de gastos en Documentos** — S — Sección "Comprobantes de gastos" en la pestaña Documentos, con el gasto de origen. Se pueden sumar al ZIP, que los pone en su propia carpeta. *`comprobantesDelTramite()`; `/documentos/zip` acepta `comprobantes`, filtrados por trámite vía el gasto. Verificado: zip con un documento + un comprobante en `Comprobantes de gastos/`.*
+- [x] **T30 · Saldo a favor en el Excel de liquidación** — S — Línea final "Saldo a favor de Fernando Arias (Intraservice) — a cobrar a \<cliente\>" / "a favor de \<cliente\>" / "Sin saldo pendiente". También en el PDF.
+- [x] **T31 · Sub partida desplegable** — S — No era bug: se guardaba (E26-001-NOVA tenía `0710802000`). Se agregó datalist con las ya usadas.
+- [x] **T32 · Mercadería / Consignatario** — S — "Mercadería importada" → "Mercadería". En exportación "Proveedor" → "Consignatario" (vía `data-label-exportacion`).
+- [x] **T33 · Cantidad, unidad y liquidación completa** — M — Cantidad y unidad en valores de la mercadería (guardadas en `preliquidacion`). La liquidación final, PDF y Excel, lleva los valores de la mercadería y los 14 datos del trámite que pidió. *Verificado leyendo el xlsx: los 14 datos presentes.*
+- [x] **T34 · Fecha Cut Off en lugar de Fecha de llegada** — S — Solo en exportación; en importación sigue "Fecha de llegada". Cut Off pasó de texto a `datetime-local`. *El único valor viejo ("28-jul-2026" en E26-001-NOVA) se migró a mano a `2026-07-28T00:00`.*
+  - Cuidado: `applyTramiteForm` cortaba a `YYYY-MM-DD` todo valor con "T"; ahora solo lo hace en `input[type=date]`, si no el Cut Off perdía la hora.
+- [x] **T35 · Campos ocultos en exportación** — S — Fecha de salida, Puerto de salida, Liquidación SENAE, Transporte y CDA. *Contradice su pedido del 07-sep (fecha y puerto de salida). Se ocultan, no se borran: verificado guardando E26-001-NOVA sin cambios, los valores quedaron intactos.*
+  - Mecanismo nuevo: `data-ocultar-en`, `data-solo-en` y `data-label-exportacion` en el HTML, aplicados por `aplicarVisibilidadPorOperacion()`.
+- [ ] **T36 · Retención y valor neto a pagar en gastos** — M — ⚠️ Esperando a Nicole: ¿retención en monto o en %? ¿El saldo usa el neto o el bruto?
+- [ ] **T37 · Gastos logísticos en la preliquidación** — M — Almacenaje, THC/flete, V/B, otros. ⚠️ Esperando a Nicole: ¿se suman a los impuestos en un total? ¿Se saca "Seguridad", que ella no menciona?
+
+## URLs compartibles (pedido de Edison, 24-sep)
+
+- [x] **T38 · Link por pantalla y por trámite** — `/novedades`, `/tramite/:id/liquidacion`, etc. Botón 🔗 que copia el link. Atrás/adelante del navegador funcionan, y el login lleva a donde apuntaba el link.
+- [x] **T39 · Filtros en la URL** — `/bitacora?q=NOVA&estado=En+proceso`, `/reportes?year=2026&desde=1&hasta=6`, `/feedback?estado=pendiente`. Se agregó el filtro por estado en Feedback.
+  - ⚠️ **La API se movió a `/api`**: `/feedback`, `/clientes`, `/reportes` y `/auditoria` chocaban con los endpoints y el link devolvía JSON. `API_URL = '/api'`. `/files` quedó afuera.
+  - ⚠️ **Assets con ruta absoluta** (`/styles.css`, `/app.js`): con ruta relativa, un link profundo cargaba la página sin estilos ni JS.
+
 ## Feedback del 07/08-sep-2026 (Nicole Arias)
 
 Todos hechos, desplegados y verificados en producción. Cada uno respondido en la pantalla de Feedback.
@@ -109,11 +130,11 @@ Todos hechos, desplegados y verificados en producción. Cada uno respondido en l
 
 ## Novedades (changelog en la app)
 
-Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 4 entradas.
+Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 5 entradas.
 
 ## Feedback: responder en la app
 
-La pantalla Feedback permite marcar cada pedido como Resuelto o No se hará y dejarle al usuario un comentario de qué se hizo. **Al cerrar un pedido, responderlo ahí**: es lo que ve quien lo reportó. Estado al 10-sep-2026: 17 resueltos, 1 descartado, 0 pendientes.
+La pantalla Feedback permite marcar cada pedido como Resuelto o No se hará y dejarle al usuario un comentario de qué se hizo. **Al cerrar un pedido, responderlo ahí**: es lo que ve quien lo reportó. Estado al 24-sep-2026: 24 resueltos, 1 descartado, 2 pendientes (T36 y T37, esperando respuesta).
 
 ---
 

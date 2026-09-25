@@ -1093,6 +1093,15 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-09-24', titulo: 'Links para compartir, exportación y liquidación completa', cambios: [
+    { tipo: 'nuevo', texto: 'Cada pantalla y cada trámite tiene su propio link. Con el botón 🔗 junto al título copiás el link de lo que estás viendo, con la pestaña y los filtros incluidos, para mandarlo por WhatsApp o correo.' },
+    { tipo: 'nuevo', texto: 'La liquidación final (PDF y Excel) lleva todos los datos del trámite, los valores de la mercadería y a favor de quién queda el saldo.' },
+    { tipo: 'nuevo', texto: 'En Documentos aparece la sección "Comprobantes de gastos" con todas las facturas y recibos cargados en los gastos. Se pueden sumar al ZIP.' },
+    { tipo: 'nuevo', texto: 'Cantidad y unidad de medida en los valores de la mercadería.' },
+    { tipo: 'mejora', texto: 'Exportación: "Fecha Cut Off" (fecha y hora) en lugar de "Fecha de llegada", y se ocultan los campos que no aplican: fecha y puerto de salida, liquidación SENAE, transporte y CDA. Lo que ya estaba cargado se conserva.' },
+    { tipo: 'mejora', texto: '"Mercadería importada" pasa a "Mercadería", y en exportación "Proveedor" se llama "Consignatario".' },
+    { tipo: 'mejora', texto: 'La sub partida es un desplegable con las que ya usaste en otros trámites.' },
+  ]},
   { fecha: '2026-09-10', titulo: 'Exportaciones, liquidaciones y borrado de trámites', cambios: [
     { tipo: 'nuevo', texto: 'Los trámites de exportación se numeran solos como E26-XXX-CLIENTE (por ejemplo E26-001-NOVA), con el cliente que elijas. Las importaciones siguen con su serie T26-XXX.' },
     { tipo: 'nuevo', texto: 'La Preliquidación y la Liquidación ahora son dos documentos separados, cada uno con sus botones de PDF y Excel. La preliquidación lleva mercadería e impuestos; la liquidación, gastos, anticipos y saldo.' },
