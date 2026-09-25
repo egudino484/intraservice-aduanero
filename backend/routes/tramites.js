@@ -125,18 +125,30 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     const dinero = fila => { fila.eachCell(c => { if (typeof c.value === 'number') c.numFmt = '#,##0.00' }) }
 
     titulo(`${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${tramite.numero} · ${tramite.cliente}`)
-    ws.addRow(['Operación', tramite.tipo === 'Otro' ? (tramite.operacion_otro || 'Otro') : tramite.tipo])
-    ws.addRow(['Régimen', tramite.regimen === 'Otro (especificar)' ? (tramite.regimen_otro || '') : (tramite.regimen || '')])
-    ws.addRow(['Sub partida', tramite.sub_partida || ''])
-    ws.addRow(['BL / AWB', tramite.bl || ''])
-    ws.addRow(['DAI / DAE', tramite.da || ''])
+    const fecha = d => d ? new Date(d).toISOString().slice(0, 10) : ''
+    const datos = esPreliq ? [
+      ['Operación', tramite.tipo === 'Otro' ? (tramite.operacion_otro || 'Otro') : tramite.tipo],
+      ['Régimen', tramite.regimen === 'Otro (especificar)' ? (tramite.regimen_otro || '') : (tramite.regimen || '')],
+      ['Sub partida', tramite.sub_partida], ['BL / AWB', tramite.bl], ['DAI / DAE', tramite.da],
+    ] : [
+      ['Trámite N°', tramite.numero], ['Cliente', tramite.cliente], ['Fecha', fecha(tramite.fecha_arribo)],
+      ['BL / AWB', tramite.bl], ['Mercadería', tramite.mercaderia], ['Contenedores', tramite.contenedores],
+      ['DAI / DAE', tramite.da], ['Póliza / Garantía / CDA', tramite.cda], ['Liquidación aduana', tramite.liq_senae],
+      ['MRN', tramite.mrn], ['Transporte local', tramite.transporte], ['Factura comercial', tramite.factura_comercial],
+      [tramite.tipo === 'Exportación' ? 'Consignatario' : 'Proveedor', tramite.proveedor], ['Entrega N°', tramite.n_entrega],
+    ]
+    datos.forEach(([k, v]) => ws.addRow([k, v || '']))
     ws.addRow([])
 
-    if (esPreliq) {
+    // Valores de la mercadería: van en los dos documentos
+    const pq = tramite.preliquidacion || {}
     cab(['Valores de la mercadería', 'USD'])
+    if (pq.cantidad) ws.addRow(['Cantidad', `${pq.cantidad} ${pq.unidad || ''}`.trim()])
     ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], ['Seguro', p.seguro], ['CIF', p.cif]]
       .forEach(([k, v]) => dinero(ws.addRow([k, v])))
     ws.addRow([])
+
+    if (esPreliq) {
 
     cab(['Impuesto', 'Tarifa %', 'Valor USD'])
     ;[['Ad Valorem', p.tarifas.adValorem, p.impuestos.adValorem],
@@ -164,7 +176,16 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     dinero(cab(['Total anticipos', '', '', '', totalAnticipos]))
     ws.addRow([])
 
-    dinero(cab(['Saldo (gastos − anticipos)', '', '', '', totalGastos - totalAnticipos]))
+    const saldo = totalGastos - totalAnticipos
+    dinero(cab(['Saldo (gastos − anticipos)', '', '', '', saldo]))
+    // Fernando Arias es Intraservice: gastos por encima del anticipo se le cobran
+    // al cliente; anticipo sin usar queda a favor del cliente
+    const favor = saldo > 0.005 ? `Saldo a favor de Fernando Arias (Intraservice) — a cobrar a ${tramite.cliente}`
+               : saldo < -0.005 ? `Saldo a favor de ${tramite.cliente} — anticipo sin usar`
+               : 'Sin saldo pendiente'
+    const fFavor = ws.addRow([favor, '', '', '', Math.abs(saldo)])
+    fFavor.font = { bold: true, color: { argb: saldo > 0.005 ? 'FF8B1F1F' : saldo < -0.005 ? 'FF1A6B3C' : 'FF555555' } }
+    dinero(fFavor)
     }
 
     res.attachment(`${(tramite.numero || 'tramite').replace(/[^\w.-]+/g, '_')}-${req.params.doc}.xlsx`)

@@ -184,7 +184,8 @@
               <div class="field"><label>Fecha de apertura de trámite</label><input type="date" data-field="fechaApertura"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Fecha de llegada</label><input type="date" data-field="fechaLlegada"></div>
+              <div class="field" data-ocultar-en="Exportación"><label>Fecha de llegada</label><input type="date" data-field="fechaLlegada"></div>
+              <div class="field" data-solo-en="Exportación"><label>Fecha Cut Off</label><input type="datetime-local" data-field="cutOff"></div>
             </div>
             <div class="field-row-3" id="fila-regimen">
               <div class="field" id="campo-operacion-otro" style="display:none"><label>Especificar operación</label><input list="operacion-otro-list" type="text" data-field="operacionOtro" placeholder="¿Qué tipo de operación?"><datalist id="operacion-otro-list"></datalist></div>
@@ -200,7 +201,7 @@
                 <datalist id="clientes-list"></datalist>
               </div>
               <div class="field">
-                <label>Mercadería importada</label>
+                <label>Mercadería</label>
                 <input list="mercaderia-list" type="text" data-field="mercaderia" id="campo-mercaderia" onchange="saveMercaderia(this.value)" placeholder="Ingresa o selecciona mercadería...">
                 <datalist id="mercaderia-list"></datalist>
               </div>
@@ -214,32 +215,29 @@
             <div id="bloque-exportacion" style="display:none">
               <div style="font-size:12px;font-weight:500;color:var(--text-2);margin:14px 0 10px;padding-top:12px;border-top:1px solid var(--border)">Datos de exportación</div>
               <div class="field-row-3">
-                <div class="field"><label>Fecha de salida</label><input type="date" data-field="fechaSalida"></div>
+                <div class="field" data-ocultar-en="Exportación"><label>Fecha de salida</label><input type="date" data-field="fechaSalida"></div>
                 <div class="field"><label>Estado de regularización</label>
                   <select data-field="regularizacion"><option value="">— Sin definir —</option><option>Sí</option><option>No</option></select>
                 </div>
                 <div class="field"><label>Booking</label><input type="text" data-field="booking"></div>
               </div>
-              <div class="field-row-3">
-                <div class="field"><label>Cut Off</label><input type="text" data-field="cutOff" placeholder="Ej: 12 sep 18:00"></div>
-              </div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
+              <div class="field" data-ocultar-en="Exportación"><label>Puerto de salida</label><input list="puertos-list" type="text" data-field="puertoSalida" placeholder="Ingresa o selecciona puerto..."><datalist id="puertos-list"></datalist></div>
               <div class="field"><label>N° de referencia del cliente</label><input type="text" data-field="refCliente"></div>
             </div>
             <div class="field-row-3">
               <div class="field"><label>DAI / DAE</label><input type="text" data-field="dai" placeholder="XXX-2026-XX-XXXXXXXX" maxlength="20" oninput="formatearDAI(this)"></div>
               <div class="field"><label>MRN</label><input type="text" data-field="mrn"></div>
-              <div class="field"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae"></div>
+              <div class="field" data-ocultar-en="Exportación"><label>Liquidación SENAE</label><input type="text" data-field="liqSenae"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Sub partida</label><input type="text" data-field="subPartida"></div>
+              <div class="field"><label>Sub partida</label><input list="subpartidas-list" type="text" data-field="subPartida" placeholder="Ingresa o selecciona sub partida..."><datalist id="subpartidas-list"></datalist></div>
               <div class="field"><label>N° Entrega</label><input type="text" data-field="entrega"></div>
-              <div class="field"><label>Transporte</label><input type="text" data-field="transporte"></div>
+              <div class="field" data-ocultar-en="Exportación"><label>Transporte</label><input type="text" data-field="transporte"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value)" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
+              <div class="field"><label data-label-exportacion="Consignatario" data-label-base="Proveedor">Proveedor</label><input list="proveedores-list" type="text" data-field="proveedor" id="campo-proveedor" onchange="saveProveedor(this.value)" placeholder="Ingresa o selecciona proveedor..."><datalist id="proveedores-list"></datalist></div>
               <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom"></div>
               <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra"></div>
             </div>
@@ -249,7 +247,7 @@
               <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
             </div>
             <div class="field-row-3">
-              <div class="field"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
+              <div class="field" data-ocultar-en="Exportación"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>
             </div>
             <div class="field-row">
               <div class="field"><label>Contenedores</label><input type="text" data-field="contenedores"></div>
@@ -383,6 +381,9 @@
             </div>
             <div id="docs-toolbar" style="display:flex;align-items:center;gap:12px;margin-bottom:10px"></div>
             <div id="documentos-list"></div>
+            <!-- Los comprobantes se cargan en cada gasto; acá se listan para tener el expediente completo -->
+            <div style="font-size:12px;font-weight:500;color:var(--text-2);margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border)">Comprobantes de gastos</div>
+            <div id="comprobantes-list"></div>
             <div class="upload-zone" id="upload-zone" onclick="triggerDocUpload()">
               <svg viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 14v1a2 2 0 002 2h10a2 2 0 002-2v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               Arrastra archivos aquí o haz clic para subir documentos del expediente
@@ -436,6 +437,9 @@
               <table class="gasto-table">
                 <thead><tr><th colspan="2" style="background:var(--surface2)">Valores de la mercadería (USD)</th></tr></thead>
                 <tbody>
+                  <tr><td>Cantidad</td><td style="text-align:right;white-space:nowrap"><input type="number" step="0.001" id="pl-cantidad" style="width:90px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()">
+                    <input list="unidades-list" type="text" id="pl-unidad" placeholder="kg" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()">
+                    <datalist id="unidades-list"><option value="kg"><option value="t"><option value="unidades"><option value="cajas"><option value="pallets"><option value="litros"><option value="m³"></datalist></td></tr>
                   <tr><td>FOB</td><td style="text-align:right"><input type="number" step="0.01" id="pl-fob" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>Flete</td><td style="text-align:right"><input type="number" step="0.01" id="pl-flete" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>CFR</td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-cfr">$0.00</td></tr>

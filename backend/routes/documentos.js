@@ -48,13 +48,20 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
 // POST /tramites/:tramiteId/documentos/zip — descarga varios documentos en un .zip
 router.post('/zip', auth, async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids : []
-  if (!ids.length) return res.status(400).json({ error: 'Sin documentos seleccionados' })
+  const comprobantes = Array.isArray(req.body?.comprobantes) ? req.body.comprobantes : []
+  if (!ids.length && !comprobantes.length) return res.status(400).json({ error: 'Sin documentos seleccionados' })
 
   try {
     // El filtro por tramite_id es lo que impide armar un zip con documentos de otro trámite
+    // Los comprobantes van en una carpeta aparte dentro del zip, filtrados
+    // también por trámite a través del gasto al que pertenecen
     const { rows } = await db.query(
-      'SELECT nombre, file_key FROM documentos WHERE tramite_id = $1 AND id = ANY($2::uuid[]) ORDER BY created_at',
-      [req.params.tramiteId, ids]
+      `SELECT nombre, file_key FROM documentos WHERE tramite_id = $1 AND id = ANY($2::uuid[])
+       UNION ALL
+       SELECT 'Comprobantes de gastos/' || COALESCE(a.nombre, 'comprobante'), a.key
+       FROM gasto_archivos a JOIN gastos g ON g.id = a.gasto_id
+       WHERE g.tramite_id = $1 AND a.id = ANY($3::uuid[])`,
+      [req.params.tramiteId, ids, comprobantes]
     )
     if (!rows.length) return res.status(404).json({ error: 'No encontrado' })
 
@@ -68,13 +75,16 @@ router.post('/zip', auth, async (req, res) => {
 
     const usados = new Set()
     for (const d of rows) {
+      if (!d.file_key) continue
       const ruta = path.join(UPLOADS_DIR, d.file_key)
       if (!fs.existsSync(ruta)) continue
       // Dos documentos pueden llamarse igual; dentro del zip no pueden
       let nombre = d.nombre
       for (let i = 2; usados.has(nombre); i++) {
         const ext = path.extname(d.nombre)
-        nombre = `${path.basename(d.nombre, ext)} (${i})${ext}`
+        const dir = path.dirname(d.nombre)   // conservar la carpeta de los comprobantes
+        const base = `${path.basename(d.nombre, ext)} (${i})${ext}`
+        nombre = dir === '.' ? base : `${dir}/${base}`
       }
       usados.add(nombre)
       zip.file(ruta, { name: nombre })

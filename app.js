@@ -327,6 +327,25 @@ function actualizarSugerenciasOperacion() {
   llenar('operacion-otro-list', bitacoraData.map(t => t.operacion_otro));
   llenar('regimen-otro-list', bitacoraData.map(t => t.regimen_otro));
   llenar('puertos-list', bitacoraData.map(t => t.puerto_salida));
+  llenar('subpartidas-list', bitacoraData.map(t => t.sub_partida));
+}
+
+// Campos que dependen de la operación. Se declaran en el HTML:
+//   data-ocultar-en="Exportación"   → no se muestra en exportaciones
+//   data-solo-en="Exportación"      → solo se muestra en exportaciones
+//   data-label-exportacion="..."    → otro nombre en exportaciones
+// Ocultar no borra: el valor sigue en el formulario y se guarda como estaba,
+// así que si un campo vuelve a mostrarse aparece con su dato.
+function aplicarVisibilidadPorOperacion(op) {
+  document.querySelectorAll('#t-datos [data-ocultar-en]').forEach(el => {
+    el.style.display = el.dataset.ocultarEn === op ? 'none' : '';
+  });
+  document.querySelectorAll('#t-datos [data-solo-en]').forEach(el => {
+    el.style.display = el.dataset.soloEn === op ? '' : 'none';
+  });
+  document.querySelectorAll('#t-datos [data-label-exportacion]').forEach(el => {
+    el.textContent = op === 'Exportación' ? el.dataset.labelExportacion : el.dataset.labelBase;
+  });
 }
 
 function onOperacionChange() {
@@ -341,10 +360,10 @@ function onOperacionChange() {
   }
   const campoOtro = document.getElementById('campo-operacion-otro');
   if (campoOtro) campoOtro.style.display = op === 'Otro' ? '' : 'none';
-  // Fecha de salida, regularización, booking, cut off, puerto y referencia
-  // solo tienen sentido en exportaciones
+  // Regularización y booking solo tienen sentido en exportaciones
   const bloqueExp = document.getElementById('bloque-exportacion');
   if (bloqueExp) bloqueExp.style.display = op === 'Exportación' ? '' : 'none';
+  aplicarVisibilidadPorOperacion(op);
   onRegimenChange();
   renderPreliquidacion();
   suggestNextNumero();
@@ -1201,6 +1220,7 @@ function renderPreliquidacion(forzarValores = false) {
   if (forzarValores) {
     const val = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
     val('pl-fob', p.fob); val('pl-flete', p.flete); val('pl-seguro', p.seguro);
+    val('pl-cantidad', p.cantidad); val('pl-unidad', p.unidad);
     val('pl-t-advalorem', p.adValorem); val('pl-t-fodinfa', p.fodinfa);
     val('pl-t-iva', p.iva); val('pl-t-seguridad', p.seguridad);
   }
@@ -1216,6 +1236,7 @@ function leerPreliqForm() {
   const v = id => document.getElementById(id)?.value;
   return {
     fob: v('pl-fob'), flete: v('pl-flete'), seguro: v('pl-seguro'),
+    cantidad: v('pl-cantidad'), unidad: v('pl-unidad'),
     adValorem: v('pl-t-advalorem'), fodinfa: v('pl-t-fodinfa'),
     iva: v('pl-t-iva'), seguridad: v('pl-t-seguridad'),
   };
@@ -1285,20 +1306,27 @@ function exportPreliqPDF(doc = 'preliquidacion') {
   </style></head><body>
   <h1>${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}</h1>
   <div class="sub">${form.cliente || ''} · ${form.operacion || ''}${form.regimen ? ' · ' + form.regimen : ''}</div>
-  <table class="meta">
-    <tr><td>Sub partida</td><td>${form.subPartida || '—'}</td></tr>
-    <tr><td>BL / AWB</td><td>${form.bl || '—'}</td></tr>
-    <tr><td>DAI / DAE</td><td>${form.dai || '—'}</td></tr>
+  <table class="meta">${(esPreliq ? [
+      ['Sub partida', form.subPartida], ['BL / AWB', form.bl], ['DAI / DAE', form.dai],
+    ] : [
+      // La liquidación final lleva todos los datos del trámite (pedido de Nicole)
+      ['Trámite N°', form.numero], ['Cliente', form.cliente], ['Fecha', form.fechaApertura],
+      ['BL / AWB', form.bl], ['Mercadería', form.mercaderia], ['Contenedores', form.contenedores],
+      ['DAI / DAE', form.dai], ['Póliza / Garantía / CDA', form.cda], ['Liquidación aduana', form.liqSenae],
+      ['MRN', form.mrn], ['Transporte local', form.transporte], ['Factura comercial', form.factCom],
+      [form.operacion === 'Exportación' ? 'Consignatario' : 'Proveedor', form.proveedor], ['Entrega N°', form.entrega],
+    ]).map(([k, v]) => `<tr><td>${k}</td><td>${escHtml(v || '—')}</td></tr>`).join('')}
   </table>
-  ${esPreliq ? `
   <h2>Valores de la mercadería</h2>
   <table>
+    ${t.cantidad ? `<tr><td>Cantidad</td><td class="num">${escHtml(t.cantidad + ' ' + (t.unidad || ''))}</td></tr>` : ''}
     <tr><td>FOB</td><td class="num">${$(r.fob)}</td></tr>
     <tr><td>Flete</td><td class="num">${$(r.flete)}</td></tr>
     <tr><td>CFR</td><td class="num">${$(r.cfr)}</td></tr>
     <tr><td>Seguro</td><td class="num">${$(r.seguro)}</td></tr>
     <tr class="tot"><td>CIF</td><td class="num">${$(r.cif)}</td></tr>
   </table>
+  ${esPreliq ? `
   <h2>Impuestos</h2>
   <table>
     <tr><th>Impuesto</th><th>Tarifa</th><th class="num">Valor</th></tr>
@@ -1322,7 +1350,13 @@ function exportPreliqPDF(doc = 'preliquidacion') {
     <tr class="tot"><td colspan="4">Total anticipos</td><td class="num">${$(totalA)}</td></tr>
   </table>
   <h2>Saldo</h2>
-  <table><tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr></table>` : ''}
+  <table>
+    <tr class="tot"><td>Gastos − anticipos</td><td class="num">${$(totalG - totalA)}</td></tr>
+    <tr><td style="font-weight:600;color:${totalG - totalA > 0.005 ? '#8B1F1F' : totalG - totalA < -0.005 ? '#1A6B3C' : '#555'}">${
+      totalG - totalA > 0.005 ? 'Saldo a favor de Fernando Arias (Intraservice) — a cobrar a ' + escHtml(form.cliente || 'el cliente')
+      : totalG - totalA < -0.005 ? 'Saldo a favor de ' + escHtml(form.cliente || 'el cliente') + ' — anticipo sin usar'
+      : 'Sin saldo pendiente'}</td><td class="num">${$(Math.abs(totalG - totalA))}</td></tr>
+  </table>` : ''}
   </body></html>`;
   mostrarPreviewDocumento(html, `${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}`);
 }
@@ -2163,8 +2197,10 @@ function applyTramiteForm(data) {
   onOperacionChange();
   for (const [campo, col] of Object.entries(CAMPOS_EXTRA)) {
     const v = data[col] ?? '';
-    // Las columnas DATE llegan como ISO completo; el input type=date solo toma YYYY-MM-DD
-    set(campo, typeof v === 'string' && v.includes('T') ? v.split('T')[0] : v);
+    const tipo = document.querySelector('#t-datos [data-field="' + campo + '"]')?.type;
+    // Las columnas DATE llegan como ISO completo; el input type=date solo toma
+    // YYYY-MM-DD. Los datetime-local (Cut Off) sí necesitan la hora: no se cortan.
+    set(campo, tipo === 'date' && typeof v === 'string' && v.includes('T') ? v.split('T')[0] : v);
   }
   onRegimenChange();
   actualizarSugerenciasOperacion();
@@ -2255,14 +2291,16 @@ function toggleDocSel(id, checked) {
 
 function toggleDocSelTodos(checked) {
   docsSeleccionados = checked ? new Set(documentoData.map(d => d.id)) : new Set();
+  compSeleccionados = checked ? new Set(comprobantesDelTramite().map(c => c.id)) : new Set();
   renderDocumentos();
 }
 
 function renderDocsToolbar() {
   const el = document.getElementById('docs-toolbar');
   if (!el) return;
-  const n = docsSeleccionados.size;
-  const todos = documentoData.length > 0 && n === documentoData.length;
+  const n = docsSeleccionados.size + compSeleccionados.size;
+  const total = documentoData.length + comprobantesDelTramite().length;
+  const todos = total > 0 && n === total;
   el.innerHTML = `
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);cursor:pointer">
       <input type="checkbox" ${todos ? 'checked' : ''} onchange="toggleDocSelTodos(this.checked)"> Seleccionar todos
@@ -2271,7 +2309,39 @@ function renderDocsToolbar() {
     <button class="btn btn-sm" ${n ? '' : 'disabled'} onclick="descargarDocsZip()">↓ Descargar seleccionados (.ZIP)</button>`;
 }
 
+let compSeleccionados = new Set();
+
+function toggleCompSel(id, checked) {
+  if (checked) compSeleccionados.add(id); else compSeleccionados.delete(id);
+  renderDocsToolbar();
+}
+
+// Todos los comprobantes cargados en los gastos del trámite, con su gasto
+function comprobantesDelTramite() {
+  return gastoData.flatMap(g => (g.archivos || []).filter(a => a.id).map(a => ({ ...a, gasto: g.concepto || '' })));
+}
+
+// Los comprobantes viven en cada gasto; acá se muestran para que "Documentos"
+// tenga el expediente completo. Se ven y se descargan; se quitan desde el gasto.
+function renderComprobantes() {
+  const el = document.getElementById('comprobantes-list');
+  if (!el) return;
+  const comps = comprobantesDelTramite();
+  compSeleccionados = new Set([...compSeleccionados].filter(id => comps.some(c => c.id === id)));
+  el.innerHTML = comps.length ? comps.map(c => `
+    <div class="doc-item">
+      <input type="checkbox" ${compSeleccionados.has(c.id) ? 'checked' : ''} onchange="toggleCompSel('${c.id}',this.checked)" title="Seleccionar para descarga múltiple">
+      <div class="doc-icon">${docSvg}</div>
+      <div class="doc-name" style="cursor:pointer;color:var(--blue)" onclick="openPreview('${c.url}','${escHtml(c.nombre||'')}')">${escHtml(c.nombre || 'comprobante')}</div>
+      <div class="doc-meta">Gasto: ${escHtml(c.gasto)}</div>
+      <button class="btn btn-sm btn-ghost" onclick="openPreview('${c.url}','${escHtml(c.nombre||'')}')">Vista previa</button>
+      <a href="${c.url}" download="${escHtml(c.nombre||'comprobante')}" class="btn btn-sm btn-ghost">↓ Descargar</a>
+    </div>`).join('')
+    : '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:12px 0">Sin comprobantes cargados en los gastos</p>';
+}
+
 function renderDocumentos() {
+  renderComprobantes();
   const el = document.getElementById('documentos-list');
   if (!el) return;
   const cont = document.getElementById('docs-contador');
@@ -2299,13 +2369,13 @@ function renderDocumentos() {
 }
 
 async function descargarDocsZip() {
-  if (!currentTramiteId || !docsSeleccionados.size) return;
+  if (!currentTramiteId || !(docsSeleccionados.size + compSeleccionados.size)) return;
   showNotif('Preparando .ZIP...');
   // No se puede usar un <a download> porque la ruta necesita el token
   const res = await fetch(API_URL + '/tramites/' + currentTramiteId + '/documentos/zip', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids: [...docsSeleccionados] })
+    body: JSON.stringify({ ids: [...docsSeleccionados], comprobantes: [...compSeleccionados] })
   });
   if (res.status === 401) { logout(); return; }
   if (!res.ok) { showNotif('No se pudo generar el .ZIP'); return; }
@@ -2316,7 +2386,7 @@ async function descargarDocsZip() {
   a.href = url; a.download = nombre;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
-  showNotif(docsSeleccionados.size + ' documento(s) descargados');
+  showNotif((docsSeleccionados.size + compSeleccionados.size) + ' archivo(s) descargados');
 }
 
 function triggerDocUpload() {
