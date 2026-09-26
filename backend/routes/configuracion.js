@@ -8,7 +8,8 @@ function noVisor(req, res, next) {
   next()
 }
 
-const CLAVES_TARIFAS = ['adValorem', 'fodinfa', 'iva', 'seguridad']
+// seguroPct es el % del CFR; reemplaza a 'seguridad', que la plantilla no usa
+const CLAVES_TARIFAS = ['adValorem', 'fodinfa', 'iva', 'seguroPct']
 
 // GET /configuracion — valores generales del sistema
 router.get('/', auth, async (req, res) => {

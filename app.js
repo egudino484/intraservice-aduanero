@@ -633,8 +633,10 @@ const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><re
 // Los gastos marcados "no liquidar" (ej. honorarios EXIMSA) se registran pero
 // no entran en el total ni en el saldo que se le cobra al cliente.
 const esLiquidable = g => !g.excluir_liquidacion;
-function totalGastos() { return gastoData.filter(esLiquidable).reduce((s,g) => s + parseFloat(g.monto||0), 0); }
-function totalNoLiquidable() { return gastoData.filter(g => !esLiquidable(g)).reduce((s,g) => s + parseFloat(g.monto||0), 0); }
+// El saldo de la liquidación va con el valor neto: monto menos retención
+const netoGasto = g => parseFloat(g.monto||0) - parseFloat(g.retencion||0);
+function totalGastos() { return gastoData.filter(esLiquidable).reduce((s,g) => s + netoGasto(g), 0); }
+function totalNoLiquidable() { return gastoData.filter(g => !esLiquidable(g)).reduce((s,g) => s + netoGasto(g), 0); }
 function totalAnticipos() { return anticipoData.reduce((s,a) => s + parseFloat(a.monto||0), 0); }
 
 // Comprobantes de un gasto. Contempla los gastos viejos que aún traen el
@@ -669,7 +671,7 @@ function saveGastoField(id, field, value) {
   // para no mostrar un valor distinto al que quedó grabado.
   if (field === 'proveedor') value = (value || '').trim().toUpperCase();
   const g = gastoData.find(g => g.id === id);
-  if (g) g[field] = field === 'monto' ? parseFloat(value)||0 : value;
+  if (g) g[field] = (field === 'monto' || field === 'retencion') ? parseFloat(value)||0 : value;
   renderAll();
   clearTimeout(gastoSaveTimers[id]);
   gastoSaveTimers[id] = setTimeout(() => {
@@ -705,7 +707,9 @@ function renderGastos() {
       <td><input type="text" value="${escHtml(g.concepto||'')}" onchange="saveGastoField('${g.id}','concepto',this.value)"></td>
       <td><input list="proveedores-list" type="text" value="${escHtml(g.proveedor||'')}" placeholder="Ingresa o selecciona proveedor..." onchange="saveProveedor(this.value);saveGastoField('${g.id}','proveedor',this.value)"></td>
       <td><input type="text" value="${escHtml(g.n_factura||'')}" style="font-family:'DM Mono',monospace;font-size:11px" onchange="saveGastoField('${g.id}','n_factura',this.value)"></td>
-      <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:90px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
+      <td><input type="number" value="${parseFloat(g.monto||0).toFixed(2)}" style="width:86px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','monto',this.value)"></td>
+      <td><input type="number" value="${parseFloat(g.retencion||0).toFixed(2)}" style="width:78px;font-family:'DM Mono',monospace" onchange="saveGastoField('${g.id}','retencion',this.value)" title="Monto retenido en USD"></td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;text-align:right">$${netoGasto(g).toFixed(2)}</td>
       <td><select onchange="saveGastoField('${g.id}','categoria',this.value)">${cats.map(c=>`<option${g.categoria===c?' selected':''}>${c}</option>`).join('')}</select></td>
       <td style="text-align:center"><input type="checkbox" ${g.excluir_liquidacion ? '' : 'checked'}
         onchange="saveGastoField('${g.id}','excluir_liquidacion', !this.checked)"
@@ -842,12 +846,16 @@ function renderTabLiquidacion() {
         <td style="font-family:'DM Mono',monospace;font-size:11px">${g.n_factura||''}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace">$${parseFloat(g.monto||0).toFixed(2)}</td>
         <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--text-3)">$0.00</td>
-        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${parseFloat(g.monto||0).toFixed(2)}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;color:${parseFloat(g.retencion||0) ? 'var(--text)' : 'var(--text-3)'}">$${parseFloat(g.retencion||0).toFixed(2)}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:500">$${netoGasto(g).toFixed(2)}</td>
       </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:12px;font-size:12px">Sin gastos registrados</td></tr>';
-    set('tl-subtotal-f', '$' + tg.toFixed(2));
+    // Totales solo de los gastos que entran en la liquidación
+    const liq = gastoData.filter(esLiquidable);
+    const bruto = liq.reduce((s,g) => s + parseFloat(g.monto||0), 0);
+    const ret = liq.reduce((s,g) => s + parseFloat(g.retencion||0), 0);
+    set('tl-subtotal-f', '$' + bruto.toFixed(2));
     set('tl-iva-f', '$0.00');
-    set('tl-ret-f', '$0.00');
+    set('tl-ret-f', '$' + ret.toFixed(2));
     set('tl-total-f', '$' + tg.toFixed(2));
   }
 
@@ -1169,7 +1177,9 @@ function actualizarBadgeNovedades() {
 // Mismo cálculo que backend/lib/preliquidacion.js: cada impuesto se apoya en
 // los anteriores. Si se toca uno, hay que tocar el otro.
 // Valores base si nunca se configuraron; los reales vienen de /configuracion
-let TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguridad: 0 };
+// seguroPct y no "seguro": en las preliquidaciones viejas "seguro" guardaba el
+// monto cargado a mano, y leerlo como porcentaje daría un seguro disparatado.
+let TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguroPct: 1 };
 
 async function loadConfiguracion() {
   const cfg = await apiFetch('/configuracion');
@@ -1182,10 +1192,10 @@ function renderTarifasDefecto() {
   if (!el) return;
   if (currentUser?.role === 'visor') { el.innerHTML = ''; return; }
   const campo = (k, label) => `<label style="font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:4px">${label}
-    <input type="number" step="0.01" id="td-${k}" value="${TARIFAS_DEFECTO[k]}" style="width:64px;font-family:'DM Mono',monospace"></label>`;
+    <input type="number" step="0.01" id="td-${k}" value="${TARIFAS_DEFECTO[k] ?? ''}" style="width:64px;font-family:'DM Mono',monospace"></label>`;
   el.innerHTML = `
     <span style="font-size:11px;color:var(--text-3)">Tarifas por defecto para nuevos trámites:</span>
-    ${campo('adValorem','Ad Valorem')} ${campo('fodinfa','Fodinfa')} ${campo('iva','IVA')} ${campo('seguridad','Seguridad')}
+    ${campo('seguroPct','Seguro % CFR')} ${campo('adValorem','Ad Valorem')} ${campo('fodinfa','Fodinfa')} ${campo('iva','IVA')}
     <button class="btn btn-sm" onclick="guardarTarifasDefecto()">Guardar</button>`;
 }
 
@@ -1193,26 +1203,40 @@ async function guardarTarifasDefecto() {
   const v = k => document.getElementById('td-' + k)?.value;
   const res = await apiFetch('/configuracion/tarifas', {
     method: 'PUT',
-    body: JSON.stringify({ adValorem: v('adValorem'), fodinfa: v('fodinfa'), iva: v('iva'), seguridad: v('seguridad') })
+    body: JSON.stringify({ adValorem: v('adValorem'), fodinfa: v('fodinfa'), iva: v('iva'), seguroPct: v('seguroPct') })
   });
   if (!res || res.error) { showNotif(res?.error || 'No se pudieron guardar'); return; }
   TARIFAS_DEFECTO = { ...TARIFAS_DEFECTO, ...res.tarifas };
   showNotif('Tarifas por defecto guardadas');
   renderTarifasDefecto();
+  renderPreliquidacion(true);
 }
 let preliqData = {};
 let preliqTimer = null;
 
+// Gastos aduaneros de la preliquidación, en el orden de la plantilla
+const GASTOS_ADUANEROS = [
+  ['vb', 'V/B Consolidadora'], ['thc', 'THC / Flete'], ['blDestino', 'BL Destino'],
+  ['almacenaje', 'Almacenaje'], ['otros', 'Otros gastos'],
+];
+// Entran en la base del IVA: así cuadra la plantilla de Intraservice al centavo
+const EN_BASE_IVA = ['vb', 'blDestino'];
+
+// Mismo cálculo que backend/lib/preliquidacion.js: si se toca uno, tocar el otro.
 function calcPreliq(p) {
   const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
-  const fob = n(p.fob), flete = n(p.flete), seguro = n(p.seguro);
-  const cfr = fob + flete, cif = cfr + seguro;
+  const fob = n(p.fob), flete = n(p.flete);
+  const cfr = fob + flete;
+  const seguro = cfr * n(p.seguroPct) / 100;   // siempre un % del CFR
+  const cif = cfr + seguro;
+  const gastos = Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, n(p[k])]));
   const adValorem = cif * n(p.adValorem) / 100;
   const fodinfa   = cif * n(p.fodinfa) / 100;
-  const iva       = (cif + adValorem + fodinfa) * n(p.iva) / 100;
-  const seguridad = (adValorem + fodinfa + iva) * n(p.seguridad) / 100;
-  return { fob, flete, seguro, cfr, cif, adValorem, fodinfa, iva, seguridad,
-           total: adValorem + fodinfa + iva + seguridad };
+  const iva       = (cif + adValorem + fodinfa + EN_BASE_IVA.reduce((s, k) => s + gastos[k], 0)) * n(p.iva) / 100;
+  const totalGastos = Object.values(gastos).reduce((s, v) => s + v, 0);
+  return { fob, flete, cfr, seguro, cif, adValorem, fodinfa, iva,
+           total: adValorem + fodinfa + iva, gastos, totalGastos,
+           anticipo: n(p.anticipo), garantia: n(p.garantia) };
 }
 
 // forzarValores=true reescribe los inputs (al abrir un trámite); en los
@@ -1228,26 +1252,31 @@ function renderPreliquidacion(forzarValores = false) {
   const p = { ...TARIFAS_DEFECTO, ...preliqData };
   if (forzarValores) {
     const val = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
-    val('pl-fob', p.fob); val('pl-flete', p.flete); val('pl-seguro', p.seguro);
+    val('pl-fob', p.fob); val('pl-flete', p.flete);
     val('pl-cantidad', p.cantidad); val('pl-unidad', p.unidad);
-    val('pl-t-advalorem', p.adValorem); val('pl-t-fodinfa', p.fodinfa);
-    val('pl-t-iva', p.iva); val('pl-t-seguridad', p.seguridad);
+    val('pl-t-seguro', p.seguroPct); val('pl-t-advalorem', p.adValorem);
+    val('pl-t-fodinfa', p.fodinfa); val('pl-t-iva', p.iva);
+    GASTOS_ADUANEROS.forEach(([k]) => val('pl-g-' + k, p[k]));
+    val('pl-anticipo', p.anticipo); val('pl-garantia', p.garantia);
   }
 
   const r = calcPreliq(p);
   const money = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = '$' + v.toFixed(2); };
-  money('pl-cfr', r.cfr); money('pl-cif', r.cif);
+  money('pl-cfr', r.cfr); money('pl-seguro', r.seguro); money('pl-cif', r.cif);
   money('pl-v-advalorem', r.adValorem); money('pl-v-fodinfa', r.fodinfa);
-  money('pl-v-iva', r.iva); money('pl-v-seguridad', r.seguridad); money('pl-total', r.total);
+  money('pl-v-iva', r.iva); money('pl-total', r.total);
+  money('pl-subtotal-gastos', r.totalGastos); money('pl-total-gastos', r.totalGastos);
 }
 
 function leerPreliqForm() {
   const v = id => document.getElementById(id)?.value;
   return {
-    fob: v('pl-fob'), flete: v('pl-flete'), seguro: v('pl-seguro'),
+    fob: v('pl-fob'), flete: v('pl-flete'),
     cantidad: v('pl-cantidad'), unidad: v('pl-unidad'),
-    adValorem: v('pl-t-advalorem'), fodinfa: v('pl-t-fodinfa'),
-    iva: v('pl-t-iva'), seguridad: v('pl-t-seguridad'),
+    seguroPct: v('pl-t-seguro'), adValorem: v('pl-t-advalorem'),
+    fodinfa: v('pl-t-fodinfa'), iva: v('pl-t-iva'),
+    ...Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, v('pl-g-' + k)])),
+    anticipo: v('pl-anticipo'), garantia: v('pl-garantia'),
   };
 }
 
@@ -1313,10 +1342,13 @@ function exportPreliqPDF(doc = 'preliquidacion') {
     .vacio{color:#999;text-align:center} .meta td:first-child{color:#666;width:150px}
     @media print{body{margin:0}}
   </style></head><body>
-  <h1>${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}</h1>
-  <div class="sub">${form.cliente || ''} · ${form.operacion || ''}${form.regimen ? ' · ' + form.regimen : ''}</div>
+  <h1>${esPreliq ? 'Pre liquidación de importación' : 'Liquidación · ' + (form.numero || '')}</h1>
+  <div class="sub">${esPreliq ? '' : (form.cliente || '') + ' · ' + (form.operacion || '') + (form.regimen ? ' · ' + form.regimen : '')}</div>
   <table class="meta">${(esPreliq ? [
-      ['Sub partida', form.subPartida], ['BL / AWB', form.bl], ['DAI / DAE', form.dai],
+      // Mismo encabezado que la plantilla de Intraservice
+      ['Cliente', form.cliente], ['Trámite', form.numero], ['Fecha', form.fechaApertura],
+      ['Producto', form.mercaderia], ['Bodega', form.almacenera], ['BL', form.bl],
+      ['Proveedor', form.proveedor], ['Sub partida', form.subPartida],
     ] : [
       // La liquidación final lleva todos los datos del trámite (pedido de Nicole)
       ['Trámite N°', form.numero], ['Cliente', form.cliente], ['Fecha', form.fechaApertura],
@@ -1332,7 +1364,7 @@ function exportPreliqPDF(doc = 'preliquidacion') {
     <tr><td>FOB</td><td class="num">${$(r.fob)}</td></tr>
     <tr><td>Flete</td><td class="num">${$(r.flete)}</td></tr>
     <tr><td>CFR</td><td class="num">${$(r.cfr)}</td></tr>
-    <tr><td>Seguro</td><td class="num">${$(r.seguro)}</td></tr>
+    <tr><td>Seguro (${t.seguroPct}% del CFR)</td><td class="num">${$(r.seguro)}</td></tr>
     <tr class="tot"><td>CIF</td><td class="num">${$(r.cif)}</td></tr>
   </table>
   ${esPreliq ? `
@@ -1342,15 +1374,25 @@ function exportPreliqPDF(doc = 'preliquidacion') {
     <tr><td>Ad Valorem</td><td>${t.adValorem}%</td><td class="num">${$(r.adValorem)}</td></tr>
     <tr><td>Fodinfa</td><td>${t.fodinfa}%</td><td class="num">${$(r.fodinfa)}</td></tr>
     <tr><td>IVA</td><td>${t.iva}%</td><td class="num">${$(r.iva)}</td></tr>
-    <tr><td>Seguridad</td><td>${t.seguridad}%</td><td class="num">${$(r.seguridad)}</td></tr>
-    <tr class="tot"><td colspan="2">Total impuestos</td><td class="num">${$(r.total)}</td></tr>
+    <tr class="tot"><td colspan="2">Subtotal impuestos</td><td class="num">${$(r.total)}</td></tr>
+  </table>
+  <h2>Gastos aduaneros</h2>
+  <table>
+    ${GASTOS_ADUANEROS.map(([k, nombre]) => `<tr><td>${nombre}</td><td class="num">${$(r.gastos[k])}</td></tr>`).join('')}
+    <tr class="tot"><td>Subtotal gastos</td><td class="num">${$(r.totalGastos)}</td></tr>
+  </table>
+  <h2>Resumen</h2>
+  <table>
+    <tr class="tot"><td>TOTAL GASTOS</td><td class="num">${$(r.totalGastos)}</td></tr>
+    <tr><td>Anticipo</td><td class="num">${$(r.anticipo)}</td></tr>
+    <tr><td>Garantía contenedores</td><td class="num">${$(r.garantia)}</td></tr>
   </table>` : ''}
   ${!esPreliq ? `
   <h2>Gastos pagados</h2>
   <table>
-    <tr><th>Concepto</th><th>Proveedor</th><th>N° factura</th><th>Categoría</th><th class="num">Monto</th></tr>
-    ${filas(gastoData, g => `<td>${escHtml(g.concepto||'')}${g.excluir_liquidacion ? ' (fuera de liquidación)' : ''}</td><td>${escHtml(g.proveedor||'')}</td><td>${escHtml(g.n_factura||'')}</td><td>${escHtml(g.categoria||'')}</td><td class="num">${$(g.monto)}</td>`)}
-    <tr class="tot"><td colspan="4">Total gastos</td><td class="num">${$(totalG)}</td></tr>
+    <tr><th>Concepto</th><th>Proveedor</th><th>N° factura</th><th class="num">Monto</th><th class="num">Retención</th><th class="num">Neto</th></tr>
+    ${filas(gastoData, g => `<td>${escHtml(g.concepto||'')}${g.excluir_liquidacion ? ' (fuera de liquidación)' : ''}</td><td>${escHtml(g.proveedor||'')}</td><td>${escHtml(g.n_factura||'')}</td><td class="num">${$(g.monto)}</td><td class="num">${$(g.retencion)}</td><td class="num">${$(netoGasto(g))}</td>`)}
+    <tr class="tot"><td colspan="5">Total gastos (neto)</td><td class="num">${$(totalG)}</td></tr>
   </table>
   <h2>Anticipos del cliente</h2>
   <table>

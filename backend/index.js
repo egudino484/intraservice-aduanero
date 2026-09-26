@@ -103,6 +103,8 @@ db.query(`
   -- Gastos que se registran pero no entran en la liquidación al cliente
   -- (caso de uso: factura de honorarios de EXIMSA)
   ALTER TABLE gastos ADD COLUMN IF NOT EXISTS excluir_liquidacion BOOLEAN NOT NULL DEFAULT false;
+  -- Retención (monto en USD). El saldo de la liquidación usa el neto: monto − retención
+  ALTER TABLE gastos ADD COLUMN IF NOT EXISTS retencion NUMERIC(12,2) NOT NULL DEFAULT 0;
   -- Operación "Otro" y régimen aduanero
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS operacion_otro TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regimen        TEXT;

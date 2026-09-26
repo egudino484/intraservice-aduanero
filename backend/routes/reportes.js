@@ -30,19 +30,19 @@ router.get('/', auth, async (req, res) => {
                 COALESCE(g.total, 0)::float8 AS gastos,
                 COALESCE(a.total, 0)::float8 AS anticipos
          FROM tramites t
-         LEFT JOIN (SELECT tramite_id, SUM(monto) AS total FROM gastos    GROUP BY tramite_id) g ON g.tramite_id = t.id
+         LEFT JOIN (SELECT tramite_id, SUM(monto - retencion) AS total FROM gastos WHERE NOT excluir_liquidacion GROUP BY tramite_id) g ON g.tramite_id = t.id
          LEFT JOIN (SELECT tramite_id, SUM(monto) AS total FROM anticipos GROUP BY tramite_id) a ON a.tramite_id = t.id
          WHERE ${filtro}
          ORDER BY t.created_at DESC`,
         params
       ),
       db.query(
-        `SELECT g.categoria AS cat, SUM(g.monto)::float8 AS total
+        `SELECT g.categoria AS cat, SUM(g.monto - g.retencion)::float8 AS total
          FROM gastos g
          JOIN tramites t ON t.id = g.tramite_id
-         WHERE ${filtro}
+         WHERE ${filtro} AND NOT g.excluir_liquidacion
          GROUP BY g.categoria
-         HAVING SUM(g.monto) <> 0
+         HAVING SUM(g.monto - g.retencion) <> 0
          ORDER BY total DESC`,
         params
       ),

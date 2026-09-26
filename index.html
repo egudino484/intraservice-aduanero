@@ -318,10 +318,12 @@
             <table class="gasto-table">
               <thead>
                 <tr>
-                  <th style="width:18%">Concepto</th>
-                  <th style="width:13%">Proveedor</th>
-                  <th style="width:11%">N° factura</th>
-                  <th style="width:9%">Monto ($)</th>
+                  <th style="width:15%">Concepto</th>
+                  <th style="width:11%">Proveedor</th>
+                  <th style="width:10%">N° factura</th>
+                  <th style="width:8%">Monto ($)</th>
+                  <th style="width:8%">Retención</th>
+                  <th style="width:8%;text-align:right">Neto a pagar</th>
                   <th style="width:10%">Categoría</th>
                   <th style="width:7%;text-align:center" title="Destildar para registrar el gasto sin sumarlo a la liquidación">Liquidar</th>
                   <th style="width:11%">Pago</th>
@@ -333,7 +335,8 @@
               <tfoot>
                 <tr class="total-row">
                   <td colspan="3" style="font-size:12px;font-family:'DM Mono',monospace">Total gastos</td>
-                  <td id="total-footer" style="font-family:'DM Mono',monospace;font-size:13px">$830.50</td>
+                  <td colspan="2" style="font-size:11px;color:var(--text-3);text-align:right">neto</td>
+                  <td id="total-footer" style="font-family:'DM Mono',monospace;font-size:13px;text-align:right">$0.00</td>
                   <td colspan="2"></td>
                   <td id="pago-footer" style="font-size:11px;color:var(--text-3)"></td>
                   <td colspan="2"></td>
@@ -433,28 +436,47 @@
             </div>
             <p style="font-size:12px;color:var(--text-3);margin-bottom:8px">Cálculo estimado de impuestos. Las tarifas vienen con un valor por defecto y se pueden ajustar en cada trámite.</p>
             <div id="tarifas-defecto" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:var(--radius-sm)"></div>
+            <!-- Mismo orden que la plantilla "PRE LIQUIDACION DE IMPORTACION" de Intraservice -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
               <table class="gasto-table">
                 <thead><tr><th colspan="2" style="background:var(--surface2)">Valores de la mercadería (USD)</th></tr></thead>
                 <tbody>
                   <tr><td>Cantidad</td><td style="text-align:right;white-space:nowrap"><input type="number" step="0.001" id="pl-cantidad" style="width:90px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()">
-                    <input list="unidades-list" type="text" id="pl-unidad" placeholder="kg" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()">
-                    <datalist id="unidades-list"><option value="kg"><option value="t"><option value="unidades"><option value="cajas"><option value="pallets"><option value="litros"><option value="m³"></datalist></td></tr>
+                    <input list="unidades-list" type="text" id="pl-unidad" placeholder="kilos" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()">
+                    <datalist id="unidades-list"><option value="kilos"><option value="toneladas"><option value="unidades"><option value="cajas"><option value="pallets"><option value="litros"><option value="m³"></datalist></td></tr>
                   <tr><td>FOB</td><td style="text-align:right"><input type="number" step="0.01" id="pl-fob" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>Flete</td><td style="text-align:right"><input type="number" step="0.01" id="pl-flete" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>CFR</td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-cfr">$0.00</td></tr>
-                  <tr><td>Seguro</td><td style="text-align:right"><input type="number" step="0.01" id="pl-seguro" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>Seguro <span style="font-size:11px;color:var(--text-3)">(<input type="number" step="0.01" id="pl-t-seguro" style="width:46px;font-family:'DM Mono',monospace;font-size:11px" onchange="onPreliqChange()">% del CFR)</span></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-seguro">$0.00</td></tr>
                   <tr class="total-row"><td>CIF</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-cif">$0.00</td></tr>
                 </tbody>
               </table>
               <table class="gasto-table">
-                <thead><tr><th>Impuesto</th><th style="width:90px">Tarifa %</th><th style="text-align:right">Valor</th></tr></thead>
+                <thead><tr><th>Impuestos</th><th style="width:90px">Tarifa %</th><th style="text-align:right">Valor</th></tr></thead>
                 <tbody>
                   <tr><td>Ad Valorem</td><td><input type="number" step="0.01" id="pl-t-advalorem" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-v-advalorem">$0.00</td></tr>
                   <tr><td>Fodinfa</td><td><input type="number" step="0.01" id="pl-t-fodinfa" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-v-fodinfa">$0.00</td></tr>
-                  <tr><td>IVA</td><td><input type="number" step="0.01" id="pl-t-iva" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-v-iva">$0.00</td></tr>
-                  <tr><td>Seguridad</td><td><input type="number" step="0.01" id="pl-t-seguridad" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-v-seguridad">$0.00</td></tr>
-                  <tr class="total-row"><td colspan="2">Total impuestos</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-total">$0.00</td></tr>
+                  <tr><td>IVA <span style="font-size:10px;color:var(--text-3)" title="Base: CIF + Ad Valorem + Fodinfa + V/B + BL destino">ⓘ</span></td><td><input type="number" step="0.01" id="pl-t-iva" style="width:70px;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-v-iva">$0.00</td></tr>
+                  <tr class="total-row"><td colspan="2">Subtotal impuestos</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-total">$0.00</td></tr>
+                </tbody>
+              </table>
+              <table class="gasto-table">
+                <thead><tr><th colspan="2" style="background:var(--surface2)">Gastos aduaneros (USD)</th></tr></thead>
+                <tbody>
+                  <tr><td>V/B Consolidadora</td><td style="text-align:right"><input type="number" step="0.01" id="pl-g-vb" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>THC / Flete</td><td style="text-align:right"><input type="number" step="0.01" id="pl-g-thc" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>BL Destino</td><td style="text-align:right"><input type="number" step="0.01" id="pl-g-blDestino" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>Almacenaje</td><td style="text-align:right"><input type="number" step="0.01" id="pl-g-almacenaje" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>Otros gastos</td><td style="text-align:right"><input type="number" step="0.01" id="pl-g-otros" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr class="total-row"><td>Subtotal gastos</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-subtotal-gastos">$0.00</td></tr>
+                </tbody>
+              </table>
+              <table class="gasto-table">
+                <thead><tr><th colspan="2" style="background:var(--surface2)">Resumen</th></tr></thead>
+                <tbody>
+                  <tr class="total-row"><td>TOTAL GASTOS</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-total-gastos">$0.00</td></tr>
+                  <tr><td>Anticipo</td><td style="text-align:right"><input type="number" step="0.01" id="pl-anticipo" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
+                  <tr><td>Garantía contenedores</td><td style="text-align:right"><input type="number" step="0.01" id="pl-garantia" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                 </tbody>
               </table>
             </div>

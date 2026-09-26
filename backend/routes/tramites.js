@@ -2,7 +2,7 @@ const router = require('express').Router()
 const ExcelJS = require('exceljs')
 const db = require('../db')
 const auth = require('../middleware/auth')
-const { calcular } = require('../lib/preliquidacion')
+const { calcular, GASTOS_ADUANEROS } = require('../lib/preliquidacion')
 const { deleteFile } = require('../lib/storage')
 
 // GET /tramites
@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const { rows } = await db.query(
       `SELECT t.*, u.name AS created_by_name,
-        (SELECT COALESCE(SUM(monto),0) FROM gastos WHERE tramite_id = t.id) AS total_gastos,
+        (SELECT COALESCE(SUM(monto - retencion),0) FROM gastos WHERE tramite_id = t.id AND NOT excluir_liquidacion) AS total_gastos,
         (SELECT COALESCE(SUM(monto),0) FROM anticipos WHERE tramite_id = t.id) AS total_anticipos
        FROM tramites t
        JOIN users u ON u.id = t.created_by
@@ -98,18 +98,20 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     const tramite = t.rows[0]
 
     const [gastos, anticipos] = await Promise.all([
-      db.query('SELECT concepto, proveedor, n_factura, monto, categoria, excluir_liquidacion FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
+      db.query('SELECT concepto, proveedor, n_factura, monto, retencion, categoria, excluir_liquidacion FROM gastos WHERE tramite_id=$1 ORDER BY created_at', [req.params.id]),
       db.query('SELECT fecha, descripcion, n_comprobante, monto, forma_pago FROM anticipos WHERE tramite_id=$1 ORDER BY fecha', [req.params.id]),
     ])
     // Las tarifas configuradas hacen de base si el trámite no tiene las suyas
     const cfg = await db.query(`SELECT valor FROM configuracion WHERE clave='tarifas'`)
     const p = calcular({ ...(cfg.rows[0]?.valor || {}), ...(tramite.preliquidacion || {}) })
-    const totalGastos = gastos.rows.filter(g => !g.excluir_liquidacion).reduce((s, g) => s + Number(g.monto || 0), 0)
+    // El saldo va con el valor neto: monto menos la retención (indicación de Intraservice)
+    const neto = g => Number(g.monto || 0) - Number(g.retencion || 0)
+    const totalGastos = gastos.rows.filter(g => !g.excluir_liquidacion).reduce((s, g) => s + neto(g), 0)
     const totalAnticipos = anticipos.rows.reduce((s, a) => s + Number(a.monto || 0), 0)
 
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet(esPreliq ? 'Preliquidación' : 'Liquidación')
-    ws.columns = [{ width: 34 }, { width: 20 }, { width: 16 }, { width: 16 }, { width: 14 }]
+    ws.columns = [{ width: 34 }, { width: 22 }, { width: 18 }, { width: 14 }, { width: 14 }, { width: 14 }]
 
     const titulo = txt => {
       const f = ws.addRow([txt])
@@ -124,12 +126,12 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     }
     const dinero = fila => { fila.eachCell(c => { if (typeof c.value === 'number') c.numFmt = '#,##0.00' }) }
 
-    titulo(`${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${tramite.numero} · ${tramite.cliente}`)
+    titulo(esPreliq ? 'PRE LIQUIDACIÓN DE IMPORTACIÓN' : `Liquidación · ${tramite.numero} · ${tramite.cliente}`)
     const fecha = d => d ? new Date(d).toISOString().slice(0, 10) : ''
     const datos = esPreliq ? [
-      ['Operación', tramite.tipo === 'Otro' ? (tramite.operacion_otro || 'Otro') : tramite.tipo],
-      ['Régimen', tramite.regimen === 'Otro (especificar)' ? (tramite.regimen_otro || '') : (tramite.regimen || '')],
-      ['Sub partida', tramite.sub_partida], ['BL / AWB', tramite.bl], ['DAI / DAE', tramite.da],
+      ['Cliente', tramite.cliente], ['Trámite', tramite.numero], ['Fecha', fecha(tramite.fecha_arribo)],
+      ['Producto', tramite.mercaderia], ['Bodega', tramite.almacenera], ['BL', tramite.bl],
+      ['Proveedor', tramite.proveedor], ['Sub partida', tramite.sub_partida],
     ] : [
       ['Trámite N°', tramite.numero], ['Cliente', tramite.cliente], ['Fecha', fecha(tramite.fecha_arribo)],
       ['BL / AWB', tramite.bl], ['Mercadería', tramite.mercaderia], ['Contenedores', tramite.contenedores],
@@ -144,46 +146,54 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     const pq = tramite.preliquidacion || {}
     cab(['Valores de la mercadería', 'USD'])
     if (pq.cantidad) ws.addRow(['Cantidad', `${pq.cantidad} ${pq.unidad || ''}`.trim()])
-    ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], ['Seguro', p.seguro], ['CIF', p.cif]]
+    ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], [`Seguro (${p.tarifas.seguroPct}% del CFR)`, p.seguro], ['CIF', p.cif]]
       .forEach(([k, v]) => dinero(ws.addRow([k, v])))
     ws.addRow([])
 
     if (esPreliq) {
 
-    cab(['Impuesto', 'Tarifa %', 'Valor USD'])
+    cab(['Impuestos', 'Tarifa %', 'Valor USD'])
     ;[['Ad Valorem', p.tarifas.adValorem, p.impuestos.adValorem],
       ['Fodinfa', p.tarifas.fodinfa, p.impuestos.fodinfa],
-      ['IVA', p.tarifas.iva, p.impuestos.iva],
-      ['Seguridad', p.tarifas.seguridad, p.impuestos.seguridad]]
+      ['IVA', p.tarifas.iva, p.impuestos.iva]]
       .forEach(f => dinero(ws.addRow(f)))
-    dinero(cab(['Total impuestos', '', p.totalImpuestos]))
+    dinero(cab(['Subtotal impuestos', '', p.totalImpuestos]))
+    ws.addRow([])
+
+    cab(['Gastos aduaneros', '', 'Valor USD'])
+    GASTOS_ADUANEROS.forEach(([k, nombre]) => dinero(ws.addRow([nombre, '', p.gastos[k]])))
+    dinero(cab(['Subtotal gastos', '', p.totalGastos]))
+    ws.addRow([])
+    dinero(cab(['TOTAL GASTOS', '', p.totalGastos]))
+    dinero(cab(['ANTICIPO', '', p.anticipo]))
+    dinero(cab(['GARANTÍA CONTENEDORES', '', p.garantia]))
     ws.addRow([])
     }
 
     // Gastos, anticipos y saldo: solo en la liquidación
     if (!esPreliq) {
-    cab(['Gastos pagados', 'Proveedor', 'N° factura', 'Categoría', 'Monto USD'])
+    cab(['Gastos pagados', 'Proveedor', 'N° factura', 'Monto USD', 'Retención', 'Neto a pagar'])
     gastos.rows.forEach(g => dinero(ws.addRow([
       g.concepto + (g.excluir_liquidacion ? ' (fuera de liquidación)' : ''),
-      g.proveedor || '', g.n_factura || '', g.categoria || '', Number(g.monto || 0)])))
-    dinero(cab(['Total gastos', '', '', '', totalGastos]))
+      g.proveedor || '', g.n_factura || '', Number(g.monto || 0), Number(g.retencion || 0), neto(g)])))
+    dinero(cab(['Total gastos (neto)', '', '', '', '', totalGastos]))
     ws.addRow([])
 
-    cab(['Anticipos del cliente', 'Referencia', 'N° comprobante', 'Forma de pago', 'Monto USD'])
+    cab(['Anticipos del cliente', 'Referencia', 'N° comprobante', 'Forma de pago', '', 'Monto USD'])
     anticipos.rows.forEach(a => dinero(ws.addRow([
       a.fecha ? new Date(a.fecha).toISOString().slice(0, 10) : '', a.descripcion || '',
-      a.n_comprobante || '', a.forma_pago || '', Number(a.monto || 0)])))
-    dinero(cab(['Total anticipos', '', '', '', totalAnticipos]))
+      a.n_comprobante || '', a.forma_pago || '', '', Number(a.monto || 0)])))
+    dinero(cab(['Total anticipos', '', '', '', '', totalAnticipos]))
     ws.addRow([])
 
     const saldo = totalGastos - totalAnticipos
-    dinero(cab(['Saldo (gastos − anticipos)', '', '', '', saldo]))
+    dinero(cab(['Saldo (gastos netos − anticipos)', '', '', '', '', saldo]))
     // Fernando Arias es Intraservice: gastos por encima del anticipo se le cobran
     // al cliente; anticipo sin usar queda a favor del cliente
     const favor = saldo > 0.005 ? `Saldo a favor de Fernando Arias (Intraservice) — a cobrar a ${tramite.cliente}`
                : saldo < -0.005 ? `Saldo a favor de ${tramite.cliente} — anticipo sin usar`
                : 'Sin saldo pendiente'
-    const fFavor = ws.addRow([favor, '', '', '', Math.abs(saldo)])
+    const fFavor = ws.addRow([favor, '', '', '', '', Math.abs(saldo)])
     fFavor.font = { bold: true, color: { argb: saldo > 0.005 ? 'FF8B1F1F' : saldo < -0.005 ? 'FF1A6B3C' : 'FF555555' } }
     dinero(fFavor)
     }
