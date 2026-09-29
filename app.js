@@ -438,7 +438,7 @@ async function saveTramiteForm() {
       da: form.dai, factura_comercial: form.factCom,
       factura_intraservice: form.factIntra, observaciones: form.obs,
       custom_props: customProps, etiquetas: etiquetasData,
-      ...camposExtra(form),
+      ...camposExtra(form), preliquidacion: preliqData,
     })
   });
   if (!res || res.error) { showNotif(res?.error || 'Error al guardar'); return; }

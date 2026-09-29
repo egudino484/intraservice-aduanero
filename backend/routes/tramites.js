@@ -83,9 +83,14 @@ router.get('/:id', auth, async (req, res) => {
 const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada','preliquidacion',
   'factura_eximsa','factura_reembolso','honorarios','puerto_salida','ref_cliente',
   'fecha_salida','regularizacion','booking','cut_off']
-// preliquidacion es JSONB: va aparte porque hay que serializarla
-const extraValores = body => EXTRA.map(c =>
-  c === 'preliquidacion' ? JSON.stringify(body.preliquidacion || {}) : (body[c] ?? null))
+// preliquidacion es JSONB: va aparte porque hay que serializarla.
+// Si el pedido no la trae, en el UPDATE va null y se conserva la guardada
+// (ver COALESCE abajo). Antes se escribía '{}' y el botón "Guardar cambios",
+// que no la manda, borraba la preliquidación: el Excel salía en cero.
+const extraValores = (body, alta = false) => EXTRA.map(c =>
+  c === 'preliquidacion'
+    ? (body.preliquidacion === undefined ? (alta ? '{}' : null) : JSON.stringify(body.preliquidacion || {}))
+    : (body[c] ?? null))
 
 // GET /tramites/:id/:doc.xlsx — doc = preliquidacion | liquidacion.
 // Son dos documentos distintos a propósito: la preliquidación es la estimación
@@ -216,7 +221,7 @@ router.post('/', auth, async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO tramites (numero, tipo, cliente, fecha_arribo, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, custom_props, etiquetas, created_by, ${EXTRA.join(', ')})
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,${EXTRA.map((_, i) => '$' + (15 + i)).join(',')}) RETURNING *`,
-      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.user.id, ...extraValores(req.body)]
+      [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.user.id, ...extraValores(req.body, true)]
     )
     await db.query(
       `INSERT INTO auditoria (tramite_id, user_id, accion, detalle) VALUES ($1,$2,'tramite_creado',$3)`,
@@ -236,7 +241,9 @@ router.put('/:id', auth, async (req, res) => {
     const { rows } = await db.query(
       `UPDATE tramites SET numero=$1, tipo=$2, cliente=$3, fecha_arribo=$4, bl=$5, naviera=$6, da=$7,
        factura_comercial=$8, factura_intraservice=$9, factura_agente=$10, observaciones=$11,
-       custom_props=$12, etiquetas=$13, ${EXTRA.map((c, i) => `${c}=$${15 + i}`).join(', ')}
+       custom_props=$12, etiquetas=$13, ${EXTRA.map((c, i) => c === 'preliquidacion'
+         ? `preliquidacion=COALESCE($${15 + i}::jsonb, preliquidacion)`
+         : `${c}=$${15 + i}`).join(', ')}
        WHERE id=$14 RETURNING *`,
       [numero, tipo, cliente, fecha_arribo || null, bl, naviera, da, factura_comercial, factura_intraservice, factura_agente, observaciones, JSON.stringify(custom_props||[]), JSON.stringify(etiquetas||[]), req.params.id, ...extraValores(req.body)]
     )
