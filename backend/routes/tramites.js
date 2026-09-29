@@ -83,7 +83,7 @@ router.get('/:id', auth, async (req, res) => {
 const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada','preliquidacion',
   'factura_eximsa','factura_reembolso','honorarios','puerto_salida','ref_cliente',
   'fecha_salida','regularizacion','booking','cut_off',
-  'valor_factura_eximsa','valor_factura_reembolso']
+  'valor_factura_eximsa','valor_factura_reembolso','tributos_pagados']
 // preliquidacion es JSONB: va aparte porque hay que serializarla.
 // Si el pedido no la trae, en el UPDATE va null y se conserva la guardada
 // (ver COALESCE abajo). Antes se escribía '{}' y el botón "Guardar cambios",
@@ -142,10 +142,11 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
       ['Trámite N°', tramite.numero], ['Cliente', tramite.cliente], ['Fecha', fecha(tramite.fecha_arribo)],
       ['BL / AWB', tramite.bl], ['Mercadería', tramite.mercaderia], ['Contenedores', tramite.contenedores],
       ['DAI / DAE', tramite.da], ['Póliza / Garantía / CDA', tramite.cda], ['Liquidación aduana', tramite.liq_senae],
+      ['Valor tributos pagados', tramite.tributos_pagados == null ? '' : Number(tramite.tributos_pagados)],
       ['MRN', tramite.mrn], ['Transporte local', tramite.transporte], ['Factura comercial', tramite.factura_comercial],
       [tramite.tipo === 'Exportación' ? 'Consignatario' : 'Proveedor', tramite.proveedor], ['Entrega N°', tramite.n_entrega],
     ]
-    datos.forEach(([k, v]) => ws.addRow([k, v || '']))
+    datos.forEach(([k, v]) => dinero(ws.addRow([k, v === 0 ? 0 : (v || '')])))
     ws.addRow([])
 
     // Valores de la mercadería: van en los dos documentos

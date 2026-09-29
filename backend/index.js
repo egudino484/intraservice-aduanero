@@ -96,6 +96,8 @@ db.query(`
   -- Valor de las facturas informativas (EXIMSA y reembolsos): no suman a la liquidación
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS valor_factura_eximsa    NUMERIC(12,2);
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS valor_factura_reembolso NUMERIC(12,2);
+  -- Lo que efectivamente se pagó al SENAE: se carga a mano y sale en la liquidación
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS tributos_pagados NUMERIC(12,2);
   -- Datos que solo aplican a exportaciones
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_salida   DATE;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regularizacion TEXT;

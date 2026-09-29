@@ -304,6 +304,7 @@ const CAMPOS_EXTRA = {
   fechaLlegada: 'fecha_llegada',
   factEximsa: 'factura_eximsa', factReembolso: 'factura_reembolso',
   valorEximsa: 'valor_factura_eximsa', valorReembolso: 'valor_factura_reembolso',
+  tributosPagados: 'tributos_pagados',
   honorarios: 'honorarios', puertoSalida: 'puerto_salida', refCliente: 'ref_cliente',
   fechaSalida: 'fecha_salida', regularizacion: 'regularizacion',
   booking: 'booking', cutOff: 'cut_off',
@@ -1355,6 +1356,7 @@ function exportPreliqPDF(doc = 'preliquidacion') {
       ['Trámite N°', form.numero], ['Cliente', form.cliente], ['Fecha', form.fechaApertura],
       ['BL / AWB', form.bl], ['Mercadería', form.mercaderia], ['Contenedores', form.contenedores],
       ['DAI / DAE', form.dai], ['Póliza / Garantía / CDA', form.cda], ['Liquidación aduana', form.liqSenae],
+      ['Valor tributos pagados', form.tributosPagados ? '$' + Number(form.tributosPagados).toLocaleString('es-EC', {minimumFractionDigits:2, maximumFractionDigits:2}) : ''],
       ['MRN', form.mrn], ['Transporte local', form.transporte], ['Factura comercial', form.factCom],
       [form.operacion === 'Exportación' ? 'Consignatario' : 'Proveedor', form.proveedor], ['Entrega N°', form.entrega],
     ]).map(([k, v]) => `<tr><td>${k}</td><td>${escHtml(v || '—')}</td></tr>`).join('')}
