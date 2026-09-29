@@ -82,7 +82,8 @@ router.get('/:id', auth, async (req, res) => {
 // Campos de texto sueltos del form; se guardan tal cual llegan
 const EXTRA = ['mercaderia','almacenera','mrn','liq_senae','sub_partida','n_entrega','transporte','proveedor','contenedores','cda','operacion_otro','regimen','regimen_otro','fecha_llegada','preliquidacion',
   'factura_eximsa','factura_reembolso','honorarios','puerto_salida','ref_cliente',
-  'fecha_salida','regularizacion','booking','cut_off']
+  'fecha_salida','regularizacion','booking','cut_off',
+  'valor_factura_eximsa','valor_factura_reembolso']
 // preliquidacion es JSONB: va aparte porque hay que serializarla.
 // Si el pedido no la trae, en el UPDATE va null y se conserva la guardada
 // (ver COALESCE abajo). Antes se escribía '{}' y el botón "Guardar cambios",
@@ -201,6 +202,17 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     const fFavor = ws.addRow([favor, '', '', '', '', Math.abs(saldo)])
     fFavor.font = { bold: true, color: { argb: saldo > 0.005 ? 'FF8B1F1F' : saldo < -0.005 ? 'FF1A6B3C' : 'FF555555' } }
     dinero(fFavor)
+
+    // Facturas informativas: se muestran, pero no entran en ningún total
+    const informativas = [
+      ['Factura EXIMSA', tramite.factura_eximsa, tramite.valor_factura_eximsa],
+      ['Factura de Reembolsos', tramite.factura_reembolso, tramite.valor_factura_reembolso],
+    ].filter(([, n, v]) => n || v)
+    if (informativas.length) {
+      ws.addRow([])
+      cab(['Facturas informativas (no suman a la liquidación)', 'N°', '', '', '', 'Valor USD'])
+      informativas.forEach(([k, n, v]) => dinero(ws.addRow([k, n || '', '', '', '', v == null ? '' : Number(v)])))
+    }
     }
 
     res.attachment(`${(tramite.numero || 'tramite').replace(/[^\w.-]+/g, '_')}-${req.params.doc}.xlsx`)

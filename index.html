@@ -241,10 +241,17 @@
               <div class="field"><label>Factura comercial</label><input type="text" data-field="factCom"></div>
               <div class="field"><label>Factura Intraservice</label><input type="text" data-field="factIntra"></div>
             </div>
+            <!-- Facturas informativas: se registran con número y valor pero no suman
+                 a los gastos ni al saldo de la liquidación (pedido de Nicole, 25-sep) -->
+            <div style="font-size:12px;font-weight:500;color:var(--text-2);margin:14px 0 4px;padding-top:12px;border-top:1px solid var(--border)">Facturas informativas <span style="font-weight:400;color:var(--text-3)">· no suman a los gastos ni al saldo</span></div>
             <div class="field-row-3">
-              <div class="field"><label>Factura EXIMSA</label><input type="text" data-field="factEximsa"></div>
-              <div class="field"><label>Factura Reembolso – Fernando Arias</label><input type="text" data-field="factReembolso"></div>
+              <div class="field"><label>Factura EXIMSA · N°</label><input type="text" data-field="factEximsa"></div>
+              <div class="field"><label>Factura EXIMSA · Valor ($)</label><input type="number" step="0.01" data-field="valorEximsa" style="font-family:'DM Mono',monospace;text-align:right"></div>
               <div class="field"><label>Honorarios – Fernando Arias</label><input type="text" data-field="honorarios"></div>
+            </div>
+            <div class="field-row-3">
+              <div class="field"><label>Factura de Reembolsos · N°</label><input type="text" data-field="factReembolso"></div>
+              <div class="field"><label>Factura de Reembolsos · Valor ($)</label><input type="number" step="0.01" data-field="valorReembolso" style="font-family:'DM Mono',monospace;text-align:right"></div>
             </div>
             <div class="field-row-3">
               <div class="field" data-ocultar-en="Exportación"><label>CDA / Garantía / Póliza</label><input type="text" data-field="cda"></div>

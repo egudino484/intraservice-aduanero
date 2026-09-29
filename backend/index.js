@@ -93,6 +93,9 @@ db.query(`
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS honorarios        TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS puerto_salida     TEXT;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS ref_cliente       TEXT;
+  -- Valor de las facturas informativas (EXIMSA y reembolsos): no suman a la liquidación
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS valor_factura_eximsa    NUMERIC(12,2);
+  ALTER TABLE tramites ADD COLUMN IF NOT EXISTS valor_factura_reembolso NUMERIC(12,2);
   -- Datos que solo aplican a exportaciones
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS fecha_salida   DATE;
   ALTER TABLE tramites ADD COLUMN IF NOT EXISTS regularizacion TEXT;

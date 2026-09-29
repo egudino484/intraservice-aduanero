@@ -303,6 +303,7 @@ const CAMPOS_EXTRA = {
   operacionOtro: 'operacion_otro', regimen: 'regimen', regimenOtro: 'regimen_otro',
   fechaLlegada: 'fecha_llegada',
   factEximsa: 'factura_eximsa', factReembolso: 'factura_reembolso',
+  valorEximsa: 'valor_factura_eximsa', valorReembolso: 'valor_factura_reembolso',
   honorarios: 'honorarios', puertoSalida: 'puerto_salida', refCliente: 'ref_cliente',
   fechaSalida: 'fecha_salida', regularizacion: 'regularizacion',
   booking: 'booking', cutOff: 'cut_off',
@@ -1407,7 +1408,14 @@ function exportPreliqPDF(doc = 'preliquidacion') {
       totalG - totalA > 0.005 ? 'Saldo a favor de Fernando Arias (Intraservice) — a cobrar a ' + escHtml(form.cliente || 'el cliente')
       : totalG - totalA < -0.005 ? 'Saldo a favor de ' + escHtml(form.cliente || 'el cliente') + ' — anticipo sin usar'
       : 'Sin saldo pendiente'}</td><td class="num">${$(Math.abs(totalG - totalA))}</td></tr>
-  </table>` : ''}
+  </table>
+  ${(form.factEximsa || form.valorEximsa || form.factReembolso || form.valorReembolso) ? `
+  <h2>Facturas informativas <span style="font-weight:400;color:#888;font-size:11px">· no suman a la liquidación</span></h2>
+  <table>
+    <tr><th>Factura</th><th>N°</th><th class="num">Valor</th></tr>
+    ${(form.factEximsa || form.valorEximsa) ? `<tr><td>Factura EXIMSA</td><td>${escHtml(form.factEximsa || '—')}</td><td class="num">${form.valorEximsa ? $(form.valorEximsa) : '—'}</td></tr>` : ''}
+    ${(form.factReembolso || form.valorReembolso) ? `<tr><td>Factura de Reembolsos</td><td>${escHtml(form.factReembolso || '—')}</td><td class="num">${form.valorReembolso ? $(form.valorReembolso) : '—'}</td></tr>` : ''}
+  </table>` : ''}` : ''}
   </body></html>`;
   mostrarPreviewDocumento(html, `${esPreliq ? 'Preliquidación' : 'Liquidación'} · ${form.numero || ''}`);
 }
