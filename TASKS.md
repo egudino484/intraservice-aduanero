@@ -14,8 +14,18 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
   - Cuidado: `applyTramiteForm` cortaba a `YYYY-MM-DD` todo valor con "T"; ahora solo lo hace en `input[type=date]`, si no el Cut Off perdía la hora.
 - [x] **T35 · Campos ocultos en exportación** — S — Fecha de salida, Puerto de salida, Liquidación SENAE, Transporte y CDA. *Contradice su pedido del 07-sep (fecha y puerto de salida). Se ocultan, no se borran: verificado guardando E26-001-NOVA sin cambios, los valores quedaron intactos.*
   - Mecanismo nuevo: `data-ocultar-en`, `data-solo-en` y `data-label-exportacion` en el HTML, aplicados por `aplicarVisibilidadPorOperacion()`.
-- [ ] **T36 · Retención y valor neto a pagar en gastos** — M — ⚠️ Esperando a Nicole: ¿retención en monto o en %? ¿El saldo usa el neto o el bruto?
-- [ ] **T37 · Gastos logísticos en la preliquidación** — M — Almacenaje, THC/flete, V/B, otros. ⚠️ Esperando a Nicole: ¿se suman a los impuestos en un total? ¿Se saca "Seguridad", que ella no menciona?
+- [x] **T36 · Retención y valor neto a pagar en gastos** — M — Retención en **monto** (confirmado). Columnas Retención y Neto a pagar. **El saldo usa el neto** (confirmado), y también el total de gastos de bitácora y reportes, que además pasaron a excluir los gastos "fuera de liquidación" (antes los sumaban). *Columna `gastos.retencion`, `netoGasto()` en `app.js`.*
+- [x] **T37 · Preliquidación calcada de la plantilla** — M — Edison mandó la plantilla real (T26-628). Gastos aduaneros (V/B Consolidadora, THC/Flete, BL Destino, Almacenaje, Otros), total gastos, anticipo, garantía. Se sacó "Seguridad". PDF y Excel con el encabezado de la plantilla. **Verificado al centavo contra la plantilla**, en backend y en frontend.
+  - ⚠️ **Seguro = 1% del CFR, no 10%.** Edison dijo "10% siempre", pero la plantilla da 781,18 = 1% de 78.118,40. Se dejó 1% por defecto, configurable. Avisado a Nicole.
+  - ⚠️ **La base del IVA incluye V/B Consolidadora y BL Destino**, además de CIF + Ad Valorem + Fodinfa. Es la única combinación que reproduce el IVA de la plantilla (12.104,11). Deducido, avisado a Nicole.
+  - La tarifa del seguro se guarda como `seguroPct` y no `seguro`: en las preliquidaciones viejas `seguro` era el monto cargado a mano, y leerlo como % daba cualquier cosa.
+
+## Feedback del 25-sep-2026 (Nicole Arias)
+
+- [x] **T40 · 🐛 El Excel salía en cero y el PDF no** — "Guardar cambios" mandaba el trámite sin la preliquidación y el backend la pisaba con `{}`. El PDF la mostraba porque lee la pantalla; el Excel lee la base. *Backend: si el PUT no la trae, se conserva (`COALESCE`). Frontend: el botón ahora la manda. Verificado reproduciendo el caso exacto.*
+  - ⚠️ **T26-614 perdió su preliquidación y hay que recargarla** (desde el PDF que generó Nicole). T26-616 también está vacío; puede que nunca haya tenido.
+- [x] **T41 · Factura EXIMSA y Factura de Reembolsos con N° y valor** — Informativas, no suman. *Columnas `valor_factura_eximsa`, `valor_factura_reembolso`; los números ya existían (T19) y se reutilizaron. Verificado: gastos $500 − anticipo $300 = saldo $200 con facturas por $288,09 cargadas.*
+- [x] **T42 · Valor tributos pagados** — Se **carga a mano** (confirmado): es lo pagado al SENAE, puede no coincidir con lo estimado. Sale en la liquidación; no suma al saldo. *Columna `tributos_pagados`. Verificado con el ejemplo de Nicole, $16.228,83.*
 
 ## URLs compartibles (pedido de Edison, 24-sep)
 
@@ -130,11 +140,11 @@ Todos hechos, desplegados y verificados en producción. Cada uno respondido en l
 
 ## Novedades (changelog en la app)
 
-Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 5 entradas.
+Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 6 entradas.
 
 ## Feedback: responder en la app
 
-La pantalla Feedback permite marcar cada pedido como Resuelto o No se hará y dejarle al usuario un comentario de qué se hizo. **Al cerrar un pedido, responderlo ahí**: es lo que ve quien lo reportó. Estado al 24-sep-2026: 24 resueltos, 1 descartado, 2 pendientes (T36 y T37, esperando respuesta).
+La pantalla Feedback permite marcar cada pedido como Resuelto o No se hará y dejarle al usuario un comentario de qué se hizo. **Al cerrar un pedido, responderlo ahí**: es lo que ve quien lo reportó. Estado al 28-sep-2026: 29 resueltos, 1 descartado, 0 pendientes.
 
 ---
 

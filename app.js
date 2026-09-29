@@ -1103,6 +1103,14 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-09-28', titulo: 'Preliquidación como la plantilla, retención y facturas informativas', cambios: [
+    { tipo: 'arreglo', texto: 'Al tocar "Guardar cambios" en Datos del trámite se borraba la preliquidación, y el Excel salía en cero. Ya no pasa. Si tenías una preliquidación cargada y el Excel te salía vacío, hay que volver a cargarla.' },
+    { tipo: 'mejora', texto: 'La preliquidación sigue el mismo orden que la plantilla de Intraservice: valores de la mercadería, impuestos, gastos aduaneros (V/B, THC, BL destino, almacenaje, otros), total, anticipo y garantía. El PDF y el Excel salen con el mismo encabezado.' },
+    { tipo: 'mejora', texto: 'El seguro se calcula solo como porcentaje del CFR (1% por defecto, configurable). Se sacó "Seguridad", que no se usaba.' },
+    { tipo: 'nuevo', texto: 'Retención y valor neto a pagar en cada gasto. El saldo de la liquidación se calcula con el neto.' },
+    { tipo: 'nuevo', texto: 'Factura EXIMSA y Factura de Reembolsos con número y valor. Son informativas: salen en la liquidación pero no suman al saldo.' },
+    { tipo: 'nuevo', texto: 'Campo "Valor tributos pagados", que sale en el PDF y el Excel de liquidación.' },
+  ]},
   { fecha: '2026-09-24', titulo: 'Links para compartir, exportación y liquidación completa', cambios: [
     { tipo: 'nuevo', texto: 'Cada pantalla y cada trámite tiene su propio link. Con el botón 🔗 junto al título copiás el link de lo que estás viendo, con la pestaña y los filtros incluidos, para mandarlo por WhatsApp o correo.' },
     { tipo: 'nuevo', texto: 'La liquidación final (PDF y Excel) lleva todos los datos del trámite, los valores de la mercadería y a favor de quién queda el saldo.' },
