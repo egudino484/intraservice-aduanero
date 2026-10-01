@@ -1229,7 +1229,8 @@ const GASTOS_ADUANEROS = [
   ['vb', 'V/B Consolidadora'], ['thc', 'THC / Flete'], ['blDestino', 'BL Destino'],
   ['almacenaje', 'Almacenaje'], ['otros', 'Otros gastos'],
 ];
-// Entran en la base del IVA: así cuadra la plantilla de Intraservice al centavo
+// Entran en la base del IVA por defecto: así cuadra la plantilla de Intraservice
+// al centavo. Cada trámite puede cambiarlo con las casillas del panel.
 const EN_BASE_IVA = ['vb', 'blDestino'];
 
 // Mismo cálculo que backend/lib/preliquidacion.js: si se toca uno, tocar el otro.
@@ -1242,11 +1243,12 @@ function calcPreliq(p) {
   const gastos = Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, n(p[k])]));
   const adValorem = cif * n(p.adValorem) / 100;
   const fodinfa   = cif * n(p.fodinfa) / 100;
-  const iva       = (cif + adValorem + fodinfa + EN_BASE_IVA.reduce((s, k) => s + gastos[k], 0)) * n(p.iva) / 100;
+  const enBaseIva = Array.isArray(p.enBaseIva) ? p.enBaseIva : EN_BASE_IVA;
+  const iva       = (cif + adValorem + fodinfa + enBaseIva.reduce((s, k) => s + (gastos[k] || 0), 0)) * n(p.iva) / 100;
   const totalGastos = Object.values(gastos).reduce((s, v) => s + v, 0);
   return { fob, flete, cfr, seguro, cif, adValorem, fodinfa, iva,
            total: adValorem + fodinfa + iva, gastos, totalGastos,
-           anticipo: n(p.anticipo), garantia: n(p.garantia) };
+           anticipo: n(p.anticipo), garantia: n(p.garantia), enBaseIva };
 }
 
 // forzarValores=true reescribe los inputs (al abrir un trámite); en los
@@ -1267,6 +1269,8 @@ function renderPreliquidacion(forzarValores = false) {
     val('pl-t-seguro', p.seguroPct); val('pl-t-advalorem', p.adValorem);
     val('pl-t-fodinfa', p.fodinfa); val('pl-t-iva', p.iva);
     GASTOS_ADUANEROS.forEach(([k]) => val('pl-g-' + k, p[k]));
+    const base = Array.isArray(p.enBaseIva) ? p.enBaseIva : EN_BASE_IVA;
+    GASTOS_ADUANEROS.forEach(([k]) => { const c = document.getElementById('pl-iva-' + k); if (c) c.checked = base.includes(k); });
     val('pl-anticipo', p.anticipo); val('pl-garantia', p.garantia);
   }
 
@@ -1286,6 +1290,7 @@ function leerPreliqForm() {
     seguroPct: v('pl-t-seguro'), adValorem: v('pl-t-advalorem'),
     fodinfa: v('pl-t-fodinfa'), iva: v('pl-t-iva'),
     ...Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, v('pl-g-' + k)])),
+    enBaseIva: GASTOS_ADUANEROS.map(([k]) => k).filter(k => document.getElementById('pl-iva-' + k)?.checked),
     anticipo: v('pl-anticipo'), garantia: v('pl-garantia'),
   };
 }

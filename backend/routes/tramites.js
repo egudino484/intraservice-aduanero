@@ -164,6 +164,10 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
       ['Fodinfa', p.tarifas.fodinfa, p.impuestos.fodinfa],
       ['IVA', p.tarifas.iva, p.impuestos.iva]]
       .forEach(f => dinero(ws.addRow(f)))
+    // Qué gastos aduaneros entraron en la base del IVA: cambia de trámite a trámite
+    const nombresBase = GASTOS_ADUANEROS.filter(([k]) => p.enBaseIva.includes(k)).map(([, n]) => n)
+    const nota = ws.addRow([`Base IVA: CIF + Ad Valorem + Fodinfa${nombresBase.length ? ' + ' + nombresBase.join(' + ') : ''}`])
+    nota.font = { italic: true, size: 9, color: { argb: 'FF777777' } }
     dinero(cab(['Subtotal impuestos', '', p.totalImpuestos]))
     ws.addRow([])
 

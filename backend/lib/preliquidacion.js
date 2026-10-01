@@ -15,8 +15,9 @@ const GASTOS_ADUANEROS = [
   ['almacenaje', 'Almacenaje'],
   ['otros', 'Otros gastos'],
 ]
-// Gastos que entran en la base del IVA. Deducido de la plantilla: su IVA
-// (12.104,11) solo cuadra sumando V/B y BL destino a CIF + impuestos.
+// Gastos que entran en la base del IVA. Por defecto V/B y BL destino, que es lo
+// que reproduce la plantilla (IVA 12.104,11). No siempre es así (confirmado por
+// Nicole), así que cada trámite puede elegir cuáles: preliquidacion.enBaseIva.
 const EN_BASE_IVA = ['vb', 'blDestino']
 
 const num = v => {
@@ -35,7 +36,8 @@ function calcular(preliq = {}) {
   const gastos = Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, num(p[k])]))
   const adValorem = cif * num(p.adValorem) / 100
   const fodinfa   = cif * num(p.fodinfa) / 100
-  const baseIva   = cif + adValorem + fodinfa + EN_BASE_IVA.reduce((s, k) => s + gastos[k], 0)
+  const enBaseIva = Array.isArray(p.enBaseIva) ? p.enBaseIva : EN_BASE_IVA
+  const baseIva   = cif + adValorem + fodinfa + enBaseIva.reduce((s, k) => s + (gastos[k] || 0), 0)
   const iva       = baseIva * num(p.iva) / 100
   const totalImpuestos = adValorem + fodinfa + iva
   const totalGastos = Object.values(gastos).reduce((s, v) => s + v, 0)
@@ -44,7 +46,7 @@ function calcular(preliq = {}) {
     cantidad: p.cantidad || '', unidad: p.unidad || '',
     fob, flete, cfr, seguro, cif,
     tarifas: { adValorem: num(p.adValorem), fodinfa: num(p.fodinfa), iva: num(p.iva), seguroPct: num(p.seguroPct) },
-    impuestos: { adValorem, fodinfa, iva },
+    impuestos: { adValorem, fodinfa, iva }, enBaseIva, baseIva,
     totalImpuestos,
     gastos, totalGastos,
     anticipo: num(p.anticipo), garantia: num(p.garantia),
