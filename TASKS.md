@@ -16,9 +16,14 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
   - Mecanismo nuevo: `data-ocultar-en`, `data-solo-en` y `data-label-exportacion` en el HTML, aplicados por `aplicarVisibilidadPorOperacion()`.
 - [x] **T36 · Retención y valor neto a pagar en gastos** — M — Retención en **monto** (confirmado). Columnas Retención y Neto a pagar. **El saldo usa el neto** (confirmado), y también el total de gastos de bitácora y reportes, que además pasaron a excluir los gastos "fuera de liquidación" (antes los sumaban). *Columna `gastos.retencion`, `netoGasto()` en `app.js`.*
 - [x] **T37 · Preliquidación calcada de la plantilla** — M — Edison mandó la plantilla real (T26-628). Gastos aduaneros (V/B Consolidadora, THC/Flete, BL Destino, Almacenaje, Otros), total gastos, anticipo, garantía. Se sacó "Seguridad". PDF y Excel con el encabezado de la plantilla. **Verificado al centavo contra la plantilla**, en backend y en frontend.
-  - ⚠️ **Seguro = 1% del CFR, no 10%.** Edison dijo "10% siempre", pero la plantilla da 781,18 = 1% de 78.118,40. Se dejó 1% por defecto, configurable. Avisado a Nicole.
-  - ⚠️ **La base del IVA incluye V/B Consolidadora y BL Destino**, además de CIF + Ad Valorem + Fodinfa. Es la única combinación que reproduce el IVA de la plantilla (12.104,11). Deducido, avisado a Nicole.
+  - **Seguro = 1% del CFR**, no 10%. Edison dijo "10% siempre", pero la plantilla da 781,18 = 1% de 78.118,40. **Confirmado por Nicole (29-sep).** Configurable.
+  - **Base del IVA configurable** (ver T43): por defecto CIF + Ad Valorem + Fodinfa + V/B Consolidadora + BL Destino, que es lo que reproduce la plantilla (12.104,11). Nicole confirmó que **no siempre** es así.
   - La tarifa del seguro se guarda como `seguroPct` y no `seguro`: en las preliquidaciones viejas `seguro` era el monto cargado a mano, y leerlo como % daba cualquier cosa.
+
+## Respuestas de Nicole del 29-sep-2026
+
+- [x] **T43 · Base del IVA configurable por trámite** — S — Casilla "base IVA" en cada gasto aduanero de la preliquidación. Por defecto V/B y BL Destino. Se guarda en `preliquidacion.enBaseIva`. El Excel aclara qué entró en la base. *Verificado: servidor y navegador dan lo mismo en tres combinaciones; por defecto 12.104,11 (plantilla), sin gastos 11.894,11; las casillas persisten al reabrir.*
+  - ⚠️ El cálculo sigue duplicado en `backend/lib/preliquidacion.js` y `calcPreliq()` de `app.js`. Antes de desplegar un cambio ahí, comparar los dos con los números de la plantilla.
 
 ## Feedback del 25-sep-2026 (Nicole Arias)
 
@@ -140,7 +145,7 @@ Todos hechos, desplegados y verificados en producción. Cada uno respondido en l
 
 ## Novedades (changelog en la app)
 
-Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 6 entradas.
+Pantalla "Novedades" en el menú, con el detalle de lo que se fue agregando y un contador de entradas sin leer. **Al sumar algo al sistema, agregar una entrada arriba del array `NOVEDADES` en `app.js`**, con la fecha del día. Van 7 entradas.
 
 ## Feedback: responder en la app
 

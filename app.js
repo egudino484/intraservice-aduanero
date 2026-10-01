@@ -1103,6 +1103,10 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-01', titulo: 'Base del IVA configurable en la preliquidación', cambios: [
+    { tipo: 'mejora', texto: 'Cada gasto aduanero de la preliquidación tiene una casilla "base IVA" para elegir si suma a la base del IVA. Vienen tildadas V/B Consolidadora y BL Destino, como en la plantilla; en cada trámite se pueden cambiar y el IVA se recalcula solo.' },
+    { tipo: 'mejora', texto: 'El Excel de preliquidación aclara debajo del IVA qué gastos entraron en la base.' },
+  ]},
   { fecha: '2026-09-28', titulo: 'Preliquidación como la plantilla, retención y facturas informativas', cambios: [
     { tipo: 'arreglo', texto: 'Al tocar "Guardar cambios" en Datos del trámite se borraba la preliquidación, y el Excel salía en cero. Ya no pasa. Si tenías una preliquidación cargada y el Excel te salía vacío, hay que volver a cargarla.' },
     { tipo: 'mejora', texto: 'La preliquidación sigue el mismo orden que la plantilla de Intraservice: valores de la mercadería, impuestos, gastos aduaneros (V/B, THC, BL destino, almacenaje, otros), total, anticipo y garantía. El PDF y el Excel salen con el mismo encabezado.' },
