@@ -268,17 +268,16 @@
             </div>
           </div>
 
-          <!-- ETIQUETAS -->
+          <!-- ETIQUETAS: un solo campo con las etiquetas adentro y un menú al escribir -->
           <div class="panel">
             <div class="panel-title"><span>Etiquetas</span></div>
-            <div id="etiquetas-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;min-height:20px"></div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-              <input id="etiqueta-input" type="text" placeholder="Escribe para buscar o crear..." style="max-width:220px"
-                     oninput="onEtiquetaInputChange()" onkeydown="onEtiquetaKey(event)">
-              <div id="etiqueta-color-picker" style="display:none;gap:5px;align-items:center"></div>
-              <button class="btn btn-sm" id="etiqueta-add-btn" onclick="addEtiqueta()">+ Agregar</button>
+            <div class="tag-picker" id="tag-picker" onclick="document.getElementById('etiqueta-input').focus()">
+              <div id="etiquetas-chips" class="tag-chips"></div>
+              <input id="etiqueta-input" type="text" autocomplete="off" placeholder="Agregar etiqueta…"
+                     oninput="onEtiquetaInputChange()" onkeydown="onEtiquetaKey(event)"
+                     onfocus="abrirMenuEtiquetas()">
+              <div id="tag-menu" class="tag-menu" hidden></div>
             </div>
-            <div id="etiquetas-sugeridas" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
           </div>
 
           <!-- PROPIEDADES PERSONALIZADAS -->

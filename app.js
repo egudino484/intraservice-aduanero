@@ -1860,91 +1860,122 @@ async function saveEtiquetaToRegistry(text, color) {
 const igual = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
 const yaPuesta = texto => etiquetasData.some(e => igual(e.text, texto));
 
+// Selector de etiquetas: un solo campo con las etiquetas aplicadas adentro y
+// un menú que se abre al enfocarlo. El menú lista las etiquetas existentes que
+// coinciden con lo escrito y, si el texto es nuevo, ofrece crearla con color.
+let menuEtiquetasIdx = 0;   // opción resaltada con el teclado
+
+function opcionesMenuEtiquetas() {
+  const texto = (document.getElementById('etiqueta-input')?.value || '').trim();
+  const filtro = texto.toLowerCase();
+  const existentes = etiquetaRegistry
+    .filter(e => !yaPuesta(e.text))
+    .filter(e => !filtro || e.text.toLowerCase().includes(filtro));
+  const puedeCrear = texto && !etiquetaRegistry.some(e => igual(e.text, texto)) && !yaPuesta(texto);
+  return { texto, existentes, puedeCrear };
+}
+
+function abrirMenuEtiquetas() {
+  menuEtiquetasIdx = 0;
+  renderMenuEtiquetas();
+}
+
+function cerrarMenuEtiquetas() {
+  const menu = document.getElementById('tag-menu');
+  if (menu) menu.hidden = true;
+}
+
+function renderMenuEtiquetas() {
+  const menu = document.getElementById('tag-menu');
+  if (!menu) return;
+  const { texto, existentes, puedeCrear } = opcionesMenuEtiquetas();
+  const total = existentes.length + (puedeCrear ? 1 : 0);
+  if (menuEtiquetasIdx >= total) menuEtiquetasIdx = Math.max(0, total - 1);
+
+  let html = '';
+  if (existentes.length) {
+    html += `<div class="tag-menu-titulo">${texto ? 'Coinciden' : 'Etiquetas existentes'}</div>`;
+    html += existentes.map((e, i) => `
+      <div class="tag-opcion ${i === menuEtiquetasIdx ? 'activa' : ''}" role="option"
+           onmousedown="event.preventDefault();addEtiqueta(${escHtml(JSON.stringify(e.text))})">
+        <span class="tag-dot" style="background:${e.color}"></span>${escHtml(e.text)}
+        <button type="button" class="tag-olvidar" title="Borrar de la lista de etiquetas (no la quita de los trámites que ya la tienen)"
+                onmousedown="event.preventDefault();event.stopPropagation();olvidarEtiqueta(${escHtml(JSON.stringify(e.text))})">Borrar</button>
+      </div>`).join('');
+  }
+  if (puedeCrear) {
+    const i = existentes.length;
+    html += `<div class="${existentes.length ? 'tag-crear' : ''}">
+      <div class="tag-opcion ${i === menuEtiquetasIdx ? 'activa' : ''}" role="option"
+           onmousedown="event.preventDefault();addEtiqueta()">
+        <span class="tag-dot" style="background:${selectedEtiquetaColor}"></span>Crear “<strong>${escHtml(texto)}</strong>”
+      </div>
+      <div class="tag-colores">${ETIQUETA_COLORS.map(c => `
+        <button type="button" title="${c.name}" aria-label="Color ${c.name}" class="${selectedEtiquetaColor === c.hex ? 'sel' : ''}"
+                style="background:${c.hex};color:${c.hex}"
+                onmousedown="event.preventDefault();selectedEtiquetaColor='${c.hex}';renderMenuEtiquetas()"></button>`).join('')}
+      </div></div>`;
+  }
+  if (!total) {
+    html = `<div class="tag-vacio">${etiquetaRegistry.length ? 'Ya tiene todas las etiquetas. Escribí para crear una nueva.' : 'Escribí el nombre de la etiqueta para crearla.'}</div>`;
+  }
+  menu.innerHTML = html;
+  menu.hidden = false;
+}
+
 function onEtiquetaInputChange() {
-  const texto = document.getElementById('etiqueta-input')?.value || '';
-  const existente = etiquetaRegistry.find(e => igual(e.text, texto));
-  // Si la etiqueta ya existe conserva su color; el selector solo aparece
-  // cuando de verdad se está creando una nueva.
-  if (existente) selectedEtiquetaColor = existente.color;
-  renderEtiquetaColorPicker();
-  renderSugerencias();
+  menuEtiquetasIdx = 0;
+  renderMenuEtiquetas();
 }
 
 function onEtiquetaKey(ev) {
-  if (ev.key === 'Enter') { ev.preventDefault(); addEtiqueta(); }
-  if (ev.key === 'Escape') { ev.target.value = ''; onEtiquetaInputChange(); }
-}
-
-function renderEtiquetaColorPicker() {
-  const el = document.getElementById('etiqueta-color-picker');
-  if (!el) return;
-  const texto = document.getElementById('etiqueta-input')?.value || '';
-  const esNueva = texto.trim() && !etiquetaRegistry.some(e => igual(e.text, texto));
-  el.style.display = esNueva ? 'flex' : 'none';
-  if (!esNueva) return;
-  el.innerHTML = ETIQUETA_COLORS.map(c => `
-    <button type="button" onclick="selectedEtiquetaColor='${c.hex}';renderEtiquetaColorPicker()" title="${c.name}"
-      aria-label="Color ${c.name}"
-      style="width:18px;height:18px;padding:0;border:none;border-radius:50%;background:${c.hex};cursor:pointer;
-             box-shadow:${selectedEtiquetaColor===c.hex?'0 0 0 2px #fff,0 0 0 4px '+c.hex:'none'};transition:box-shadow .15s"></button>
-  `).join('');
-}
-
-// Chips del registro que todavía no están puestas: un clic las agrega.
-function renderSugerencias() {
-  const el = document.getElementById('etiquetas-sugeridas');
-  if (!el) return;
-  const filtro = (document.getElementById('etiqueta-input')?.value || '').trim().toLowerCase();
-  const disponibles = etiquetaRegistry
-    .filter(e => !yaPuesta(e.text))
-    .filter(e => !filtro || e.text.toLowerCase().includes(filtro));
-
-  if (!etiquetaRegistry.length) { el.innerHTML = ''; return; }
-  if (!disponibles.length) {
-    el.innerHTML = `<span style="font-size:12px;color:var(--text-3)">${
-      filtro ? 'Ninguna etiqueta coincide — Enter la crea' : 'Todas las etiquetas ya están puestas'}</span>`;
-    return;
+  const { existentes, puedeCrear } = opcionesMenuEtiquetas();
+  const total = existentes.length + (puedeCrear ? 1 : 0);
+  if (ev.key === 'ArrowDown') { ev.preventDefault(); menuEtiquetasIdx = Math.min(menuEtiquetasIdx + 1, total - 1); renderMenuEtiquetas(); }
+  else if (ev.key === 'ArrowUp') { ev.preventDefault(); menuEtiquetasIdx = Math.max(menuEtiquetasIdx - 1, 0); renderMenuEtiquetas(); }
+  else if (ev.key === 'Enter') {
+    ev.preventDefault();
+    if (menuEtiquetasIdx < existentes.length) addEtiqueta(existentes[menuEtiquetasIdx].text);
+    else if (puedeCrear) addEtiqueta();
   }
-  el.innerHTML = '<span style="font-size:11px;color:var(--text-3);margin-right:2px">Usar existente:</span>'
-    + disponibles.map(e => `
-    <span style="display:inline-flex;align-items:center;border:1px solid ${e.color};border-radius:999px;overflow:hidden">
-      <button type="button" onclick="addEtiqueta('${escHtml(e.text).replace(/'/g, "\\'")}')"
-        style="border:none;background:transparent;color:${e.color};font-size:12px;padding:3px 4px 3px 10px;cursor:pointer;font-family:inherit"
-        title="Agregar ${escHtml(e.text)}">${escHtml(e.text)}</button>
-      <button type="button" onclick="olvidarEtiqueta('${escHtml(e.text).replace(/'/g, "\\'")}')"
-        style="border:none;background:transparent;color:var(--text-3);font-size:12px;padding:3px 8px 3px 4px;cursor:pointer"
-        title="Quitar de la lista de etiquetas">×</button>
-    </span>`).join('');
+  else if (ev.key === 'Escape') { ev.target.value = ''; cerrarMenuEtiquetas(); ev.target.blur(); }
+  // Borrar con el campo vacío quita la última etiqueta, como en Gmail
+  else if (ev.key === 'Backspace' && !ev.target.value && etiquetasData.length) { removeEtiqueta(etiquetasData.length - 1); }
 }
+
+// Se conserva el nombre: initApp la llama al arrancar
+function renderEtiquetaColorPicker() {}
 
 function renderEtiquetas() {
   const el = document.getElementById('etiquetas-chips');
   if (!el) return;
-  renderEtiquetaColorPicker();
-  renderSugerencias();
   el.innerHTML = etiquetasData.map((e, i) => `
-    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;
-                 background:${e.color};color:#fff;font-size:12px;font-weight:500">
+    <span class="tag-chip" style="background:${e.color}">
       ${escHtml(e.text)}
-      <button type="button" onclick="removeEtiqueta(${i})" title="Quitar del trámite" aria-label="Quitar ${escHtml(e.text)}"
-        style="border:none;background:transparent;color:#fff;opacity:.85;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>
-    </span>
-  `).join('') || '<span style="font-size:12px;color:var(--text-3)">Sin etiquetas</span>';
+      <button type="button" onclick="event.stopPropagation();removeEtiqueta(${i})" title="Quitar del trámite" aria-label="Quitar ${escHtml(e.text)}">×</button>
+    </span>`).join('');
+  const input = document.getElementById('etiqueta-input');
+  if (input) input.placeholder = etiquetasData.length ? '' : 'Agregar etiqueta…';
+  // Si el menú está abierto, refrescarlo (cambian las disponibles)
+  if (!document.getElementById('tag-menu')?.hidden) renderMenuEtiquetas();
 }
 
-// texto opcional: viene de las sugerencias; si no, se toma del input
+// texto opcional: viene del menú; si no, se toma del campo
 function addEtiqueta(texto) {
   const input = document.getElementById('etiqueta-input');
   const text = (texto ?? input?.value ?? '').trim();
   if (!text) { input?.focus(); return; }
+  if (text.length > 40) { showNotif('Máximo 40 caracteres'); return; }
   if (yaPuesta(text)) { showNotif('Esa etiqueta ya está puesta'); if (input) input.value = ''; renderEtiquetas(); return; }
 
   const existente = etiquetaRegistry.find(e => igual(e.text, text));
   const color = existente ? existente.color : selectedEtiquetaColor;
   etiquetasData.push({ text: existente ? existente.text : text, color });
   saveEtiquetaToRegistry(text, color);
-  if (input) input.value = '';
+  if (input) { input.value = ''; input.focus(); }
+  menuEtiquetasIdx = 0;
   renderEtiquetas();
+  renderMenuEtiquetas();
   guardarEtiquetas();
 }
 
@@ -1954,17 +1985,26 @@ function removeEtiqueta(i) {
   guardarEtiquetas();
 }
 
-// Saca la etiqueta del registro (la lista de sugerencias), sin tocar los
-// trámites que ya la tengan puesta.
+// Saca la etiqueta de la lista (el registro), sin tocar los trámites que ya la
+// tengan puesta. Pide confirmación: antes era una × al lado de cada sugerencia
+// y se confundía con "quitar".
 async function olvidarEtiqueta(texto) {
   const et = etiquetaRegistry.find(e => igual(e.text, texto));
   if (!et) return;
+  if (!confirm(`¿Borrar "${et.text}" de la lista de etiquetas?\n\nLos trámites que ya la tienen la conservan.`)) return;
   etiquetaRegistry = etiquetaRegistry.filter(e => !igual(e.text, texto));
   renderEtiquetas();
+  renderMenuEtiquetas();
   if (!et.id) return;
   const res = await apiFetch('/etiquetas/' + et.id, { method: 'DELETE' });
-  if (!res || res.error) { showNotif(res?.error || 'No se pudo quitar'); loadEtiquetas(); }
+  if (!res || res.error) { showNotif(res?.error || 'No se pudo borrar'); loadEtiquetas(); }
 }
+
+// Cerrar el menú al hacer clic fuera del selector
+document.addEventListener('mousedown', ev => {
+  const picker = document.getElementById('tag-picker');
+  if (picker && !picker.contains(ev.target)) cerrarMenuEtiquetas();
+});
 
 // Las etiquetas se guardan solas, como los gastos y anticipos: antes había que
 // acordarse de apretar "Guardar cambios" o se perdían.

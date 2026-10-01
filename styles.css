@@ -463,3 +463,57 @@
   /* ── FEEDBACK FAB ── */
   #feedback-fab { transition: transform 0.15s, background 0.15s; }
   #feedback-fab:hover { background: #163DA8; transform: scale(1.06); }
+
+  /* ── SELECTOR DE ETIQUETAS ── */
+  .tag-picker {
+    position: relative;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    min-height: 40px; padding: 6px 8px;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--surface); cursor: text;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .tag-picker:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+  .tag-chips { display: contents; }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 4px 3px 10px; border-radius: 999px;
+    color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3;
+  }
+  .tag-chip button {
+    border: none; background: transparent; color: #fff; opacity: .75;
+    width: 18px; height: 18px; border-radius: 50%; padding: 0;
+    font-size: 13px; line-height: 1; cursor: pointer;
+  }
+  .tag-chip button:hover { opacity: 1; background: rgba(255,255,255,.2); }
+  #etiqueta-input {
+    flex: 1; min-width: 140px; border: none; outline: none;
+    padding: 4px 2px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    background: transparent; color: var(--text);
+  }
+  .tag-menu {
+    position: absolute; left: -1px; right: -1px; top: calc(100% + 4px); z-index: 50;
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0,0,0,.10); padding: 4px; max-height: 260px; overflow: auto;
+  }
+  .tag-menu-titulo { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px 4px; font-family: 'DM Mono', monospace; }
+  .tag-opcion {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 8px; border: none; border-radius: 4px; background: transparent;
+    font-size: 13px; color: var(--text); text-align: left; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .tag-opcion.activa, .tag-opcion:hover { background: var(--bg); }
+  .tag-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .tag-opcion .tag-olvidar {
+    margin-left: auto; opacity: 0; font-size: 11px; color: var(--text-3);
+    border: none; background: transparent; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  }
+  .tag-opcion:hover .tag-olvidar { opacity: 1; }
+  .tag-olvidar:hover { color: var(--red); background: var(--red-light); }
+  .tag-crear { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 6px; }
+  .tag-colores { display: flex; gap: 6px; padding: 4px 8px 6px 26px; }
+  .tag-colores button {
+    width: 18px; height: 18px; border-radius: 50%; border: none; cursor: pointer; padding: 0;
+  }
+  .tag-colores button.sel { box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor; }
+  .tag-vacio { padding: 8px; font-size: 12px; color: var(--text-3); }
