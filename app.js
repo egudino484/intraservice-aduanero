@@ -176,7 +176,7 @@ async function openTramite(id) {
   renderAll();
   renderDocumentos();
   renderEtiquetas();
-  renderHistorial(data.historial || []);
+  renderHistorial();
   pageTitles.tramite = 'Trámite ' + data.numero + ' · ' + data.cliente;
   topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(data.estado) + '">' + data.estado + '</span>';
   const estadoSel = document.getElementById('estado-select');
@@ -460,24 +460,38 @@ async function registrarCambioEstado() {
   document.getElementById('estado-motivo').value = '';
   topbarBadges.tramite = '<span class="badge badge-' + badgeEstado(estado) + '">' + estado + '</span>';
   document.getElementById('topbar-badge').innerHTML = topbarBadges.tramite;
-  const data = await apiFetch('/tramites/' + currentTramiteId);
-  if (data) renderHistorial(data.historial || []);
+  renderHistorial();
   loadBitacora(); loadDashboard();
 }
 
-function renderHistorial(historial) {
+// Antes leía solo tramite_estados (los cambios de estado), así que la pestaña
+// "Estado y auditoría" no mostraba gastos ni documentos aunque estuvieran en
+// la auditoría general. Ahora trae todo lo registrado para este trámite.
+async function renderHistorial() {
   const el = document.getElementById('tramite-historial');
-  if (!el) return;
-  if (!historial.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:14px">Sin historial</p>'; return; }
-  const dotColor = { Concluido:'green','Pendiente documentación':'red','En proceso':'amber' };
-  el.innerHTML = historial.map(h => `
+  if (!el || !currentTramiteId) return;
+  const id = currentTramiteId;
+  const data = await apiFetch('/auditoria?tramite_id=' + id);
+  if (id !== currentTramiteId) return;   // se cambió de trámite mientras cargaba
+  if (!Array.isArray(data) || !data.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-3);text-align:center;padding:14px">Sin actividad registrada</p>';
+    return;
+  }
+  el.innerHTML = data.map(a => `
     <div class="audit-item">
-      <div class="audit-line"><div class="audit-dot ${dotColor[h.estado_nuevo]||''}"></div></div>
+      <div class="audit-line"><div class="audit-dot ${PUNTO_AUDITORIA[a.accion]||''}"></div></div>
       <div>
-        <div class="audit-text">Estado → <strong>${h.estado_nuevo}</strong>${h.motivo?' · '+h.motivo:''}</div>
-        <div class="audit-meta">${h.user_name||'—'} · ${fmtDate(h.created_at)}</div>
+        <div class="audit-text">${describirAuditoria(a)}</div>
+        <div class="audit-meta">${escHtml(a.user_name||'—')} · ${fmtFechaHora(a.created_at)}</div>
       </div>
     </div>`).join('');
+}
+
+function fmtFechaHora(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' })
+    + ' · ' + d.toLocaleTimeString('es-EC', { hour:'2-digit', minute:'2-digit' });
 }
 
 // ── USUARIOS ──────────────────────────────────────────────────────
@@ -600,11 +614,34 @@ async function createUser() {
 }
 
 // ── AUDITORÍA ─────────────────────────────────────────────────────
+// Texto de cada evento de auditoría, con el detalle que se guardó. Lo usan la
+// pantalla Historial y la pestaña "Estado y auditoría" de cada trámite.
+const ETIQUETAS_AUDITORIA = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada', ecuapass_consultada:'Clave ECUAPASS consultada', tramite_eliminado:'Trámite eliminado' };
+const PUNTO_AUDITORIA = { estado_cambiado:'green', tramite_creado:'blue', tramite_eliminado:'red' };
+
+function describirAuditoria(a) {
+  const d = a.detalle || {};
+  const $ = n => '$' + Number(n || 0).toFixed(2);
+  switch (a.accion) {
+    case 'estado_cambiado':
+      return `Estado: ${escHtml(d.de || '—')} → <strong>${escHtml(d.a || '')}</strong>${d.motivo ? ' · ' + escHtml(d.motivo) : ''}`;
+    case 'gasto_agregado':
+      return `Gasto agregado: ${escHtml(d.concepto || '')} · <strong>${$(d.monto)}</strong>`;
+    case 'documento_cargado': {
+      const arch = (d.archivos || [d.nombre]).filter(Boolean).map(escHtml).join(', ');
+      return (d.gasto_id ? 'Comprobante de gasto cargado' : 'Documento cargado') + (arch ? ': ' + arch : '');
+    }
+    case 'tramite_creado':
+      return `Trámite creado${d.cliente ? ' · ' + escHtml(d.cliente) : ''}`;
+    default:
+      return ETIQUETAS_AUDITORIA[a.accion] || escHtml(a.accion);
+  }
+}
+
 async function loadAuditoria() {
   const data = await apiFetch('/auditoria');
   if (!data) return;
-  const labels = { tramite_creado:'Trámite creado', estado_cambiado:'Estado cambiado', gasto_agregado:'Gasto agregado', documento_cargado:'Documento cargado', liquidacion_enviada:'Liquidación enviada', ecuapass_consultada:'Clave ECUAPASS consultada', tramite_eliminado:'Trámite eliminado' };
-  const dotC = { estado_cambiado:'green', gasto_agregado:'', documento_cargado:'', tramite_creado:'blue' };
+  const dotC = PUNTO_AUDITORIA;
   const panel = document.querySelector('#screen-auditoria .panel');
   if (!panel) return;
   const title = panel.querySelector('.panel-title');
@@ -615,7 +652,7 @@ async function loadAuditoria() {
     <div class="audit-item">
       <div class="audit-line"><div class="audit-dot ${dotC[a.accion]||''}"></div></div>
       <div>
-        <div class="audit-text">${a.tramite_numero?`<strong style="font-family:'DM Mono',monospace;font-size:12px">${a.tramite_numero}</strong> · `:''}${labels[a.accion]||a.accion}</div>
+        <div class="audit-text">${a.tramite_numero?`<strong style="font-family:'DM Mono',monospace;font-size:12px">${a.tramite_numero}</strong> · `:''}${describirAuditoria(a)}</div>
         <div class="audit-meta">${a.user_name||'—'} · ${fmtDate(a.created_at)}</div>
       </div>
     </div>`).join('');
