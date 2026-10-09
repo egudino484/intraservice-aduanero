@@ -31,6 +31,15 @@ Sistema de gestión de trámites aduaneros para la empresa **Intraservice**. SPA
 └── uploads/                # Archivos locales (gitignored; en prod → Railway Volume)
 ```
 
+## REGLA: publicar siempre el historial de cambios
+
+**Siempre que se agrega algo nuevo o se cambia algo en el sistema**, en el mismo commit:
+
+1. Sumar una entrada **arriba** en `NOVEDADES` (`app.js`, sección `// ── NOVEDADES`) con la fecha del día, un título corto y cada cambio como `{ tipo: 'nuevo' | 'mejora' | 'arreglo', texto }`. Escribir para el usuario final (Nicole), sin jerga técnica.
+2. Registrar la tarea en `TASKS.md` con su número `T<n>` (siguiente libre).
+
+Ningún cambio visible para el usuario se despliega sin su entrada en Novedades.
+
 ## Archivos principales
 
 - `index.html` — frontend completo (HTML + CSS + JS)
