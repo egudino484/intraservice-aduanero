@@ -3,6 +3,10 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Pedido del 08-oct-2026 (audio WhatsApp)
+
+- [x] **T44 · Exportaciones vuelven a T26-XXX** — S — Revierte T21: una sola serie consecutiva `T26-XXX` para importación y exportación, sin sufijo de cliente. Los `E26-…` existentes no se renumeran. *`/tramites/next-numero` ignora `tipo`; `suggestNextNumero()` ya no pega el cliente.*
+
 ## Feedback del 11-sep-2026 (Nicole Arias)
 
 - [x] **T29 · Comprobantes de gastos en Documentos** — S — Sección "Comprobantes de gastos" en la pestaña Documentos, con el gasto de origen. Se pueden sumar al ZIP, que los pone en su propia carpeta. *`comprobantesDelTramite()`; `/documentos/zip` acepta `comprobantes`, filtrados por trámite vía el gasto. Verificado: zip con un documento + un comprobante en `Comprobantes de gastos/`.*

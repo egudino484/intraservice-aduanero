@@ -35,16 +35,14 @@ router.get('/', auth, async (req, res) => {
 // GET /tramites/next-numero — sugerencia de consecutivo del año (debe ir antes de /:id)
 router.get('/next-numero', auth, async (req, res) => {
   const yy = String(new Date().getFullYear()).slice(-2)
-  // Las exportaciones llevan su propia serie: E26-XXX-CLIENTE. El cliente lo
-  // agrega el frontend, que es quien sabe cuál está elegido en el formulario.
-  const esExportacion = req.query.tipo === 'Exportación'
-  const letra = esExportacion ? 'E' : 'T'
-  const prefijo = `${letra}${yy}-`
+  // Una sola serie T26-XXX para importación y exportación. La serie E26-XXX-CLIENTE
+  // que tuvieron las exportaciones se dejó de usar (pedido 08-oct); esos números quedan.
+  const prefijo = `T${yy}-`
   try {
     const { rows } = await db.query(
       `SELECT COALESCE(MAX(SUBSTRING(numero FROM $1)::int), 0) AS ultimo
        FROM tramites WHERE numero ~ $2`,
-      [`^${letra}\\d{2}-(\\d+)`, `^${letra}${yy}-\\d+`]
+      ['^T\\d{2}-(\\d+)', `^T${yy}-\\d+`]
     )
     const secuencia = Number(rows[0].ultimo) + 1
     res.json({ numero: prefijo + String(secuencia).padStart(3, '0'), prefijo, secuencia })

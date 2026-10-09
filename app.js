@@ -281,12 +281,7 @@ async function suggestNextNumero() {
   numEl.placeholder = '';
   if (!res || res.error || !res.numero) return;
 
-  // Exportación: E26-XXX-CLIENTE, con el cliente elegido en el formulario
-  let numero = res.numero;
-  if (tipo === 'Exportación') {
-    const cliente = (document.querySelector('[data-field="cliente"]')?.value || '').trim().toUpperCase();
-    if (cliente) numero += '-' + cliente.replace(/\s+/g, '');
-  }
+  const numero = res.numero;
   if (creatingMode && (!numEl.value || numEl.value === ultimaSugerenciaNumero)) {
     numEl.value = numero;
     ultimaSugerenciaNumero = numero;
@@ -1140,6 +1135,9 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-09', titulo: 'Exportaciones con la serie T26-XXX', cambios: [
+    { tipo: 'mejora', texto: 'Los trámites de exportación vuelven a numerarse con la misma serie T26-XXX que las importaciones, sin el cliente al final. Los números E26 que ya existen no cambian.' },
+  ]},
   { fecha: '2026-10-01', titulo: 'Base del IVA configurable en la preliquidación', cambios: [
     { tipo: 'mejora', texto: 'Cada gasto aduanero de la preliquidación tiene una casilla "base IVA" para elegir si suma a la base del IVA. Vienen tildadas V/B Consolidadora y BL Destino, como en la plantilla; en cada trámite se pueden cambiar y el IVA se recalcula solo.' },
     { tipo: 'mejora', texto: 'El Excel de preliquidación aclara debajo del IVA qué gastos entraron en la base.' },
