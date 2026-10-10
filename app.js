@@ -1137,6 +1137,7 @@ async function loadProveedores() {
 const NOVEDADES = [
   { fecha: '2026-10-10', titulo: 'El sistema como app en el teléfono', cambios: [
     { tipo: 'nuevo', texto: 'Podés instalar el sistema en el teléfono y abrirlo desde su ícono, como cualquier app. En Android: abrí el sistema en Chrome, tocá el menú ⋮ y elegí "Instalar app" o "Agregar a la pantalla principal". En iPhone: abrilo en Safari, tocá el botón Compartir y elegí "Agregar a inicio".' },
+    { tipo: 'nuevo', texto: 'En el menú hay una opción nueva, "Instalar en el teléfono", con los pasos para Android y para iPhone y una demostración animada de cada uno.' },
     { tipo: 'mejora', texto: 'En el teléfono las pantallas se acomodan al ancho: el menú se abre con el botón ☰ arriba a la izquierda y las tablas se desplazan de costado.' },
   ]},
   { fecha: '2026-10-09', titulo: 'Exportaciones con la serie T26-XXX', cambios: [
@@ -2842,6 +2843,111 @@ updatePresetButtons();
     document.getElementById('login-overlay').style.display = 'flex';
   }
 })();
+
+// ── INSTALAR EN EL TELÉFONO ───────────────────────────────────────
+// Popup con los pasos de Android e iPhone y una demo animada en un teléfono
+// dibujado, que avanza sola paso a paso junto con la lista.
+const PH_URL = 'sistema-importacion-intraservice…';
+const phPagina = () => `<div class="ph-page"><div class="ph-line" style="width:60%"></div><div class="ph-card"></div><div class="ph-card"></div><div class="ph-line" style="width:80%"></div><div class="ph-card"></div><div class="ph-card"></div></div>`;
+const phInicio = () => `<div class="ph-home">${'<div class="ph-app"><i></i></div>'.repeat(9)}<div class="ph-app ph-tap" style="border-radius:8px"><img src="/icons/icon-192.png" alt="">Intraservice</div></div>`;
+const phChrome = (tap) => `<div class="ph-bar"><div class="ph-ico">⌂</div><div class="ph-url">🔒 ${PH_URL}</div><div class="ph-ico ${tap ? 'ph-tap' : ''}">⋮</div></div>${phPagina()}`;
+const phSafari = (tap) => `<div class="ph-bar" style="justify-content:center"><div class="ph-url" style="text-align:center">${PH_URL}</div></div>${phPagina()}
+  <div class="ph-bar" style="position:absolute;bottom:0;left:0;right:0;padding:6px 12px 14px;justify-content:space-between;border-top:1px solid var(--border);border-bottom:none">
+    <div class="ph-ico">‹</div><div class="ph-ico">›</div><div class="ph-ico ${tap ? 'ph-tap' : ''}">⬆︎</div><div class="ph-ico">⧉</div><div class="ph-ico">▢</div></div>`;
+
+const INSTALAR = {
+  android: {
+    nota: 'Hay que usar <strong>Chrome</strong>. En algunos teléfonos la opción se llama "Agregar a la pantalla principal".',
+    pasos: [
+      { texto: 'Abre el sistema en <strong>Chrome</strong> y toca el menú <strong>⋮</strong>, arriba a la derecha.', pantalla: () => phChrome(true) },
+      { texto: 'Elige <strong>Instalar app</strong> (o <strong>Agregar a la pantalla principal</strong>).', pantalla: () => phChrome(false) +
+        `<div class="ph-menu" style="top:40px;right:6px"><div class="ph-item">Nueva pestaña</div><div class="ph-item">Historial</div><div class="ph-item">Descargas</div><div class="ph-item ph-tap">⊕ Instalar app</div><div class="ph-item">Configuración</div></div>` },
+      { texto: 'Confirma tocando <strong>Instalar</strong>.', pantalla: () => phChrome(false) +
+        `<div class="ph-dim"></div><div class="ph-dialog"><div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><img src="/icons/icon-192.png" style="width:26px;height:26px;border-radius:6px" alt=""><div><div style="font-weight:500;font-size:11px">¿Instalar app?</div><div style="color:var(--text-3);font-size:8px">Intraservice</div></div></div><div style="display:flex;justify-content:flex-end;gap:10px"><span class="ph-item">Cancelar</span><span class="ph-item ph-tap" style="color:var(--blue);font-weight:500">Instalar</span></div></div>` },
+      { texto: 'Listo: ábrelo desde el ícono <strong>Intraservice</strong> en tu pantalla de inicio.', pantalla: phInicio },
+    ],
+  },
+  ios: {
+    nota: 'Hay que usar <strong>Safari</strong>: en iPhone, Chrome y otros navegadores no permiten instalarlo.',
+    pasos: [
+      { texto: 'Abre el sistema en <strong>Safari</strong> y toca el botón <strong>Compartir</strong> (el cuadrado con la flecha hacia arriba), abajo.', pantalla: () => phSafari(true) },
+      { texto: 'Desliza hacia abajo y elige <strong>Agregar a inicio</strong>.', pantalla: () => phSafari(false) +
+        `<div class="ph-dim"></div><div class="ph-sheet"><div style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><img src="/icons/icon-192.png" style="width:22px;height:22px;border-radius:5px" alt=""><span style="font-weight:500">Intraservice</span></div><div class="ph-item">Copiar</div><div class="ph-item">Agregar a favoritos</div><div class="ph-item ph-tap">⊞ Agregar a inicio</div><div class="ph-item">Buscar en la página</div></div>` },
+      { texto: 'Toca <strong>Agregar</strong>, arriba a la derecha.', pantalla: () =>
+        `<div class="ph-bar" style="justify-content:space-between"><span style="color:var(--blue)">Cancelar</span><span style="font-weight:500">Agregar a inicio</span><span class="ph-item ph-tap" style="color:var(--blue);font-weight:500;padding:3px 6px">Agregar</span></div>
+         <div style="margin:12px 8px;background:var(--surface);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center"><img src="/icons/apple-touch-icon.png" style="width:34px;height:34px;border-radius:8px" alt=""><div><div style="font-weight:500">Intraservice</div><div style="color:var(--text-3);font-size:8px">${PH_URL}</div></div></div>` },
+      { texto: 'Listo: ábrelo desde el ícono <strong>Intraservice</strong> en tu pantalla de inicio.', pantalla: phInicio },
+    ],
+  },
+};
+
+let instOS = 'android', instPaso = 0, instTimer = null, instPausado = false, instPrompt = null;
+
+// Chrome en Android avisa cuando se puede instalar: se guarda para el botón "Instalar ahora"
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instPrompt = e; actualizarBotonInstalar(); });
+window.addEventListener('appinstalled', () => { instPrompt = null; actualizarBotonInstalar(); });
+
+// Ya abierto como app instalada: no tiene sentido ofrecer instalarlo
+if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+  document.getElementById('nav-instalar')?.remove();
+}
+
+function abrirInstalar() {
+  toggleMenu(false);
+  const ua = navigator.userAgent;
+  instalarOS(/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : 'android');
+  document.getElementById('instalar-modal').classList.add('show');
+}
+
+function cerrarInstalar() {
+  document.getElementById('instalar-modal').classList.remove('show');
+  clearInterval(instTimer); instTimer = null;
+}
+
+function instalarOS(os) {
+  instOS = os; instPaso = 0;
+  document.querySelectorAll('.inst-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.os === os));
+  const cfg = INSTALAR[os];
+  document.getElementById('inst-pasos').innerHTML = cfg.pasos.map((p, i) => `<li onclick="instalarIrA(${i})"><span>${p.texto}</span></li>`).join('');
+  document.getElementById('inst-nota').innerHTML = cfg.nota;
+  actualizarBotonInstalar();
+  instalarMostrar();
+  instalarReanudar();
+}
+
+function instalarMostrar() {
+  const scr = document.getElementById('inst-screen');
+  scr.innerHTML = INSTALAR[instOS].pasos[instPaso].pantalla();
+  scr.style.animation = 'none'; scr.offsetHeight; scr.style.animation = '';   // repite el fundido
+  document.querySelectorAll('#inst-pasos li').forEach((li, i) => li.classList.toggle('activo', i === instPaso));
+}
+
+function instalarReanudar() {
+  clearInterval(instTimer);
+  instTimer = instPausado ? null : setInterval(() => {
+    instPaso = (instPaso + 1) % INSTALAR[instOS].pasos.length;
+    instalarMostrar();
+  }, 2600);
+  document.getElementById('inst-play').textContent = instPausado ? '▶ Reproducir' : '❚❚ Pausar';
+}
+
+function instalarPlayPausa() { instPausado = !instPausado; instalarReanudar(); }
+
+function instalarIrA(i) { instPaso = i; instPausado = true; instalarMostrar(); instalarReanudar(); }
+
+function actualizarBotonInstalar() {
+  const btn = document.getElementById('inst-ahora');
+  if (btn) btn.style.display = instPrompt && instOS === 'android' ? '' : 'none';
+}
+
+async function instalarAhora() {
+  if (!instPrompt) return;
+  instPrompt.prompt();
+  await instPrompt.userChoice;
+  instPrompt = null; actualizarBotonInstalar();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarInstalar(); });
 
 // Service worker: permite instalar el sistema como app en el teléfono
 if ('serviceWorker' in navigator) {
