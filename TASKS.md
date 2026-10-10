@@ -9,6 +9,8 @@ Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
 - [x] **T46 · Popup "Instalar en el teléfono"** — S — Opción en el menú (se oculta si ya se abrió como app instalada). Pestañas Android / iPhone, elegida según el dispositivo; pasos numerados y demo animada en un teléfono dibujado que avanza sola, con pausa y clic en cada paso. En Android, si Chrome dispara `beforeinstallprompt`, aparece "Instalar ahora". *No es un video grabado: es una animación HTML/CSS (`INSTALAR` en `app.js`), así no pesa ni depende de YouTube.*
 
+- [x] **T47 · Compartir el sistema** — S — Opción en el menú con mensaje de bienvenida + link (`mensajeBienvenida()`). En pantallas táctiles usa `navigator.share`; si no, popup editable con Copiar, WhatsApp (`wa.me`) y Correo (`mailto`). El link es `location.origin`, no se hardcodea la URL.
+
 ## Pedido del 08-oct-2026 (audio WhatsApp)
 
 - [x] **T44 · Exportaciones vuelven a T26-XXX** — S — Revierte T21: una sola serie consecutiva `T26-XXX` para importación y exportación, sin sufijo de cliente. Los `E26-…` existentes no se renumeran. *`/tramites/next-numero` ignora `tipo`; `suggestNextNumero()` ya no pega el cliente.*

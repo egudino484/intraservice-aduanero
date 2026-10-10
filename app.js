@@ -1136,6 +1136,7 @@ async function loadProveedores() {
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
   { fecha: '2026-10-10', titulo: 'El sistema como app en el teléfono', cambios: [
+    { tipo: 'nuevo', texto: 'Opción "Compartir el sistema" en el menú: arma un mensaje de bienvenida con el link de acceso para mandarlo por WhatsApp, correo o copiarlo. En el teléfono abre directamente el menú de compartir.' },
     { tipo: 'nuevo', texto: 'Podés instalar el sistema en el teléfono y abrirlo desde su ícono, como cualquier app. En Android: abrí el sistema en Chrome, tocá el menú ⋮ y elegí "Instalar app" o "Agregar a la pantalla principal". En iPhone: abrilo en Safari, tocá el botón Compartir y elegí "Agregar a inicio".' },
     { tipo: 'nuevo', texto: 'En el menú hay una opción nueva, "Instalar en el teléfono", con los pasos para Android y para iPhone y una demostración animada de cada uno.' },
     { tipo: 'mejora', texto: 'En el teléfono las pantallas se acomodan al ancho: el menú se abre con el botón ☰ arriba a la izquierda y las tablas se desplazan de costado.' },
@@ -2948,6 +2949,45 @@ async function instalarAhora() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarInstalar(); });
+
+// ── COMPARTIR EL SISTEMA ──────────────────────────────────────────
+// Mensaje de bienvenida con el link de acceso. En el teléfono usa el menú de
+// compartir del propio teléfono; si no existe, un popup para copiar o mandar.
+function mensajeBienvenida() {
+  return `¡Hola! Te comparto el acceso al Sistema Aduanero de Intraservice.
+
+Ahí llevamos los trámites de importación y exportación: datos del trámite, documentos, gastos, anticipos, preliquidación y liquidación, todo en un solo lugar.
+
+Entra aquí: ${location.origin}
+
+Ingresas con el correo y la contraseña que te dio el administrador. También lo puedes instalar en tu teléfono como una app: en el menú, "Instalar en el teléfono".`;
+}
+
+async function compartirSistema() {
+  toggleMenu(false);
+  const texto = mensajeBienvenida();
+  // El menú nativo solo en pantallas táctiles: en la computadora es más útil el popup
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    try { await navigator.share({ title: 'Sistema Aduanero · Intraservice', text: texto }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }   // lo canceló el usuario
+  }
+  document.getElementById('compartir-texto').value = texto;
+  document.getElementById('compartir-modal').classList.add('show');
+}
+
+function cerrarCompartir() { document.getElementById('compartir-modal').classList.remove('show'); }
+
+async function compartirPor(medio) {
+  const texto = document.getElementById('compartir-texto').value;
+  if (medio === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+  else if (medio === 'correo') location.href = 'mailto:?subject=' + encodeURIComponent('Acceso al Sistema Aduanero de Intraservice') + '&body=' + encodeURIComponent(texto);
+  else {
+    try { await navigator.clipboard.writeText(texto); showNotif('Mensaje copiado'); }
+    catch { document.getElementById('compartir-texto').select(); showNotif('Selecciona el texto y cópialo'); }
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarCompartir(); });
 
 // Service worker: permite instalar el sistema como app en el teléfono
 if ('serviceWorker' in navigator) {
