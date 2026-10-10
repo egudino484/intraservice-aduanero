@@ -3,6 +3,10 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Pedido del 10-oct-2026 (Edison)
+
+- [x] **T45 · Instalable como app en el teléfono** — M — PWA: `manifest.webmanifest`, íconos en `/icons` (logo del sidebar sobre azul, zona segura maskable) y `sw.js` sin caché (solo habilita la instalación; todo va a la red). Layout de teléfono (≤768px): menú lateral desplegable con ☰ (`toggleMenu()`, se cierra al navegar), grillas a una columna, tablas y pestañas con scroll horizontal, inputs de 16px para que iPhone no haga zoom. *Verificado local a 375px: formulario, menú abierto/cerrado; en escritorio sin cambios. Manifest, íconos y SW responden 200 y el SW se registra.*
+
 ## Pedido del 08-oct-2026 (audio WhatsApp)
 
 - [x] **T44 · Exportaciones vuelven a T26-XXX** — S — Revierte T21: una sola serie consecutiva `T26-XXX` para importación y exportación, sin sufijo de cliente. Los `E26-…` existentes no se renumeran. *`/tramites/next-numero` ignora `tipo`; `suggestNextNumero()` ya no pega el cliente.*

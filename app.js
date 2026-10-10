@@ -1135,6 +1135,10 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-10', titulo: 'El sistema como app en el teléfono', cambios: [
+    { tipo: 'nuevo', texto: 'Podés instalar el sistema en el teléfono y abrirlo desde su ícono, como cualquier app. En Android: abrí el sistema en Chrome, tocá el menú ⋮ y elegí "Instalar app" o "Agregar a la pantalla principal". En iPhone: abrilo en Safari, tocá el botón Compartir y elegí "Agregar a inicio".' },
+    { tipo: 'mejora', texto: 'En el teléfono las pantallas se acomodan al ancho: el menú se abre con el botón ☰ arriba a la izquierda y las tablas se desplazan de costado.' },
+  ]},
   { fecha: '2026-10-09', titulo: 'Exportaciones con la serie T26-XXX', cambios: [
     { tipo: 'mejora', texto: 'Los trámites de exportación vuelven a numerarse con la misma serie T26-XXX que las importaciones, sin el cliente al final. Los números E26 que ya existen no cambian.' },
   ]},
@@ -2387,6 +2391,11 @@ const topbarBadges = {
   tramite: '<span class="badge badge-amber">En proceso</span>',
 };
 
+// Menú lateral desplegable en el teléfono (en escritorio está siempre visible)
+function toggleMenu(abrir) {
+  document.body.classList.toggle('menu-abierto', abrir);
+}
+
 function nav(id, el) {
   if (id === 'tramite' && !currentTramiteId && !creatingMode) {
     showNotif('Selecciona un trámite desde la Bitácora');
@@ -2394,6 +2403,7 @@ function nav(id, el) {
   }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
+  toggleMenu(false);
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (el) el.classList.add('active');
   else { const f = document.getElementById('nav-' + id); if (f) f.classList.add('active'); }
@@ -2832,3 +2842,8 @@ updatePresetButtons();
     document.getElementById('login-overlay').style.display = 'flex';
   }
 })();
+
+// Service worker: permite instalar el sistema como app en el teléfono
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}

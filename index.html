@@ -6,6 +6,15 @@
 <title>Intraservice — Sistema Aduanero</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+<!-- Instalable como app en el teléfono (ver sw.js) -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1E4FBF">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Intraservice">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 </head>
 <body>
@@ -109,9 +118,13 @@
   </div>
 
   <!-- MAIN -->
+  <!-- En el teléfono el menú lateral se despliega; esto lo cierra al tocar afuera -->
+  <div class="sidebar-backdrop" onclick="toggleMenu(false)"></div>
+
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
+        <button class="menu-btn" onclick="toggleMenu()" aria-label="Abrir menú"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg></button>
         <h2 id="page-title">Detalle del trámite</h2>
         <span id="topbar-badge"></span>
         <button class="btn btn-sm btn-ghost" onclick="copiarLinkActual()" title="Copiar el link de esta pantalla para compartirlo" style="padding:3px 8px">🔗</button>
