@@ -19,10 +19,74 @@
     --purple: #4A2D8B;
     --purple-light: #F3EEFF;
     --accent: #1E4FBF;
+    --primary-hover: #163DA8;
+    --chip-hover: #DDE8FF;
+    --danger-border: #F09595;
+    color-scheme: light;
     --radius: 10px;
     --radius-sm: 6px;
     --sidebar-w: 220px;
     --topbar-h: 56px;
+  }
+
+  /* Modo oscuro: sigue al dispositivo salvo que se elija claro u oscuro a mano
+     (data-theme en <html>, ver aplicarTema() en app.js). Solo en pantalla:
+     lo que se imprime sale siempre en claro. */
+  @media screen and (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413;
+      --surface: #1E1D1B;
+      --surface2: #2A2926;
+      --border: rgba(255,255,255,0.09);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #ECEAE4;
+      --text-2: #A9A69E;
+      --text-3: #7A776F;
+      --blue: #4F78E6;
+      --blue-light: rgba(79,120,230,0.18);
+      --blue-text: #8FAEFF;
+      --green: #4CC38A;
+      --green-light: rgba(76,195,138,0.14);
+      --amber: #F0B45A;
+      --amber-light: rgba(240,180,90,0.14);
+      --red: #F08080;
+      --red-light: rgba(240,128,128,0.14);
+      --purple: #B49CF5;
+      --purple-light: rgba(180,156,245,0.15);
+      --accent: #4F78E6;
+      --primary-hover: #3D66D6;
+      --chip-hover: rgba(79,120,230,0.28);
+      --danger-border: rgba(240,128,128,0.45);
+      color-scheme: dark;
+    }
+  }
+  @media screen {
+    :root[data-theme="dark"] {
+      --bg: #141413;
+      --surface: #1E1D1B;
+      --surface2: #2A2926;
+      --border: rgba(255,255,255,0.09);
+      --border-strong: rgba(255,255,255,0.18);
+      --text: #ECEAE4;
+      --text-2: #A9A69E;
+      --text-3: #7A776F;
+      --blue: #4F78E6;
+      --blue-light: rgba(79,120,230,0.18);
+      --blue-text: #8FAEFF;
+      --green: #4CC38A;
+      --green-light: rgba(76,195,138,0.14);
+      --amber: #F0B45A;
+      --amber-light: rgba(240,180,90,0.14);
+      --red: #F08080;
+      --red-light: rgba(240,128,128,0.14);
+      --purple: #B49CF5;
+      --purple-light: rgba(180,156,245,0.15);
+      --accent: #4F78E6;
+      --primary-hover: #3D66D6;
+      --chip-hover: rgba(79,120,230,0.28);
+      --danger-border: rgba(240,128,128,0.45);
+      color-scheme: dark;
+    }
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,7 +184,8 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .sidebar-footer-name { font-size: 12px; font-weight: 500; }
+  .sidebar-footer-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tema-btn { font-size: 15px; line-height: 1; padding: 4px 6px !important; color: var(--text-3) !important; }
   .sidebar-footer-role { font-size: 11px; color: var(--text-3); }
 
   /* ── MAIN ── */
@@ -166,11 +231,11 @@
     color: white;
     border-color: var(--blue);
   }
-  .btn-primary:hover { background: #163DA8; }
+  .btn-primary:hover { background: var(--primary-hover); }
   .btn-sm { padding: 4px 9px; font-size: 11px; }
   .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
   .btn-ghost:hover { background: var(--bg); color: var(--text); }
-  .btn-danger { color: var(--red); border-color: #F09595; }
+  .btn-danger { color: var(--red); border-color: var(--danger-border); }
   .btn-danger:hover { background: var(--red-light); }
 
   /* ── BADGES ── */
@@ -348,7 +413,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .doc-chip:hover { background: #DDE8FF; }
+  .doc-chip:hover { background: var(--chip-hover); }
 
   /* ── UPLOAD ZONE ── */
   .upload-zone {
@@ -462,7 +527,7 @@
 
   /* ── FEEDBACK FAB ── */
   #feedback-fab { transition: transform 0.15s, background 0.15s; }
-  #feedback-fab:hover { background: #163DA8; transform: scale(1.06); }
+  #feedback-fab:hover { background: var(--primary-hover); transform: scale(1.06); }
 
   /* ── SELECTOR DE ETIQUETAS ── */
   .tag-picker {

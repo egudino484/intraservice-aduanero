@@ -3,6 +3,10 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Pedido del 12-oct-2026 (Edison)
+
+- [x] **T48 · Modo oscuro** — M — Paleta oscura en las mismas variables de `:root`, activa con `prefers-color-scheme` salvo que `data-theme` en `<html>` diga otra cosa. Botón ◐/☀/☾ en el pie del sidebar (`cambiarTema()`), guardado en `localStorage.sa_tema`; un script en `<head>` lo aplica antes de pintar. Solo `@media screen`: impresión y PDFs (iframe con estilos propios) quedan en claro. Se pasaron a variables los hovers fijos (`--primary-hover`, `--chip-hover`, `--danger-border`) y los íconos SVG con azul fijo.
+
 ## Pedido del 10-oct-2026 (Edison)
 
 - [x] **T45 · Instalable como app en el teléfono** — M — PWA: `manifest.webmanifest`, íconos en `/icons` (logo del sidebar sobre azul, zona segura maskable) y `sw.js` sin caché (solo habilita la instalación; todo va a la red). Layout de teléfono (≤768px): menú lateral desplegable con ☰ (`toggleMenu()`, se cierra al navegar), grillas a una columna, tablas y pestañas con scroll horizontal, inputs de 16px para que iPhone no haga zoom. *Verificado local a 375px: formulario, menú abierto/cerrado; en escritorio sin cambios. Manifest, íconos y SW responden 200 y el SW se registra.*

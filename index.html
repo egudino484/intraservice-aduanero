@@ -9,6 +9,10 @@
 <!-- Instalable como app en el teléfono (ver sw.js) -->
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1E4FBF">
+<script>
+  // Tema antes de pintar, para que no destelle en claro al abrir en oscuro
+  try { const t = localStorage.getItem('sa_tema'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="icon" type="image/png" href="/icons/icon-192.png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -119,10 +123,11 @@
 
     <div class="sidebar-footer">
       <div class="avatar" id="user-avatar">EG</div>
-      <div style="flex:1">
+      <div style="flex:1;min-width:0">
         <div class="sidebar-footer-name" id="user-name">Edison Gudiño</div>
         <div class="sidebar-footer-role" id="user-role">Administrador</div>
       </div>
+      <button class="btn btn-sm btn-ghost tema-btn" id="tema-btn" onclick="cambiarTema()" title="Tema">◐</button>
       <button class="btn btn-sm btn-ghost" onclick="logout()" title="Cerrar sesión" style="padding:4px 8px;color:var(--text-3);font-size:13px">⎋</button>
     </div>
   </div>

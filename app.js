@@ -662,7 +662,7 @@ function fmtDate(iso) {
   return d.toLocaleDateString('es-EC', { day:'2-digit', month:'short', year:'numeric' });
 }
 
-const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" stroke="#1E4FBF" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" stroke="#1E4FBF" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" stroke="#1E4FBF" stroke-width=".7"/></svg>`;
+const docIcon = `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1" y="1" width="9" height="9" rx="1" style="stroke:var(--blue)" stroke-width="1"/><line x1="2.5" y1="4" x2="8.5" y2="4" style="stroke:var(--blue)" stroke-width=".7"/><line x1="2.5" y1="5.8" x2="8.5" y2="5.8" style="stroke:var(--blue)" stroke-width=".7"/></svg>`;
 
 // Los gastos marcados "no liquidar" (ej. honorarios EXIMSA) se registran pero
 // no entran en el total ni en el saldo que se le cobra al cliente.
@@ -1135,6 +1135,10 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-12', titulo: 'Modo oscuro', cambios: [
+    { tipo: 'nuevo', texto: 'El sistema tiene modo oscuro. Por defecto sigue la configuración de tu teléfono o computadora; con el botón ◐ junto a tu nombre, abajo en el menú, lo cambias a claro (☀), oscuro (☾) o automático (◐). Se recuerda en cada dispositivo.' },
+    { tipo: 'mejora', texto: 'Los PDF y lo que se imprime salen siempre en claro, aunque estés en modo oscuro.' },
+  ]},
   { fecha: '2026-10-10', titulo: 'El sistema como app en el teléfono', cambios: [
     { tipo: 'nuevo', texto: 'Opción "Compartir el sistema" en el menú: arma un mensaje de bienvenida con el link de acceso para mandarlo por WhatsApp, correo o copiarlo. En el teléfono abre directamente el menú de compartir.' },
     { tipo: 'nuevo', texto: 'Podés instalar el sistema en el teléfono y abrirlo desde su ícono, como cualquier app. En Android: abrí el sistema en Chrome, tocá el menú ⋮ y elegí "Instalar app" o "Agregar a la pantalla principal". En iPhone: abrilo en Safari, tocá el botón Compartir y elegí "Agregar a inicio".' },
@@ -2444,7 +2448,7 @@ function showNotif(msg) {
 }
 
 // ── DOCUMENTOS DEL EXPEDIENTE ─────────────────────────────────────
-const docSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="#1E4FBF" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" stroke="#1E4FBF" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" stroke="#1E4FBF" stroke-width="1"/></svg>`;
+const docSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" style="stroke:var(--blue)" stroke-width="1.2"/><line x1="5" y1="5.5" x2="11" y2="5.5" style="stroke:var(--blue)" stroke-width="1"/><line x1="5" y1="8" x2="11" y2="8" style="stroke:var(--blue)" stroke-width="1"/><line x1="5" y1="10.5" x2="8" y2="10.5" style="stroke:var(--blue)" stroke-width="1"/></svg>`;
 
 // Ids de documentos tildados para la descarga en zip
 let docsSeleccionados = new Set();
@@ -2988,6 +2992,36 @@ async function compartirPor(medio) {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarCompartir(); });
+
+// ── TEMA CLARO / OSCURO ───────────────────────────────────────────
+// Automático (sigue al dispositivo), claro u oscuro. Se recuerda por dispositivo
+// en localStorage; el <head> lo aplica antes de pintar para que no destelle.
+const TEMAS = { auto: { icono: '◐', nombre: 'automático' }, light: { icono: '☀', nombre: 'claro' }, dark: { icono: '☾', nombre: 'oscuro' } };
+
+function temaGuardado() {
+  try { const t = localStorage.getItem('sa_tema'); return TEMAS[t] ? t : 'auto'; } catch { return 'auto'; }
+}
+
+function aplicarTema(tema) {
+  const root = document.documentElement;
+  if (tema === 'auto') delete root.dataset.theme; else root.dataset.theme = tema;
+  const btn = document.getElementById('tema-btn');
+  if (btn) { btn.textContent = TEMAS[tema].icono; btn.title = `Tema: ${TEMAS[tema].nombre} (clic para cambiar)`; }
+  // Barra del navegador / app instalada acompaña al tema
+  const oscuro = tema === 'dark' || (tema === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', oscuro ? '#1E1D1B' : '#1E4FBF');
+}
+
+function cambiarTema() {
+  const orden = ['auto', 'light', 'dark'];
+  const sig = orden[(orden.indexOf(temaGuardado()) + 1) % orden.length];
+  try { if (sig === 'auto') localStorage.removeItem('sa_tema'); else localStorage.setItem('sa_tema', sig); } catch {}
+  aplicarTema(sig);
+  showNotif('Tema ' + TEMAS[sig].nombre);
+}
+
+aplicarTema(temaGuardado());
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => aplicarTema(temaGuardado()));
 
 // Service worker: permite instalar el sistema como app en el teléfono
 if ('serviceWorker' in navigator) {
