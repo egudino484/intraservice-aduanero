@@ -3,6 +3,10 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Pedido del 16-oct-2026 (Edison)
+
+- [x] **T49 · 🐛 No se podía arrastrar documentos** — S — La zona decía "Arrastra archivos aquí" pero solo tenía `onclick`; al soltar, el navegador abría el archivo. *`docDragOver/docDragLeave/docDrop` en `app.js` → `handleDocFiles()`. Filtra por extensión (lo soltado no pasa por `accept`). `dragover`/`drop` en `window` con `preventDefault` para que un archivo soltado fuera no saque al usuario del sistema.*
+
 ## Pedido del 12-oct-2026 (Edison)
 
 - [x] **T48 · Modo oscuro** — M — Paleta oscura en las mismas variables de `:root`, activa con `prefers-color-scheme` salvo que `data-theme` en `<html>` diga otra cosa. Botón ◐/☀/☾ en el pie del sidebar (`cambiarTema()`), guardado en `localStorage.sa_tema`; un script en `<head>` lo aplica antes de pintar. Solo `@media screen`: impresión y PDFs (iframe con estilos propios) quedan en claro. Se pasaron a variables los hovers fijos (`--primary-hover`, `--chip-hover`, `--danger-border`) y los íconos SVG con azul fijo.

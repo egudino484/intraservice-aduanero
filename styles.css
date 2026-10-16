@@ -427,6 +427,7 @@
     margin-top: 12px;
     transition: all 0.12s;
   }
+  .upload-zone.arrastrando { background: var(--blue-light); border-color: var(--blue); border-style: solid; color: var(--blue-text); }
   .upload-zone:hover { background: var(--bg); border-color: var(--blue); color: var(--blue); }
   .upload-zone svg { width: 20px; height: 20px; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
 

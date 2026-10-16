@@ -1135,6 +1135,9 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-16', titulo: 'Arrastrar documentos al trámite', cambios: [
+    { tipo: 'arreglo', texto: 'En la pestaña Documentos ya se pueden arrastrar archivos a la zona de carga y se suben solos. Antes solo funcionaba haciendo clic. Si sueltas un archivo fuera de la zona, ya no se abre en lugar del sistema.' },
+  ]},
   { fecha: '2026-10-12', titulo: 'Modo oscuro', cambios: [
     { tipo: 'nuevo', texto: 'El sistema tiene modo oscuro. Por defecto sigue la configuración de tu teléfono o computadora; con el botón ◐ junto a tu nombre, abajo en el menú, lo cambias a claro (☀), oscuro (☾) o automático (◐). Se recuerda en cada dispositivo.' },
     { tipo: 'mejora', texto: 'Los PDF y lo que se imprime salen siempre en claro, aunque estés en modo oscuro.' },
@@ -2562,6 +2565,36 @@ function triggerDocUpload() {
   const input = document.getElementById('doc-file-input');
   if (input) input.click();
 }
+
+// Arrastrar y soltar en la zona de documentos. Lo soltado no pasa por el
+// filtro "accept" del input, así que se filtra a mano con los mismos tipos.
+const DOC_EXT_PERMITIDAS = /\.(pdf|jpe?g|png|xlsx|docx)$/i;
+
+function docDragOver(e) {
+  if (!e.dataTransfer?.types?.includes('Files')) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  e.currentTarget.classList.add('arrastrando');
+}
+
+function docDragLeave(e) {
+  if (e.currentTarget.contains(e.relatedTarget)) return;   // pasó sobre el ícono o el texto
+  e.currentTarget.classList.remove('arrastrando');
+}
+
+function docDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('arrastrando');
+  const files = [...(e.dataTransfer?.files || [])];
+  const validos = files.filter(f => DOC_EXT_PERMITIDAS.test(f.name));
+  const rechazados = files.length - validos.length;
+  if (rechazados) showNotif(`${rechazados} archivo(s) ignorados: solo PDF, JPG, PNG, Excel o Word`);
+  if (validos.length) handleDocFiles(validos);
+}
+
+// Un archivo soltado fuera de la zona no debe abrirse en la pestaña y sacar al usuario del sistema
+window.addEventListener('dragover', e => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault(); });
+window.addEventListener('drop', e => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault(); });
 
 async function handleDocFiles(files) {
   if (!currentTramiteId) { showNotif('Abre un trámite primero'); return; }
