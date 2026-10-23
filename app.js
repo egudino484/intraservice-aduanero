@@ -89,6 +89,7 @@ async function initApp() {
 async function loadDashboard() {
   const tramites = await apiFetch('/tramites');
   if (!tramites) return;
+  bitacoraData = tramites;   // el buscador del dashboard usa la misma lista
   const byE = e => tramites.filter(t => t.estado === e).length;
   const metricsRow = document.querySelector('#screen-dashboard .metrics-row');
   if (metricsRow) metricsRow.innerHTML = `
@@ -124,15 +125,109 @@ async function loadBitacora() {
   renderBitacora();
 }
 
+// ── BUSCADOR ──────────────────────────────────────────────────────
+// Busca en todos los datos del trámite (cualquier campo de "Datos del trámite")
+// y en lo relacionado que manda el servidor: RUC, gastos, anticipos, documentos.
+// Devuelve dónde coincidió, para mostrarlo sin tener que abrir el trámite.
+const normalizar = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Columnas del trámite que no tienen campo en el formulario (o no aportan)
+const NO_BUSCAR = new Set(['id', 'created_by', 'created_by_name', 'created_at', 'updated_at', 'preliquidacion',
+  'total_gastos', 'total_anticipos', 'busqueda_extra', 'custom_props', 'etiquetas', 'estado', 'tipo']);
+const COLUMNAS_BASE = { numero: 'numero', cliente: 'cliente', fecha_arribo: 'fechaApertura', bl: 'bl',
+  naviera: 'naviera', da: 'dai', factura_comercial: 'factCom', factura_intraservice: 'factIntra', observaciones: 'obs' };
+const ETIQUETAS_EXTRA = { ruc: 'RUC del cliente', gastos: 'Gastos', anticipos: 'Anticipos', documentos: 'Documentos' };
+
+// Nombre de cada columna tal como se lee en el formulario
+let etiquetasColumnas = null;
+function etiquetaColumna(col) {
+  if (!etiquetasColumnas) {
+    etiquetasColumnas = {};
+    const mapa = { ...COLUMNAS_BASE, ...Object.fromEntries(Object.entries(CAMPOS_EXTRA).map(([f, c]) => [c, f])) };
+    for (const [c, f] of Object.entries(mapa)) {
+      const lbl = document.querySelector(`[data-field="${f}"]`)?.closest('.field')?.querySelector('label')?.textContent?.trim();
+      if (lbl) etiquetasColumnas[c] = lbl.charAt(0) + lbl.slice(1).toLowerCase();
+    }
+  }
+  return etiquetasColumnas[col] || ETIQUETAS_EXTRA[col] || col.replace(/_/g, ' ');
+}
+
+// [{ campo, valor }] de un trámite, armado una sola vez por carga
+function camposBuscables(t) {
+  if (t._campos) return t._campos;
+  const campos = [];
+  for (const [k, v] of Object.entries(t)) {
+    if (NO_BUSCAR.has(k) || k.startsWith('_') || v === null || v === '' || typeof v === 'object') continue;
+    campos.push({ campo: k, valor: String(v) });
+  }
+  (t.custom_props || []).forEach(p => p?.value && campos.push({ campo: p.name || p.label || 'Campo adicional', valor: String(p.value), libre: true }));
+  (t.etiquetas || []).forEach(e => e?.text && campos.push({ campo: 'Etiqueta', valor: e.text, libre: true }));
+  for (const [k, v] of Object.entries(t.busqueda_extra || {})) if (v) campos.push({ campo: k, valor: String(v) });
+  campos.forEach(c => { c.norm = normalizar(c.valor); });
+  return (t._campos = campos);
+}
+
+// null si no coincide; si no, la lista de campos donde aparece el texto
+function coincidencias(t, q) {
+  const nq = normalizar(q).trim();
+  if (!nq) return [];
+  const hits = camposBuscables(t).filter(c => c.norm.includes(nq));
+  return hits.length ? hits : null;
+}
+
+// Fragmento con el texto buscado resaltado
+function fragmentoCoincidencia(c, q) {
+  const i = c.norm.indexOf(normalizar(q).trim());
+  const ini = Math.max(0, i - 30), fin = Math.min(c.valor.length, i + q.trim().length + 30);
+  const pre = (ini > 0 ? '…' : '') + c.valor.slice(ini, i), hit = c.valor.slice(i, i + q.trim().length), post = c.valor.slice(i + q.trim().length, fin) + (fin < c.valor.length ? '…' : '');
+  const nombre = c.libre ? c.campo : etiquetaColumna(c.campo);
+  return `<span style="color:var(--text-3)">${escHtml(nombre)}:</span> ${escHtml(pre)}<mark class="busq-hit">${escHtml(hit)}</mark>${escHtml(post)}`;
+}
+
+// Buscador del dashboard: escribe cualquier dato y abre el trámite donde está
+function buscarGlobal() {
+  const q = document.getElementById('busq-global')?.value || '';
+  const caja = document.getElementById('busq-global-res');
+  if (!caja) return;
+  if (!q.trim()) { caja.style.display = 'none'; caja.innerHTML = ''; return; }
+  const res = bitacoraData.map(t => ({ t, hits: coincidencias(t, q) })).filter(r => r.hits);
+  caja.style.display = '';
+  caja.innerHTML = res.length
+    ? res.slice(0, 8).map(({ t, hits }) => `<div class="busq-item" onclick="abrirDesdeBusqueda('${t.id}')">
+        <div><strong style="font-family:'DM Mono',monospace;font-size:12px">${escHtml(t.numero)}</strong> · ${escHtml(t.cliente)}
+          <span style="color:var(--text-3);font-size:11px">· ${escHtml(t.tipo)} · ${escHtml(t.estado)}</span></div>
+        <div class="busq-item-hit">${fragmentoCoincidencia(hits[0], q)}${hits.length > 1 ? ` <span style="color:var(--text-3)">+${hits.length - 1}</span>` : ''}</div>
+      </div>`).join('') + (res.length > 8 ? `<div class="busq-item" onclick="verTodoEnBitacora()" style="color:var(--blue-text);font-size:12px">Ver los ${res.length} resultados en la Bitácora →</div>` : '')
+    : '<div style="padding:12px;color:var(--text-3);font-size:12px">Ningún trámite tiene ese dato</div>';
+}
+
+function abrirDesdeBusqueda(id) {
+  const el = document.getElementById('busq-global'); if (el) el.value = '';
+  buscarGlobal();
+  openTramite(id);
+}
+
+function verTodoEnBitacora() {
+  const q = document.getElementById('busq-global')?.value || '';
+  const b = document.getElementById('b-search'); if (b) b.value = q;
+  document.getElementById('busq-global').value = ''; buscarGlobal();
+  nav('bitacora', document.getElementById('nav-bitacora'));
+}
+
+function teclaBusqueda(e) {
+  if (e.key === 'Enter') { document.querySelector('#busq-global-res .busq-item')?.click(); }
+  if (e.key === 'Escape') { e.target.value = ''; buscarGlobal(); }
+}
+
 // Filtros de la bitácora, aparte para que la exportación baje lo mismo que se ve
 function filtrarBitacora() {
-  const search = (document.getElementById('b-search')?.value || '').toLowerCase();
+  const search = document.getElementById('b-search')?.value || '';
   const tipo = document.getElementById('b-tipo')?.value || '';
   const estado = document.getElementById('b-estado')?.value || '';
   return bitacoraData.filter(t =>
-    (!search || t.numero.toLowerCase().includes(search) || t.cliente.toLowerCase().includes(search) || (t.bl||'').toLowerCase().includes(search) || (t.da||'').toLowerCase().includes(search)) &&
     (!tipo || t.tipo === tipo) &&
-    (!estado || t.estado === estado)
+    (!estado || t.estado === estado) &&
+    (!search.trim() || coincidencias(t, search))
   );
 }
 
@@ -142,17 +237,25 @@ function renderBitacora() {
   const filtered = filtrarBitacora();
   const tbody = document.getElementById('bitacora-body');
   if (!tbody) return;
+  const search = document.getElementById('b-search')?.value || '';
+  // Con búsqueda, debajo de cada fila se ve dónde coincidió (los campos que ya
+  // están en columnas no se repiten)
+  const enColumnas = new Set(['numero', 'cliente', 'ref_cliente', 'bl', 'da', 'naviera']);
   tbody.innerHTML = filtered.length
-    ? filtered.map(t => `<tr>
-        <td><span class="row-link" onclick="openTramite('${t.id}')">${t.numero}</span></td>
-        <td>${t.cliente}</td>
+    ? filtered.map(t => {
+        const hits = search.trim() ? (coincidencias(t, search) || []).filter(c => !enColumnas.has(c.campo)) : [];
+        return `<tr>
+        <td><span class="row-link" onclick="openTramite('${t.id}')">${escHtml(t.numero)}</span></td>
+        <td>${escHtml(t.cliente)}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${escHtml(t.ref_cliente||'—')}</td>
         <td>${t.tipo==='Importación'?'IMP':'EXP'}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:11px">${t.bl||'—'}</td>
-        <td style="font-family:'DM Mono',monospace;font-size:11px">${t.da||'—'}</td>
-        <td>${t.naviera||'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${escHtml(t.bl||'—')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px">${escHtml(t.da||'—')}</td>
+        <td>${escHtml(t.naviera||'—')}</td>
         <td><span class="badge badge-${bc[t.estado]||'gray'}">${t.estado}</span></td>
-      </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin resultados</td></tr>';
+      </tr>${hits.length ? `<tr class="busq-detalle"><td colspan="8">${hits.slice(0, 4).map(c => `<div>${fragmentoCoincidencia(c, search)}</div>`).join('')}${hits.length > 4 ? `<div style="color:var(--text-3)">y ${hits.length - 4} coincidencia(s) más</div>` : ''}</td></tr>` : ''}`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Sin resultados</td></tr>';
 }
 
 // ── TRAMITE ───────────────────────────────────────────────────────
@@ -184,7 +287,8 @@ async function openTramite(id) {
   const navTramite = document.getElementById('nav-tramite');
   if (navTramite) navTramite.style.display = '';
   nav('tramite', navTramite);
-  setTab(document.getElementById('tab-docs'), 't-docs');
+  // Siempre arranca en "Datos del trámite" (pedido de Fernando, 14-oct)
+  setTab(document.getElementById('tab-datos'), 't-datos');
 }
 
 function badgeEstado(e) {
@@ -1135,6 +1239,13 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-23', titulo: 'Buscador en todo el sistema y seguro sobre el FOB', cambios: [
+    { tipo: 'nuevo', texto: 'Buscador arriba del Dashboard: escribe cualquier dato (N° de trámite, cliente, RUC, BL, DAI/DAE, factura, contenedor, mercadería, nombre de un documento…) y te muestra los trámites que lo tienen y en qué campo. Un clic abre el trámite.' },
+    { tipo: 'mejora', texto: 'El buscador de la Bitácora ahora busca en todos los datos del trámite, no solo en número, cliente, BL y DAI. Debajo de cada resultado se ve dónde coincidió, sin tener que abrirlo.' },
+    { tipo: 'nuevo', texto: 'Columna "Ref. cliente" en la Bitácora, con el N° de referencia del cliente de Datos del trámite. También sale en el CSV y el Excel.' },
+    { tipo: 'mejora', texto: 'El seguro de la preliquidación ahora es el 1% del FOB (antes era del CFR). Se calcula solo, y si necesitas otro valor lo escribes en dólares directamente en la casilla; si la dejas vacía vuelve al 1% del FOB.' },
+    { tipo: 'mejora', texto: 'Al hacer clic en el número de un trámite se abre en la pestaña "Datos del trámite".' },
+  ]},
   { fecha: '2026-10-16', titulo: 'Arrastrar documentos al trámite', cambios: [
     { tipo: 'arreglo', texto: 'En la pestaña Documentos ya se pueden arrastrar archivos a la zona de carga y se suben solos. Antes solo funcionaba haciendo clic. Si sueltas un archivo fuera de la zona, ya no se abre en lugar del sistema.' },
   ]},
@@ -1257,7 +1368,7 @@ function renderTarifasDefecto() {
     <input type="number" step="0.01" id="td-${k}" value="${TARIFAS_DEFECTO[k] ?? ''}" style="width:64px;font-family:'DM Mono',monospace"></label>`;
   el.innerHTML = `
     <span style="font-size:11px;color:var(--text-3)">Tarifas por defecto para nuevos trámites:</span>
-    ${campo('seguroPct','Seguro % CFR')} ${campo('adValorem','Ad Valorem')} ${campo('fodinfa','Fodinfa')} ${campo('iva','IVA')}
+    ${campo('seguroPct','Seguro % FOB')} ${campo('adValorem','Ad Valorem')} ${campo('fodinfa','Fodinfa')} ${campo('iva','IVA')}
     <button class="btn btn-sm" onclick="guardarTarifasDefecto()">Guardar</button>`;
 }
 
@@ -1285,12 +1396,17 @@ const GASTOS_ADUANEROS = [
 // al centavo. Cada trámite puede cambiarlo con las casillas del panel.
 const EN_BASE_IVA = ['vb', 'blDestino'];
 
+const seguroCargado = v => v !== undefined && v !== null && String(v).trim() !== '' && Number.isFinite(parseFloat(v));
+const etiquetaSeguro = (r, pct) => r.seguroManual ? 'Seguro (valor cargado)' : `Seguro (${pct}% del FOB)`;
+
 // Mismo cálculo que backend/lib/preliquidacion.js: si se toca uno, tocar el otro.
 function calcPreliq(p) {
   const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
   const fob = n(p.fob), flete = n(p.flete);
   const cfr = fob + flete;
-  const seguro = cfr * n(p.seguroPct) / 100;   // siempre un % del CFR
+  // 1% del FOB por defecto; si se cargó un valor a mano, manda ese
+  const seguroManual = seguroCargado(p.seguroMonto);
+  const seguro = seguroManual ? n(p.seguroMonto) : fob * n(p.seguroPct) / 100;
   const cif = cfr + seguro;
   const gastos = Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, n(p[k])]));
   const adValorem = cif * n(p.adValorem) / 100;
@@ -1298,7 +1414,7 @@ function calcPreliq(p) {
   const enBaseIva = Array.isArray(p.enBaseIva) ? p.enBaseIva : EN_BASE_IVA;
   const iva       = (cif + adValorem + fodinfa + enBaseIva.reduce((s, k) => s + (gastos[k] || 0), 0)) * n(p.iva) / 100;
   const totalGastos = Object.values(gastos).reduce((s, v) => s + v, 0);
-  return { fob, flete, cfr, seguro, cif, adValorem, fodinfa, iva,
+  return { fob, flete, cfr, seguro, seguroManual, cif, adValorem, fodinfa, iva,
            total: adValorem + fodinfa + iva, gastos, totalGastos,
            anticipo: n(p.anticipo), garantia: n(p.garantia), enBaseIva };
 }
@@ -1318,7 +1434,7 @@ function renderPreliquidacion(forzarValores = false) {
     const val = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
     val('pl-fob', p.fob); val('pl-flete', p.flete);
     val('pl-cantidad', p.cantidad); val('pl-unidad', p.unidad);
-    val('pl-t-seguro', p.seguroPct); val('pl-t-advalorem', p.adValorem);
+    val('pl-seguro-monto', p.seguroMonto); val('pl-t-advalorem', p.adValorem);
     val('pl-t-fodinfa', p.fodinfa); val('pl-t-iva', p.iva);
     GASTOS_ADUANEROS.forEach(([k]) => val('pl-g-' + k, p[k]));
     const base = Array.isArray(p.enBaseIva) ? p.enBaseIva : EN_BASE_IVA;
@@ -1328,7 +1444,12 @@ function renderPreliquidacion(forzarValores = false) {
 
   const r = calcPreliq(p);
   const money = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = '$' + v.toFixed(2); };
-  money('pl-cfr', r.cfr); money('pl-seguro', r.seguro); money('pl-cif', r.cif);
+  money('pl-cfr', r.cfr); money('pl-cif', r.cif);
+  // El valor automático se muestra como sugerencia en el campo vacío
+  const segIn = document.getElementById('pl-seguro-monto');
+  if (segIn) segIn.placeholder = (r.fob * (parseFloat(p.seguroPct) || 0) / 100).toFixed(2);
+  const segLbl = document.getElementById('pl-seguro-label');
+  if (segLbl) segLbl.textContent = r.seguroManual ? 'valor cargado · vacío = ' + p.seguroPct + '% del FOB' : p.seguroPct + '% del FOB';
   money('pl-v-advalorem', r.adValorem); money('pl-v-fodinfa', r.fodinfa);
   money('pl-v-iva', r.iva); money('pl-total', r.total);
   money('pl-subtotal-gastos', r.totalGastos); money('pl-total-gastos', r.totalGastos);
@@ -1339,7 +1460,8 @@ function leerPreliqForm() {
   return {
     fob: v('pl-fob'), flete: v('pl-flete'),
     cantidad: v('pl-cantidad'), unidad: v('pl-unidad'),
-    seguroPct: v('pl-t-seguro'), adValorem: v('pl-t-advalorem'),
+    seguroPct: preliqData.seguroPct ?? TARIFAS_DEFECTO.seguroPct, seguroMonto: v('pl-seguro-monto'),
+    adValorem: v('pl-t-advalorem'),
     fodinfa: v('pl-t-fodinfa'), iva: v('pl-t-iva'),
     ...Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, v('pl-g-' + k)])),
     enBaseIva: GASTOS_ADUANEROS.map(([k]) => k).filter(k => document.getElementById('pl-iva-' + k)?.checked),
@@ -1432,7 +1554,7 @@ function exportPreliqPDF(doc = 'preliquidacion') {
     <tr><td>FOB</td><td class="num">${$(r.fob)}</td></tr>
     <tr><td>Flete</td><td class="num">${$(r.flete)}</td></tr>
     <tr><td>CFR</td><td class="num">${$(r.cfr)}</td></tr>
-    <tr><td>Seguro (${t.seguroPct}% del CFR)</td><td class="num">${$(r.seguro)}</td></tr>
+    <tr><td>${etiquetaSeguro(r, t.seguroPct)}</td><td class="num">${$(r.seguro)}</td></tr>
     <tr class="tot"><td>CIF</td><td class="num">${$(r.cif)}</td></tr>
   </table>
   ${esPreliq ? `
@@ -1660,6 +1782,7 @@ async function exportarXLSX(nombre, columnas, filas) {
 function exportarBitacora(formato) {
   const columnas = [
     { key:'numero', label:'N° trámite' }, { key:'cliente', label:'Cliente' },
+    { key:'ref_cliente', label:'Ref. cliente' },
     { key:'tipo', label:'Operación' }, { key:'regimen', label:'Régimen' },
     { key:'bl', label:'BL / AWB' }, { key:'da', label:'DAI / DAE' },
     { key:'naviera', label:'Naviera' }, { key:'estado', label:'Estado' },
@@ -1669,7 +1792,7 @@ function exportarBitacora(formato) {
     { key:'saldo', label:'Saldo' },
   ];
   const filas = filtrarBitacora().map(t => ({
-    numero: t.numero, cliente: t.cliente, tipo: t.tipo,
+    numero: t.numero, cliente: t.cliente, ref_cliente: t.ref_cliente || '', tipo: t.tipo,
     regimen: t.regimen === 'Otro (especificar)' ? (t.regimen_otro || 'Otro') : (t.regimen || ''),
     bl: t.bl || '', da: t.da || '', naviera: t.naviera || '', estado: t.estado,
     apertura: (t.fecha_arribo || t.created_at || '').split('T')[0],
@@ -2845,7 +2968,7 @@ async function aplicarRuta() {
     restaurandoRuta = true;
     await openTramite(partes[1]);
     restaurandoRuta = false;
-    const tab = TABS_URL[partes[2]] || 't-docs';
+    const tab = TABS_URL[partes[2]] || 't-datos';
     const btn = document.getElementById('tab-' + tab.slice(2));   // t-docs → tab-docs
     if (btn) setTab(btn, tab);
     return;

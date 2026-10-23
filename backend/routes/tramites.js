@@ -2,7 +2,7 @@ const router = require('express').Router()
 const ExcelJS = require('exceljs')
 const db = require('../db')
 const auth = require('../middleware/auth')
-const { calcular, GASTOS_ADUANEROS } = require('../lib/preliquidacion')
+const { calcular, etiquetaSeguro, GASTOS_ADUANEROS } = require('../lib/preliquidacion')
 const { deleteFile } = require('../lib/storage')
 
 // GET /tramites
@@ -17,17 +17,34 @@ router.get('/', auth, async (req, res) => {
   if (estado) { where.push(`estado = $${i}`); params.push(estado); i++ }
   if (mes)    { where.push(`to_char(created_at, 'YYYY-MM') = $${i}`); params.push(mes); i++ }
 
-  try {
-    const { rows } = await db.query(
-      `SELECT t.*, u.name AS created_by_name,
+  // La consulta con busqueda_extra es la normal; si falla (p. ej. falta la tabla
+  // clientes en una base vieja), la lista igual sale, solo sin esos datos extra.
+  const conExtra = `SELECT t.*, u.name AS created_by_name,
+        (SELECT COALESCE(SUM(monto - retencion),0) FROM gastos WHERE tramite_id = t.id AND NOT excluir_liquidacion) AS total_gastos,
+        (SELECT COALESCE(SUM(monto),0) FROM anticipos WHERE tramite_id = t.id) AS total_anticipos,
+        -- Para el buscador: lo que no está en la fila del trámite (RUC del cliente,
+        -- gastos, anticipos y nombres de documentos), con la sección de origen
+        json_build_object(
+          'ruc',        (SELECT ruc FROM clientes c WHERE upper(c.nombre) = upper(t.cliente) LIMIT 1),
+          'gastos',     (SELECT string_agg(concat_ws(' · ', g.concepto, g.proveedor, g.n_factura), ' | ') FROM gastos g WHERE g.tramite_id = t.id),
+          'anticipos',  (SELECT string_agg(concat_ws(' · ', a.descripcion, a.n_comprobante), ' | ') FROM anticipos a WHERE a.tramite_id = t.id),
+          'documentos', (SELECT string_agg(d.nombre, ' | ') FROM documentos d WHERE d.tramite_id = t.id)
+        ) AS busqueda_extra
+       FROM tramites t
+       JOIN users u ON u.id = t.created_by
+       WHERE ${where.join(' AND ')}
+       ORDER BY t.created_at DESC`
+  const sinExtra = `SELECT t.*, u.name AS created_by_name,
         (SELECT COALESCE(SUM(monto - retencion),0) FROM gastos WHERE tramite_id = t.id AND NOT excluir_liquidacion) AS total_gastos,
         (SELECT COALESCE(SUM(monto),0) FROM anticipos WHERE tramite_id = t.id) AS total_anticipos
        FROM tramites t
        JOIN users u ON u.id = t.created_by
        WHERE ${where.join(' AND ')}
-       ORDER BY t.created_at DESC`,
-      params
-    )
+       ORDER BY t.created_at DESC`
+  try {
+    let rows
+    try { ({ rows } = await db.query(conExtra, params)) }
+    catch (e) { console.error('GET /tramites busqueda_extra:', e.message); ({ rows } = await db.query(sinExtra, params)) }
     res.json(rows)
   } catch { res.status(500).json({ error: 'Error interno' }) }
 })
@@ -151,7 +168,7 @@ router.get('/:id/:doc(preliquidacion|liquidacion).xlsx', auth, async (req, res) 
     const pq = tramite.preliquidacion || {}
     cab(['Valores de la mercadería', 'USD'])
     if (pq.cantidad) ws.addRow(['Cantidad', `${pq.cantidad} ${pq.unidad || ''}`.trim()])
-    ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], [`Seguro (${p.tarifas.seguroPct}% del CFR)`, p.seguro], ['CIF', p.cif]]
+    ;[['FOB', p.fob], ['Flete', p.flete], ['CFR', p.cfr], [etiquetaSeguro(p), p.seguro], ['CIF', p.cif]]
       .forEach(([k, v]) => dinero(ws.addRow([k, v])))
     ws.addRow([])
 

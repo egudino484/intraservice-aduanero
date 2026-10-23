@@ -151,6 +151,11 @@
 
       <!-- ══ DASHBOARD ══ -->
       <div class="screen" id="screen-dashboard">
+        <div class="busq-global">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <input id="busq-global" type="search" autocomplete="off" placeholder="Buscar en todos los trámites: N°, cliente, RUC, BL, DAI, factura, contenedor, documento..." oninput="buscarGlobal()" onkeydown="teclaBusqueda(event)">
+          <div id="busq-global-res" class="busq-global-res" style="display:none"></div>
+        </div>
         <div class="metrics-row">
           <div class="metric"><div class="metric-label">Trámites del año</div><div class="metric-value">281</div><div class="metric-sub">enero – mayo 2026</div></div>
           <div class="metric"><div class="metric-label">En proceso</div><div class="metric-value" style="color:var(--amber)">7</div><div class="metric-sub">requieren acción</div></div>
@@ -175,7 +180,7 @@
       <!-- ══ BITÁCORA ══ -->
       <div class="screen" id="screen-bitacora">
         <div class="filters">
-          <input id="b-search" class="filter-input" type="text" placeholder="Buscar trámite, cliente, BL..." oninput="renderBitacora()">
+          <input id="b-search" class="filter-input" type="text" placeholder="Buscar por cualquier dato: trámite, cliente, RUC, DAI, factura..." oninput="renderBitacora()" style="min-width:300px">
           <select id="b-tipo" class="filter-select" onchange="renderBitacora()"><option value="">Todas las operaciones</option><option>Importación</option><option>Exportación</option></select>
           <select id="b-estado" class="filter-select" onchange="renderBitacora()"><option value="">Todos los estados</option><option>Concluido</option><option>En proceso</option><option>Pendiente documentación</option><option>Cancelado</option></select>
           <button class="btn btn-sm" onclick="exportarBitacora('csv')" title="Descargar lo que estás viendo, con los filtros aplicados">↓ CSV</button>
@@ -184,7 +189,7 @@
         </div>
         <div class="panel" style="padding:0;overflow:hidden">
           <table>
-            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Op.</th><th>BL / AWB</th><th>DAI / DAE</th><th>Naviera</th><th>Estado</th></tr></thead>
+            <thead><tr><th>N° trámite</th><th>Cliente</th><th>Ref. cliente</th><th>Op.</th><th>BL / AWB</th><th>DAI / DAE</th><th>Naviera</th><th>Estado</th></tr></thead>
             <tbody id="bitacora-body">
               <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:20px;font-size:12px">Cargando...</td></tr>
             </tbody>
@@ -484,7 +489,7 @@
                   <tr><td>FOB</td><td style="text-align:right"><input type="number" step="0.01" id="pl-fob" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>Flete</td><td style="text-align:right"><input type="number" step="0.01" id="pl-flete" style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr><td>CFR</td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-cfr">$0.00</td></tr>
-                  <tr><td>Seguro <span style="font-size:11px;color:var(--text-3)">(<input type="number" step="0.01" id="pl-t-seguro" style="width:46px;font-family:'DM Mono',monospace;font-size:11px" onchange="onPreliqChange()">% del CFR)</span></td><td style="text-align:right;font-family:'DM Mono',monospace" id="pl-seguro">$0.00</td></tr>
+                  <tr><td>Seguro <span style="font-size:11px;color:var(--text-3)">(<span id="pl-seguro-label">1% del FOB</span>)</span></td><td style="text-align:right"><input type="number" step="0.01" id="pl-seguro-monto" title="Vacío: se calcula solo. Escribe un valor para reemplazarlo." style="width:120px;text-align:right;font-family:'DM Mono',monospace" onchange="onPreliqChange()"></td></tr>
                   <tr class="total-row"><td>CIF</td><td style="text-align:right;font-family:'DM Mono',monospace;font-size:14px" id="pl-cif">$0.00</td></tr>
                 </tbody>
               </table>

@@ -8,7 +8,7 @@ function noVisor(req, res, next) {
   next()
 }
 
-// seguroPct es el % del CFR; reemplaza a 'seguridad', que la plantilla no usa
+// seguroPct es el % del FOB; reemplaza a 'seguridad', que la plantilla no usa
 const CLAVES_TARIFAS = ['adValorem', 'fodinfa', 'iva', 'seguroPct']
 
 // GET /configuracion — valores generales del sistema

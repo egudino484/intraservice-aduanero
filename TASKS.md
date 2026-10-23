@@ -3,6 +3,15 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Feedback del 02 al 14-oct-2026 (Nicole, Katy, Fernando)
+
+- [x] **T50 · Buscador por cualquier dato** — M — Pedidos de Nicole (02 y 08-oct) y Katy (08-oct). Bitácora y nuevo buscador en el Dashboard buscan en **todas** las columnas del trámite (salvo ids, fechas de sistema y JSON), campos adicionales, etiquetas, y lo relacionado que manda `GET /tramites` en `busqueda_extra`: RUC del cliente, gastos (concepto · proveedor · factura), anticipos (descripción · comprobante) y nombres de documentos. Sin tildes ni mayúsculas. Debajo de cada fila, el campo donde coincidió (`fragmentoCoincidencia()`), con el nombre tomado del label del formulario. *Si la consulta con `busqueda_extra` falla, el endpoint cae a la consulta vieja: la lista nunca se rompe. Verificado con los 93 trámites de prod (factura, ref. cliente, cliente, naviera, mercadería).*
+- [x] **T51 · Columna Ref. cliente en Bitácora** — S — Fernando (14-oct). También en CSV/Excel. Se respondió así también el pedido de Katy del 13-oct ("ver el trámite del importador/exportador para no duplicar"), interpretado como la referencia del cliente; queda preguntado si era eso.
+- [x] **T52 · Seguro = 1% del FOB, editable en valor** — S — Nicole (02 y 12-oct). Antes 1% del CFR (T37, confirmado el 29-sep; ahora lo cambió ella). `seguroMonto` en la preliquidación: si tiene valor manda ese; vacío → `seguroPct`% del FOB (placeholder muestra el automático). Se quitó el input de % por trámite; el % por defecto sigue en "Tarifas por defecto". ⚠️ Las preliquidaciones existentes se recalculan sobre FOB al abrirlas: el CIF y los impuestos bajan un poco. *Mismo cálculo en `calcPreliq()` y `backend/lib/preliquidacion.js`; etiqueta "Seguro (1% del FOB)" / "Seguro (valor cargado)" en PDF y Excel. Verificado: FOB 46.880,60 → seguro 468,81, que coincide con el ejemplo original de la plantilla.*
+- [x] **T53 · Abrir el trámite en "Datos del trámite"** — S — Fernando (14-oct). `openTramite()` y los links sin pestaña en la URL abren en Datos; antes, en Gastos y anticipos.
+- [x] **T49** cubre el pedido de Fernando del 14-oct de arrastrar documentos (ya publicado).
+- **Eliminar pestaña "Estado y auditoría"** (Nicole, 04-ago) — sigue sin hacerse por decisión de Edison (ver abajo). Se responde en Feedback.
+
 ## Pedido del 16-oct-2026 (Edison)
 
 - [x] **T49 · 🐛 No se podía arrastrar documentos** — S — La zona decía "Arrastra archivos aquí" pero solo tenía `onclick`; al soltar, el navegador abría el archivo. *`docDragOver/docDragLeave/docDrop` en `app.js` → `handleDocFiles()`. Filtra por extensión (lo soltado no pasa por `accept`). `dragover`/`drop` en `window` con `preventDefault` para que un archivo soltado fuera no saque al usuario del sistema.*

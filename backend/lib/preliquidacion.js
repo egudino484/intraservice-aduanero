@@ -3,7 +3,7 @@
 // código: cada trámite guarda las suyas y estos valores son el punto de partida.
 //
 // ⚠️ Mismo cálculo en calcPreliq() de app.js: si se toca uno, tocar el otro.
-// seguroPct y no "seguro": en las preliquidaciones viejas "seguro" guardaba el
+// seguroPct (% del FOB) y no "seguro": en las preliquidaciones viejas "seguro" guardaba el
 // monto cargado a mano, y leerlo como % daría un seguro disparatado.
 const TARIFAS_DEFECTO = { adValorem: 0, fodinfa: 0.5, iva: 15, seguroPct: 1 }
 
@@ -24,13 +24,16 @@ const num = v => {
   const n = parseFloat(v)
   return Number.isFinite(n) ? n : 0
 }
+const seguroCargado = v => v !== undefined && v !== null && String(v).trim() !== '' && Number.isFinite(parseFloat(v))
 
 function calcular(preliq = {}) {
   const p = { ...TARIFAS_DEFECTO, ...(preliq || {}) }
   const fob = num(p.fob), flete = num(p.flete)
   const cfr = fob + flete
-  // El seguro siempre es un % del CFR (indicación de Intraservice)
-  const seguro = cfr * num(p.seguroPct) / 100
+  // Seguro: 1% del FOB por defecto (pedido de Nicole, 12-oct). Si se cargó un
+  // valor a mano (seguroMonto) manda ese; vacío vuelve al cálculo automático.
+  const seguroManual = seguroCargado(p.seguroMonto)
+  const seguro = seguroManual ? num(p.seguroMonto) : fob * num(p.seguroPct) / 100
   const cif = cfr + seguro
 
   const gastos = Object.fromEntries(GASTOS_ADUANEROS.map(([k]) => [k, num(p[k])]))
@@ -44,7 +47,7 @@ function calcular(preliq = {}) {
 
   return {
     cantidad: p.cantidad || '', unidad: p.unidad || '',
-    fob, flete, cfr, seguro, cif,
+    fob, flete, cfr, seguro, cif, seguroManual,
     tarifas: { adValorem: num(p.adValorem), fodinfa: num(p.fodinfa), iva: num(p.iva), seguroPct: num(p.seguroPct) },
     impuestos: { adValorem, fodinfa, iva }, enBaseIva, baseIva,
     totalImpuestos,
@@ -53,4 +56,7 @@ function calcular(preliq = {}) {
   }
 }
 
-module.exports = { calcular, TARIFAS_DEFECTO, GASTOS_ADUANEROS }
+// Texto de la fila del seguro en PDF y Excel
+const etiquetaSeguro = r => r.seguroManual ? 'Seguro (valor cargado)' : `Seguro (${r.tarifas.seguroPct}% del FOB)`
+
+module.exports = { calcular, etiquetaSeguro, TARIFAS_DEFECTO, GASTOS_ADUANEROS }
