@@ -1239,6 +1239,9 @@ async function loadProveedores() {
 // Changelog visible para los usuarios. Al agregar algo al sistema, sumar una
 // entrada arriba con la fecha del día.
 const NOVEDADES = [
+  { fecha: '2026-10-23', titulo: 'Nueva dirección: intraservice.edisonai.lat', cambios: [
+    { tipo: 'nuevo', texto: 'El sistema tiene una dirección nueva, más fácil de recordar: intraservice.edisonai.lat. La dirección anterior sigue funcionando. En la nueva hay que iniciar sesión una vez, y si lo tenías instalado en el teléfono, conviene instalarlo de nuevo desde la nueva dirección.' },
+  ]},
   { fecha: '2026-10-23', titulo: 'Buscador en todo el sistema y seguro sobre el FOB', cambios: [
     { tipo: 'nuevo', texto: 'Buscador arriba del Dashboard: escribe cualquier dato (N° de trámite, cliente, RUC, BL, DAI/DAE, factura, contenedor, mercadería, nombre de un documento…) y te muestra los trámites que lo tienen y en qué campo. Un clic abre el trámite.' },
     { tipo: 'mejora', texto: 'El buscador de la Bitácora ahora busca en todos los datos del trámite, no solo en número, cliente, BL y DAI. Debajo de cada resultado se ve dónde coincidió, sin tener que abrirlo.' },

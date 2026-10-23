@@ -3,6 +3,10 @@
 Derivadas del feedback de usuarios en producción (tabla `feedback`, autora: Nicole Arias — jul a sep 2026).
 Esfuerzo: S (≤1h) · M (medio día) · L (1-2 días)
 
+## Pedido del 23-oct-2026 (Edison)
+
+- [x] **T54 · Dominio propio intraservice.edisonai.lat** — S — Custom domain en Railway (puerto 8080) + CNAME `intraservice` → `1x1tzt7t.up.railway.app` y TXT `_railway-verify.intraservice` en GoDaddy. HTTPS emitido por Railway. La URL de Railway sigue viva. *El frontend usa `/api` relativo y el link de "Compartir el sistema" sale de `location.origin`: no hubo que tocar código. ⚠️ Sesión (`localStorage`) y app instalada van por dirección: en la nueva hay que volver a entrar e instalar.*
+
 ## Feedback del 02 al 14-oct-2026 (Nicole, Katy, Fernando)
 
 - [x] **T50 · Buscador por cualquier dato** — M — Pedidos de Nicole (02 y 08-oct) y Katy (08-oct). Bitácora y nuevo buscador en el Dashboard buscan en **todas** las columnas del trámite (salvo ids, fechas de sistema y JSON), campos adicionales, etiquetas, y lo relacionado que manda `GET /tramites` en `busqueda_extra`: RUC del cliente, gastos (concepto · proveedor · factura), anticipos (descripción · comprobante) y nombres de documentos. Sin tildes ni mayúsculas. Debajo de cada fila, el campo donde coincidió (`fragmentoCoincidencia()`), con el nombre tomado del label del formulario. *El RUC se cruza con `clientes` por nombre sin espacios sobrantes (había trámites con "FENATRAPE "). Al 23-oct ningún cliente tiene RUC cargado: la búsqueda por RUC empieza a dar resultados cuando los carguen en Clientes. Si la consulta con `busqueda_extra` falla, el endpoint cae a la consulta vieja: la lista nunca se rompe. Verificado con los 93 trámites de prod (factura, ref. cliente, cliente, naviera, mercadería).*

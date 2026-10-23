@@ -100,7 +100,8 @@ npx serve . -p 8080
 **Proyecto:** `sistema-importacion-niky` (el *servicio* dentro del proyecto sí se llama `sistema-importacion-intraservice`)  
 **Project ID:** `10955fcc-d096-4cbb-8055-8412f280e739`  
 **Workspace:** Edison Gudiño's Projects — `91ade6ab-aa1c-41df-9a20-390673296b58`  
-**API URL producción:** `https://sistema-importacion-intraservice-production-0b8a.up.railway.app`  
+**URL producción (la que usan los usuarios):** `https://intraservice.edisonai.lat` — dominio propio, CNAME en GoDaddy (`edisonai.lat`) → Railway, desde el 23-oct-2026  
+**URL Railway (sigue funcionando):** `https://sistema-importacion-intraservice-production-0b8a.up.railway.app`  
 **GitHub repo:** `https://github.com/egudino484/intraservice-aduanero.git`
 
 ### Deploy del backend
