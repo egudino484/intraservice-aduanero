@@ -25,7 +25,7 @@ router.get('/', auth, async (req, res) => {
         -- Para el buscador: lo que no está en la fila del trámite (RUC del cliente,
         -- gastos, anticipos y nombres de documentos), con la sección de origen
         json_build_object(
-          'ruc',        (SELECT ruc FROM clientes c WHERE upper(c.nombre) = upper(t.cliente) LIMIT 1),
+          'ruc',        (SELECT ruc FROM clientes c WHERE upper(trim(c.nombre)) = upper(trim(t.cliente)) LIMIT 1),
           'gastos',     (SELECT string_agg(concat_ws(' · ', g.concepto, g.proveedor, g.n_factura), ' | ') FROM gastos g WHERE g.tramite_id = t.id),
           'anticipos',  (SELECT string_agg(concat_ws(' · ', a.descripcion, a.n_comprobante), ' | ') FROM anticipos a WHERE a.tramite_id = t.id),
           'documentos', (SELECT string_agg(d.nombre, ' | ') FROM documentos d WHERE d.tramite_id = t.id)
